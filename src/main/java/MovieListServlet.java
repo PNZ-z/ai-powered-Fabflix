@@ -95,7 +95,7 @@ public class MovieListServlet extends HttpServlet {
                                 String starId = starRs.getString("id");
                                 String starName = starRs.getString("name");
 
-                                if (!starLinks.isEmpty()) {
+                                if (starLinks.length() > 0) {
                                     starLinks.append(", ");
                                 }
 
