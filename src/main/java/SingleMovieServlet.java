@@ -13,8 +13,8 @@ import java.sql.ResultSet;
 @WebServlet("/single-movie")
 public class SingleMovieServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "root";
-        String loginPasswd = "20041113";
+        String loginUser = "mytestuser";
+        String loginPasswd = "My6$Password";
         String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
 
         response.setContentType("text/html");
