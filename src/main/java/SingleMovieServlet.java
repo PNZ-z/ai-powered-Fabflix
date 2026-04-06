@@ -1,3 +1,6 @@
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,14 +13,15 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-@WebServlet("/single-movie")
+@WebServlet("/api/single-movie")
 public class SingleMovieServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+        String loginUser = "root";
+        String loginPasswd = "20041113";
+        String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
-        response.setContentType("text/html");
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
         String movieId = request.getParameter("id");
@@ -48,13 +52,7 @@ public class SingleMovieServlet extends HttpServlet {
             Class.forName("com.mysql.cj.jdbc.Driver");
 
             try (Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd)) {
-                out.println("<html>");
-                out.println("<head><title>Single Movie Page</title></head>");
-                out.println("<body>");
-
-                out.println("<h1>Movie Details</h1>");
-                out.println("<p><a href='movie-list'>Back to Movie List</a></p>");
-
+                JsonObject jsonObject = new JsonObject();
                 boolean movieFound = false;
 
                 try (PreparedStatement movieStatement = conn.prepareStatement(movieQuery)) {
@@ -74,15 +72,14 @@ public class SingleMovieServlet extends HttpServlet {
                                 genres = "";
                             }
 
-                            out.println("<p><strong>Title:</strong> " + title + "</p>");
-                            out.println("<p><strong>Year:</strong> " + year + "</p>");
-                            out.println("<p><strong>Director:</strong> " + director + "</p>");
-                            out.println("<p><strong>Genres:</strong> " + genres + "</p>");
-                            out.println("<p><strong>Rating:</strong> " + rating + "</p>");
+                            jsonObject.addProperty("movie_id", movieId);
+                            jsonObject.addProperty("movie_title", title);
+                            jsonObject.addProperty("movie_year", year);
+                            jsonObject.addProperty("movie_director", director);
+                            jsonObject.addProperty("movie_genres", genres);
+                            jsonObject.addProperty("movie_rating", rating);
 
-                            out.println("<p><strong>Stars:</strong> ");
-
-                            StringBuilder starLinks = new StringBuilder();
+                            JsonArray starArray = new JsonArray();
 
                             try (PreparedStatement starStatement = conn.prepareStatement(starQuery)) {
                                 starStatement.setString(1, movieId);
@@ -92,37 +89,36 @@ public class SingleMovieServlet extends HttpServlet {
                                         String starId = starRs.getString("id");
                                         String starName = starRs.getString("name");
 
-                                        if (starLinks.length() > 0) {
-                                            starLinks.append(", ");
-                                        }
-
-                                        starLinks.append("<a href='single-star?id=")
-                                                .append(starId)
-                                                .append("'>")
-                                                .append(starName)
-                                                .append("</a>");
+                                        JsonObject singleStar = new JsonObject();
+                                        singleStar.addProperty("star_id", starId);
+                                        singleStar.addProperty("star_name", starName);
+                                        starArray.add(singleStar);
                                     }
                                 }
                             }
 
-                            out.println(starLinks + "</p>");
+                            jsonObject.add("movie_stars", starArray);
                         }
                     }
                 }
 
                 if (!movieFound) {
-                    out.println("<p>Movie not found.</p>");
+                    JsonObject errorObject = new JsonObject();
+                    errorObject.addProperty("errorMessage", "Movie not found.");
+                    out.write(errorObject.toString());
+                    response.setStatus(404);
+                } else {
+                    out.write(jsonObject.toString());
+                    response.setStatus(200);
                 }
-
-                out.println("</body>");
-                out.println("</html>");
             }
         } catch (Exception e) {
             request.getServletContext().log("Error in SingleMovieServlet", e);
-            out.println("<html><body>");
-            out.println("<h2>Error</h2>");
-            out.println("<p>" + e.getMessage() + "</p>");
-            out.println("</body></html>");
+
+            JsonObject errorObject = new JsonObject();
+            errorObject.addProperty("errorMessage", e.getMessage());
+            out.write(errorObject.toString());
+            response.setStatus(500);
         } finally {
             out.close();
         }

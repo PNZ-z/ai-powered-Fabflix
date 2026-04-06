@@ -1,0 +1,73 @@
+/**
+ * This file follows frontend and backend separation.
+ *
+ * It does two things:
+ * 1. Reads the movie id from the page URL.
+ * 2. Calls the backend API and fills the HTML page with movie data.
+ */
+
+
+/**
+ * Handles the JSON data returned by the backend and populates the page.
+ * @param resultData JSON object for one movie
+ */
+function handleSingleMovieResult(resultData) {
+    console.log("handleSingleMovieResult: populating single movie page");
+
+    if (resultData["errorMessage"]) {
+        jQuery("#movie_title").text("Error");
+        jQuery("#movie_year").text("");
+        jQuery("#movie_director").text(resultData["errorMessage"]);
+        jQuery("#movie_genres").text("");
+        jQuery("#movie_stars").text("");
+        jQuery("#movie_rating").text("");
+        return;
+    }
+
+    jQuery("#movie_title").text(resultData["movie_title"]);
+    jQuery("#movie_year").text(resultData["movie_year"]);
+    jQuery("#movie_director").text(resultData["movie_director"]);
+    jQuery("#movie_genres").text(resultData["movie_genres"]);
+    jQuery("#movie_rating").text(resultData["movie_rating"]);
+
+    let movieStarsElement = jQuery("#movie_stars");
+    movieStarsElement.empty();
+
+    let starsArray = resultData["movie_stars"];
+    for (let i = 0; i < starsArray.length; i++) {
+        let currentStar = starsArray[i];
+
+        movieStarsElement.append(
+            '<a href="single-star.html?id=' + currentStar["star_id"] + '">' +
+            currentStar["star_name"] +
+            '</a>'
+        );
+
+        if (i < starsArray.length - 1) {
+            movieStarsElement.append(", ");
+        }
+    }
+}
+
+
+/**
+ * Read movie id from the URL.
+ * Example: single-movie.html?id=tt1234567
+ */
+let urlParams = new URLSearchParams(window.location.search);
+let movieId = urlParams.get("id");
+
+
+/**
+ * Call backend API.
+ */
+jQuery.ajax({
+    dataType: "json",
+    method: "GET",
+    url: "api/single-movie?id=" + movieId,
+    success: (resultData) => handleSingleMovieResult(resultData),
+    error: function(xhr, status, error) {
+        console.error("Error fetching single movie:", error);
+        console.error("Response text:", xhr.responseText);
+    }
+});
