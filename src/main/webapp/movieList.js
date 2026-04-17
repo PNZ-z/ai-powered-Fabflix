@@ -5,7 +5,7 @@
  *
  * This .js does two things:
  * 1. Sends a request to the backend API to get movie list JSON data.
- * 2. Populates the movie table in index.html.
+ * 2. Populates the movie table in movieList.html.
  */
 
 
