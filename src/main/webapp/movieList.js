@@ -67,13 +67,49 @@ function handleMovieListResult(resultData) {
 /**
  * Once this .js is loaded, the following AJAX request is executed by the browser.
  */
+let params = new URLSearchParams(window.location.search);
 jQuery.ajax({
     dataType: "json",
     method: "GET",
     url: "api/movie-list",
+    data: {
+        title: params.get("title"),
+        year: params.get("year"),
+        director: params.get("director"),
+        star: params.get("star")
+    },
     success: (resultData) => handleMovieListResult(resultData),
     error: function(xhr, status, error) {
         console.error("Error fetching movie list:", error);
         console.error("Response text:", xhr.responseText);
     }
 });
+// $(document).ready(function() {
+//     // 1. Get the parameters from the browser's address bar
+//     let urlParams = new URLSearchParams(window.location.search);
+//
+//     // 2. Build the data object explicitly
+//     let requestData = {};
+//     if (urlParams.get("title")) requestData["title"] = urlParams.get("title");
+//     if (urlParams.get("year")) requestData["year"] = urlParams.get("year");
+//     if (urlParams.get("director")) requestData["director"] = urlParams.get("director");
+//     if (urlParams.get("star")) requestData["star"] = urlParams.get("star");
+//     if (urlParams.get("pageNumber")) requestData["pageNumber"] = urlParams.get("pageNumber");
+//
+//     console.log("Attempting to send data:", requestData);
+//
+//     // 3. The AJAX call
+//     jQuery.ajax({
+//         dataType: "json",
+//         method: "GET",
+//         url: "api/movie-list",
+//         data: requestData, // This MUST be here for the Payload to appear
+//         success: (resultData) => {
+//             console.log("Success! Data received:", resultData);
+//             handleMovieListResult(resultData);
+//         },
+//         error: (error) => {
+//             console.log("AJAX Error:", error);
+//         }
+//     });
+// });

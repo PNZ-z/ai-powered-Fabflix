@@ -16,11 +16,13 @@ function submitSearchForm(formSubmitEvent) {
     let director = $("#movieDirector").val();
     let star = $("#movieStar").val();
 
-    let url = "movieList.html?" +
-        "title=" + encodeURIComponent(title) +
-        "&year=" + encodeURIComponent(year) +
-        "&director=" + encodeURIComponent(director) +
-        "&star=" + encodeURIComponent(star);
+    let params = new URLSearchParams();
+    if (title) params.append("title", title);
+    if (year) params.append("year", year);
+    if (director) params.append("director", director);
+    if (star) params.append("star", star);
+    params.append("pageNumber", 0);
+    let url = "movieList.html" + (params.toString() ? "?" + params.toString() : "");
 
     console.log("Redirecting to: " + url);
     window.location.replace(url);

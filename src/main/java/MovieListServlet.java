@@ -24,6 +24,16 @@ public class MovieListServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
+        String searchTitle = request.getParameter("title");
+        String searchYear = request.getParameter("year");
+        String searchDirector = request.getParameter("director");
+        String searchStar = request.getParameter("star");
+        String searchPageNumber = request.getParameter("pageNumber");
+
+        System.out.println("DEBUG: searchTitle value is [" + searchTitle + "]");
+
+
+
         String movieQuery =
                 "SELECT " +
                         "m.id, " +
@@ -39,10 +49,9 @@ public class MovieListServlet extends HttpServlet {
                         "FROM movies m " +
                         "JOIN ratings r ON m.id = r.movie_id " +
                         "LEFT JOIN genres_in_movies gim ON m.id = gim.movie_id " +
-                        "LEFT JOIN genres g ON gim.genre_id = g.id " +
-                        "GROUP BY m.id, m.title, m.year, m.director, r.rating " +
-                        "ORDER BY r.rating DESC " +
-                        "LIMIT 20";
+                        "LEFT JOIN genres g ON gim.genre_id = g.id ";
+
+//
 
         String starQuery =
                 "SELECT s.id, s.name " +
@@ -54,29 +63,50 @@ public class MovieListServlet extends HttpServlet {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
+            if (searchStar != null && !searchStar.trim().isEmpty()) {
+                movieQuery+=" JOIN stars_in_movies sim ON m.id = sim.movie_id JOIN stars s ON s.id = sim.star_id ";
+            }
+            movieQuery += " WHERE 1=1 ";
+            if(searchTitle != null && !searchTitle.trim().isEmpty())
+                movieQuery += " AND m.title LIKE ? ";
+            else
+                System.out.println("title not detected");
+            if(searchYear != null && !searchYear.trim().isEmpty())
+                movieQuery += " AND m.year= ? ";
+            if(searchDirector != null && !searchDirector.trim().isEmpty())
+                movieQuery += " AND m.director LIKE ? ";
+            if(searchStar != null && !searchStar.trim().isEmpty())
+                movieQuery += " AND s.name LIKE ? ";
+
+            movieQuery += " GROUP BY m.id, m.title, m.year, m.director, r.rating " +
+                            "ORDER BY r.rating DESC " +
+                            "LIMIT 10 ";
+
+            if(searchPageNumber != null && !searchPageNumber.trim().isEmpty()&&isInteger(searchPageNumber))
+                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber)*10;
+            else{
+                movieQuery += " OFFSET 0";
+            }
 
             try (
                     Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd);
-                    PreparedStatement movieStatement = conn.prepareStatement(movieQuery);
-                    ResultSet rs = movieStatement.executeQuery()
             ) {
-//                out.println("<html>");
-//                out.println("<head>");
-//                out.println("<title>Movie List</title>");
-//                out.println("</head>");
-//                out.println("<body>");
-//
-//                out.println("<h1>Top 20 Rated Movies</h1>");
-//                out.println("<table border='1'>");
-//                out.println("<tr>");
-//                out.println("<th>Title</th>");
-//                out.println("<th>Year</th>");
-//                out.println("<th>Director</th>");
-//                out.println("<th>Genres</th>");
-//                out.println("<th>Stars</th>");
-//                out.println("<th>Rating</th>");
-//                out.println("</tr>");
-
+                PreparedStatement movieStatement = conn.prepareStatement(movieQuery);
+                int paramIndex = 1;
+                if (searchTitle != null && !searchTitle.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, "%" + searchTitle + "%");
+                }
+                if (searchYear != null && !searchYear.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, searchYear);
+                }
+                if (searchDirector != null && !searchDirector.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, "%" + searchDirector + "%");
+                }
+                if (searchStar != null && !searchStar.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, "%" + searchStar + "%");
+                }
+                System.out.println(movieStatement.toString());
+                ResultSet rs = movieStatement.executeQuery();
                 JsonArray jsonArray = new JsonArray();
                 while (rs.next()) {
                     String movieId = rs.getString("id");
@@ -91,7 +121,6 @@ public class MovieListServlet extends HttpServlet {
                     }
 
 
-                    StringBuilder starLinks = new StringBuilder();
 
                     // Create a JsonObject based on the data we retrieve from rs
                     JsonObject jsonObject = new JsonObject();
@@ -117,15 +146,6 @@ public class MovieListServlet extends HttpServlet {
                                 singleStar.addProperty("star_name", starName);
                                 starArray.add(singleStar);
 
-//                                if (starLinks.length()>0) {
-//                                    starLinks.append(", ");
-//                                }
-//
-//                                starLinks.append("<a href='single-star?id=")
-//                                        .append(starId)
-//                                        .append("'>")
-//                                        .append(starName)
-//                                        .append("</a>");
                             }
                             jsonObject.add("movie_stars",starArray);
                         }
@@ -135,29 +155,12 @@ public class MovieListServlet extends HttpServlet {
 
 
                     jsonArray.add(jsonObject);
-//                    out.println("<tr>");
-//                    out.println("<td><a href='single-movie?id=" + movieId + "'>" + title + "</a></td>");
-//                    out.println("<td>" + year + "</td>");
-//                    out.println("<td>" + director + "</td>");
-//                    out.println("<td>" + genres + "</td>");
-//                    out.println("<td>" + starLinks + "</td>");
-//                    out.println("<td>" + rating + "</td>");
-//                    out.println("</tr>");
+
                 }
 
-//                out.println("</table>");
-//                out.println("</body>");
-//                out.println("</html>");
                 out.write(jsonArray.toString());
             }
         } catch (Exception e) {
-//            request.getServletContext().log("Error in MovieListServlet", e);
-//            out.println("<html><body>");
-//            out.println("<h2>Error</h2>");
-//            out.println("<p>" + e.getMessage() + "</p>");
-//            out.println("</body></html>");
-
-
 
             // Write error message JSON object to output
             JsonObject jsonObject = new JsonObject();
@@ -169,6 +172,17 @@ public class MovieListServlet extends HttpServlet {
 
         } finally {
             out.close();
+        }
+    }
+    public static boolean isInteger(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 }
