@@ -76,7 +76,10 @@ jQuery.ajax({
         title: params.get("title"),
         year: params.get("year"),
         director: params.get("director"),
-        star: params.get("star")
+        star: params.get("star"),
+        genre: params.get("genre"),
+        startsWith: params.get("startsWith"),
+        pageNumber: params.get("pageNumber")
     },
     success: (resultData) => handleMovieListResult(resultData),
     error: function(xhr, status, error) {

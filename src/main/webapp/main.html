@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
+<div style="text-align: right; margin: 10px 20px;">
+    <a href="api/logout" class="btn btn-secondary">Logout</a>
+</div>
 <h2 style="text-align: center">Search Movies</h2>
 <!-- Set the method to POST to avoid showing the username/password in the URL
      The default action is disabled to allow your own implementation. -->
@@ -39,6 +42,29 @@
 
     <input type="Submit" value="Search">
 </form>
+
+<div id="browse_container" style="text-align: center">
+    <h2>Browse Movies</h2>
+
+    <div class="browse-choice">
+        <label>
+            <input type="radio" name="browseType" value="genre" checked>
+            Genre
+        </label>
+        <label>
+            <input type="radio" name="browseType" value="title">
+            Title
+        </label>
+    </div>
+
+    <div id="genre_browse_section" class="browse-section">
+        <div id="genre_browse_list"></div>
+    </div>
+
+    <div id="title_browse_section" class="browse-section" style="display: none;">
+        <div id="title_browse_list"></div>
+    </div>
+</div>
 
 <div id="login_error_message"></div>
 

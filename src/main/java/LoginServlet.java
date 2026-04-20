@@ -42,8 +42,8 @@ public class LoginServlet extends HttpServlet {
 //            }
 //        }
 
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
+        String loginUser = "root";
+        String loginPasswd = "20041113";
         String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         String loginQuery = "SELECT * FROM customers WHERE email= ? and password= ? LIMIT 1";

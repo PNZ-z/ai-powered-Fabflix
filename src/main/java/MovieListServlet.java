@@ -16,8 +16,8 @@ import java.sql.ResultSet;
 @WebServlet("/api/movie-list")
 public class MovieListServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
+        String loginUser = "root";
+        String loginPasswd = "20041113";
         String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         response.setContentType("application/json");
@@ -30,9 +30,12 @@ public class MovieListServlet extends HttpServlet {
         String searchStar = request.getParameter("star");
         String searchPageNumber = request.getParameter("pageNumber");
 
+        String searchGenre = request.getParameter("genre");
+        String startsWith = request.getParameter("startsWith");
+
         System.out.println("DEBUG: searchTitle value is [" + searchTitle + "]");
-
-
+        System.out.println("DEBUG: searchGenre value is [" + searchGenre + "]");
+        System.out.println("DEBUG: startsWith value is [" + startsWith + "]");
 
         String movieQuery =
                 "SELECT " +
@@ -51,8 +54,6 @@ public class MovieListServlet extends HttpServlet {
                         "LEFT JOIN genres_in_movies gim ON m.id = gim.movie_id " +
                         "LEFT JOIN genres g ON gim.genre_id = g.id ";
 
-//
-
         String starQuery =
                 "SELECT s.id, s.name " +
                         "FROM stars s " +
@@ -63,51 +64,90 @@ public class MovieListServlet extends HttpServlet {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
+
             if (searchStar != null && !searchStar.trim().isEmpty()) {
-                movieQuery+=" JOIN stars_in_movies sim ON m.id = sim.movie_id JOIN stars s ON s.id = sim.star_id ";
+                movieQuery += " JOIN stars_in_movies sim ON m.id = sim.movie_id " +
+                        " JOIN stars s ON s.id = sim.star_id ";
             }
+
+            if (searchGenre != null && !searchGenre.trim().isEmpty()) {
+                movieQuery += " JOIN genres_in_movies gim_filter ON m.id = gim_filter.movie_id " +
+                        " JOIN genres g_filter ON gim_filter.genre_id = g_filter.id ";
+            }
+
             movieQuery += " WHERE 1=1 ";
-            if(searchTitle != null && !searchTitle.trim().isEmpty())
+
+            if (searchTitle != null && !searchTitle.trim().isEmpty()) {
                 movieQuery += " AND m.title LIKE ? ";
-            else
+            } else {
                 System.out.println("title not detected");
-            if(searchYear != null && !searchYear.trim().isEmpty())
-                movieQuery += " AND m.year= ? ";
-            if(searchDirector != null && !searchDirector.trim().isEmpty())
+            }
+
+            if (searchYear != null && !searchYear.trim().isEmpty()) {
+                movieQuery += " AND m.year = ? ";
+            }
+
+            if (searchDirector != null && !searchDirector.trim().isEmpty()) {
                 movieQuery += " AND m.director LIKE ? ";
-            if(searchStar != null && !searchStar.trim().isEmpty())
+            }
+
+            if (searchStar != null && !searchStar.trim().isEmpty()) {
                 movieQuery += " AND s.name LIKE ? ";
+            }
+
+            if (searchGenre != null && !searchGenre.trim().isEmpty()) {
+                movieQuery += " AND g_filter.name = ? ";
+            }
+
+            if (startsWith != null && !startsWith.trim().isEmpty()) {
+                movieQuery += " AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ";
+            }
 
             movieQuery += " GROUP BY m.id, m.title, m.year, m.director, r.rating " +
-                            "ORDER BY r.rating DESC " +
-                            "LIMIT 10 ";
+                    "ORDER BY r.rating DESC " +
+                    "LIMIT 10 ";
 
-            if(searchPageNumber != null && !searchPageNumber.trim().isEmpty()&&isInteger(searchPageNumber))
-                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber)*10;
-            else{
+            if (searchPageNumber != null && !searchPageNumber.trim().isEmpty() && isInteger(searchPageNumber)) {
+                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber) * 10;
+            } else {
                 movieQuery += " OFFSET 0";
             }
 
             try (
-                    Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd);
+                    Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd)
             ) {
                 PreparedStatement movieStatement = conn.prepareStatement(movieQuery);
                 int paramIndex = 1;
+
                 if (searchTitle != null && !searchTitle.trim().isEmpty()) {
                     movieStatement.setString(paramIndex++, "%" + searchTitle + "%");
                 }
+
                 if (searchYear != null && !searchYear.trim().isEmpty()) {
                     movieStatement.setString(paramIndex++, searchYear);
                 }
+
                 if (searchDirector != null && !searchDirector.trim().isEmpty()) {
                     movieStatement.setString(paramIndex++, "%" + searchDirector + "%");
                 }
+
                 if (searchStar != null && !searchStar.trim().isEmpty()) {
                     movieStatement.setString(paramIndex++, "%" + searchStar + "%");
                 }
+
+                if (searchGenre != null && !searchGenre.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, searchGenre);
+                }
+
+                if (startsWith != null && !startsWith.trim().isEmpty()) {
+                    movieStatement.setString(paramIndex++, startsWith);
+                }
+
                 System.out.println(movieStatement.toString());
+
                 ResultSet rs = movieStatement.executeQuery();
                 JsonArray jsonArray = new JsonArray();
+
                 while (rs.next()) {
                     String movieId = rs.getString("id");
                     String title = rs.getString("title");
@@ -120,9 +160,6 @@ public class MovieListServlet extends HttpServlet {
                         genres = "";
                     }
 
-
-
-                    // Create a JsonObject based on the data we retrieve from rs
                     JsonObject jsonObject = new JsonObject();
                     jsonObject.addProperty("movie_id", movieId);
                     jsonObject.addProperty("movie_title", title);
@@ -130,7 +167,7 @@ public class MovieListServlet extends HttpServlet {
                     jsonObject.addProperty("movie_director", director);
                     jsonObject.addProperty("movie_genres", genres);
                     jsonObject.addProperty("movie_rating", rating);
-                    //creating a new osobj for storing info for stars and the add this into main jsobj
+
                     JsonArray starArray = new JsonArray();
 
                     try (PreparedStatement starStatement = conn.prepareStatement(starQuery)) {
@@ -145,35 +182,26 @@ public class MovieListServlet extends HttpServlet {
                                 singleStar.addProperty("star_id", starId);
                                 singleStar.addProperty("star_name", starName);
                                 starArray.add(singleStar);
-
                             }
-                            jsonObject.add("movie_stars",starArray);
+                            jsonObject.add("movie_stars", starArray);
                         }
                     }
 
-
-
-
                     jsonArray.add(jsonObject);
-
                 }
 
                 out.write(jsonArray.toString());
             }
         } catch (Exception e) {
-
-            // Write error message JSON object to output
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("errorMessage", e.getMessage());
             out.write(jsonObject.toString());
-
-            // Set response status to 500 (Internal Server Error)
             response.setStatus(500);
-
         } finally {
             out.close();
         }
     }
+
     public static boolean isInteger(String str) {
         if (str == null || str.isEmpty()) {
             return false;

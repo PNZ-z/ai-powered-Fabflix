@@ -22,3 +22,39 @@
     border-radius: 4px;
     width: 100%;
 }
+
+#browse_container {
+    max-width: 400px;
+    margin: 30px auto 0 auto;
+    text-align: center;
+}
+
+.browse-choice {
+    margin-bottom: 20px;
+}
+
+.browse-choice label {
+    margin: 0 10px;
+    font-weight: bold;
+}
+
+.browse-section {
+    margin-top: 10px;
+}
+
+#genre_browse_list,
+#title_browse_list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+#genre_browse_list a,
+#title_browse_list a {
+    text-decoration: none;
+    padding: 4px 8px;
+    border: 1px solid black;
+    border-radius: 4px;
+    color: black;
+}
