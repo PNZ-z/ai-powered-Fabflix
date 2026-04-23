@@ -36,7 +36,22 @@ function handleMovieListResult(resultData) {
 
         rowHTML += "<td>" + resultData[i]["movie_year"] + "</td>";
         rowHTML += "<td>" + resultData[i]["movie_director"] + "</td>";
-        rowHTML += "<td>" + resultData[i]["movie_genres"] + "</td>";
+        rowHTML += "<td>";
+        // + resultData[i]["movie_genres"] + "</td>";
+        let genres = resultData[i]["movie_genres"].split(',');
+        for (let y=0; y<genres.length; y++){
+            let genre = genres[y];
+            let trimmedGenre = genre.trim();
+            rowHTML += '<a href="movieList.html?genre=' + trimmedGenre + '">';
+            if(y !== genres.length-1){
+                rowHTML += trimmedGenre + "</a>" + ',';
+            }
+            else{
+                rowHTML += trimmedGenre + "</a>";
+            }
+        }
+
+        rowHTML += ""
 
         // Stars with hyperlinks to single-star.html
         rowHTML += "<td>";
@@ -87,32 +102,34 @@ jQuery.ajax({
         console.error("Response text:", xhr.responseText);
     }
 });
-// $(document).ready(function() {
-//     // 1. Get the parameters from the browser's address bar
-//     let urlParams = new URLSearchParams(window.location.search);
-//
-//     // 2. Build the data object explicitly
-//     let requestData = {};
-//     if (urlParams.get("title")) requestData["title"] = urlParams.get("title");
-//     if (urlParams.get("year")) requestData["year"] = urlParams.get("year");
-//     if (urlParams.get("director")) requestData["director"] = urlParams.get("director");
-//     if (urlParams.get("star")) requestData["star"] = urlParams.get("star");
-//     if (urlParams.get("pageNumber")) requestData["pageNumber"] = urlParams.get("pageNumber");
-//
-//     console.log("Attempting to send data:", requestData);
-//
-//     // 3. The AJAX call
-//     jQuery.ajax({
-//         dataType: "json",
-//         method: "GET",
-//         url: "api/movie-list",
-//         data: requestData, // This MUST be here for the Payload to appear
-//         success: (resultData) => {
-//             console.log("Success! Data received:", resultData);
-//             handleMovieListResult(resultData);
-//         },
-//         error: (error) => {
-//             console.log("AJAX Error:", error);
-//         }
-//     });
-// });
+
+$(document).ready(function() {
+    // 1. Get current parameters
+    let params = new URLSearchParams(window.location.search);
+
+    // 2. Determine current page (default to 0 if not present)
+    let currentPage = parseInt(params.get("pageNumber")) || 0;
+
+    // 3. Update the Page Info span
+    // $("#page_info").text("Page " + (currentPage + 1));
+
+    // 4. Next Button Click
+    $("#next_button").click(function() {
+        params.set("pageNumber", currentPage + 1);
+        window.location.search = params.toString(); // This reloads the page with new params
+    });
+
+    // 5. Previous Button Click
+    $("#prev_button").click(function() {
+
+        if (currentPage > 0) {
+            params.set("pageNumber", currentPage - 1);
+            window.location.search = params.toString();
+        }
+    });
+
+    // Disable Prev button if on page 1
+    if (currentPage === 0) {
+        $("#prev_button").prop("disabled", true);
+    }
+});

@@ -16,8 +16,8 @@ import java.sql.ResultSet;
 @WebServlet("/api/movie-list")
 public class MovieListServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "root";
-        String loginPasswd = "20041113";
+        String loginUser = "mytestuser";
+        String loginPasswd = "My6$Password";
         String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         response.setContentType("application/json");
@@ -32,10 +32,7 @@ public class MovieListServlet extends HttpServlet {
 
         String searchGenre = request.getParameter("genre");
         String startsWith = request.getParameter("startsWith");
-
-        System.out.println("DEBUG: searchTitle value is [" + searchTitle + "]");
-        System.out.println("DEBUG: searchGenre value is [" + searchGenre + "]");
-        System.out.println("DEBUG: startsWith value is [" + startsWith + "]");
+        
 
         String movieQuery =
                 "SELECT " +
