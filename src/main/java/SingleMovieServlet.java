@@ -44,9 +44,11 @@ public class SingleMovieServlet extends HttpServlet {
         String starQuery =
                 "SELECT s.id, s.name " +
                         "FROM stars s " +
-                        "JOIN stars_in_movies sim ON s.id = sim.star_id " +
-                        "WHERE sim.movie_id = ? " +
-                        "ORDER BY s.name";
+                        "JOIN stars_in_movies sim1 ON s.id = sim1.star_id " +
+                        "JOIN stars_in_movies sim2 ON s.id = sim2.star_id " +
+                        "WHERE sim1.movie_id = ? " +
+                        "GROUP BY s.id, s.name " +
+                        "ORDER BY COUNT(sim2.movie_id) DESC, s.name ASC";
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");

@@ -36,7 +36,7 @@ public class SingleStarServlet extends HttpServlet {
                         "FROM movies m " +
                         "JOIN stars_in_movies sim ON m.id = sim.movie_id " +
                         "WHERE sim.star_id = ? " +
-                        "ORDER BY m.title";
+                        "ORDER BY m.year DESC, m.title ASC";
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");

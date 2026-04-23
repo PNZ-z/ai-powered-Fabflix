@@ -52,7 +52,10 @@ function handleMovieListResult(resultData) {
         for (let y=0; y<genres.length; y++){
             let genre = genres[y];
             let trimmedGenre = genre.trim();
-            rowHTML += '<a href="movieList.html?genre=' + trimmedGenre + '">';
+            let genreUrl = "movieList.html?genre=" + encodeURIComponent(trimmedGenre)
+                + "&pageSize=" + pageSize
+                + "&pageNumber=0";
+            rowHTML += '<a href="' + genreUrl + '">';
             if(y !== genres.length-1){
                 rowHTML += trimmedGenre + "</a>" + ", ";
             }

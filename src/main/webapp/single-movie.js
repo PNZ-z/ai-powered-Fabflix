@@ -27,7 +27,23 @@ function handleSingleMovieResult(resultData) {
     jQuery("#movie_title").text(resultData["movie_title"]);
     jQuery("#movie_year").text(resultData["movie_year"]);
     jQuery("#movie_director").text(resultData["movie_director"]);
-    jQuery("#movie_genres").text(resultData["movie_genres"]);
+
+    let movieGenresElement = jQuery("#movie_genres");
+    const genres = resultData["movie_genres"].split(',');
+    for(let i=0; i< genres.length; i++){
+        let trimmedGenre = genres[i].trim();
+        movieGenresElement.append(
+            '<a href="movieList.html?genre=' + encodeURIComponent(trimmedGenre)
+            + "&pageSize=10" + "&pageNumber=0" + '">' + trimmedGenre
+        )
+        if(i !== genres.length-1){
+            movieGenresElement.append('</a>, ');
+        }
+        else{
+            movieGenresElement.append('</a>');
+        }
+
+    }
     jQuery("#movie_rating").text(resultData["movie_rating"]);
 
     let movieStarsElement = jQuery("#movie_stars");
