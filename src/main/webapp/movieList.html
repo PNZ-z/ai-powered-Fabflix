@@ -23,7 +23,43 @@
 
 
 <h1>Movie Lists</h1>
+<div class="table-controls" style="display: flex; align-items: center; justify-content: space-between; padding: 10px;">
 
+    <div style="flex: 1;"></div>
+
+    <div style="flex: 2; text-align: center;">
+        <label>Sort by:</label>
+        <select id="sort1">
+            <option value="title" selected>Title</option>
+            <option value="rating">Rating</option>
+        </select>
+        <select id="dir1">
+            <option value="ASC" selected>ASC</option>
+            <option value="DESC">DESC</option>
+        </select>
+
+        <span style="margin: 0 10px;">then</span>
+
+        <select id="sort2">
+            <option value="title">Title</option>
+            <option value="rating" selected>Rating</option>
+        </select>
+        <select id="dir2">
+            <option value="ASC">ASC</option>
+            <option value="DESC" selected>DESC</option>
+        </select>
+        <button id="apply_filter_btn" style="margin-left: 10px;">Apply</button>
+    </div>
+
+    <div style="flex: 1; text-align: right;">
+        <select name="results" id="display_number">
+            <option value="10" selected>Results: 10</option>
+            <option value="25">Results: 25</option>
+            <option value="50">Results: 50</option>
+            <option value="100">Results: 100</option>
+        </select>
+    </div>
+</div>
 <!-- Id "star_table" is useful for jQuery to find the html element with id, class here is mapping to Bootstrap defined class CSS -->
 <table id=movie_list_table class="table table-striped">
     <!-- Create a table header -->

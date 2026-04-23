@@ -22,8 +22,18 @@ function handleMovieListResult(resultData) {
     // Clear existing rows first
     movieListTableBodyElement.empty();
 
+    let pageSize = parseInt(params.get("pageSize")) || 10;
+
+    if(resultData.length > pageSize){
+        $("#next_button").prop("disabled", false);
+        console.log("next_button set to clickable");
+    }
+    else{
+        $("#next_button").prop("disabled", true);
+        console.log("next_button set to NOT clickable");
+    }
     // Iterate through resultData, no more than 20 entries
-    for (let i = 0; i < Math.min(20, resultData.length); i++) {
+    for (let i = 0; i < Math.min(pageSize, resultData.length); i++) {
         let rowHTML = "";
         rowHTML += "<tr>";
 
@@ -44,7 +54,7 @@ function handleMovieListResult(resultData) {
             let trimmedGenre = genre.trim();
             rowHTML += '<a href="movieList.html?genre=' + trimmedGenre + '">';
             if(y !== genres.length-1){
-                rowHTML += trimmedGenre + "</a>" + ',';
+                rowHTML += trimmedGenre + "</a>" + ", ";
             }
             else{
                 rowHTML += trimmedGenre + "</a>";
@@ -94,7 +104,12 @@ jQuery.ajax({
         star: params.get("star"),
         genre: params.get("genre"),
         startsWith: params.get("startsWith"),
-        pageNumber: params.get("pageNumber")
+        pageNumber: params.get("pageNumber"),
+        pageSize: params.get("pageSize"),
+        sort1: params.get("sort1"),
+        dir1:params.get("dir1"),
+        sort2: params.get("sort2"),
+        dir2: params.get("dir2")
     },
     success: (resultData) => handleMovieListResult(resultData),
     error: function(xhr, status, error) {
@@ -109,7 +124,41 @@ $(document).ready(function() {
 
     // 2. Determine current page (default to 0 if not present)
     let currentPage = parseInt(params.get("pageNumber")) || 0;
+    const displayNumberDropdown = $("#display_number");
+    let currentPageSize = params.get("pageSize") || "10";
+    displayNumberDropdown.val(currentPageSize);
 
+    const sort1 = $("#sort1");
+    const sort2 = $("#sort2");
+    sort1.val(params.get("sort1") || "title");
+    sort2.val(params.get("sort2") || "rating");
+    const dir1 = $("#dir1");
+    const dir2 = $("#dir2");
+    dir1.val(params.get("dir1") || "ASC");
+    dir2.val(params.get("dir2") || "DESC");
+    sort1.on("change", function() {
+        if ($(this).val() === "title") {
+            sort2.val("rating");
+        } else {
+            sort2.val("title");
+        }
+    });
+    sort2.on("change", function() {
+        if ($(this).val() === "title") {
+            sort1.val("rating");
+        } else {
+            sort1.val("title");
+        }
+    });
+    $("#apply_filter_btn").on("click", function() {
+        let params = new URLSearchParams(window.location.search);
+        params.set("sort1", sort1.val());
+        params.set("dir1", $("#dir1").val());
+        params.set("sort2", sort2.val());
+        params.set("dir2", $("#dir2").val());
+
+        window.location.search = params.toString();
+    });
     // 3. Update the Page Info span
     // $("#page_info").text("Page " + (currentPage + 1));
 
@@ -127,9 +176,21 @@ $(document).ready(function() {
             window.location.search = params.toString();
         }
     });
+    displayNumberDropdown.val(currentPageSize);
+    displayNumberDropdown.on("change", function(){
+        let params = new URLSearchParams(window.location.search);
 
+        let newLimit = $(this).val();
+
+        params.set("pageSize", newLimit);
+        // params.set("pageNumber", "0"); // Always reset to page 1 when changing result count
+
+        window.location.search = params.toString();
+    });
     // Disable Prev button if on page 1
     if (currentPage === 0) {
         $("#prev_button").prop("disabled", true);
     }
+
+
 });

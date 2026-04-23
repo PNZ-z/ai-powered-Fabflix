@@ -29,7 +29,16 @@ public class MovieListServlet extends HttpServlet {
         String searchDirector = request.getParameter("director");
         String searchStar = request.getParameter("star");
         String searchPageNumber = request.getParameter("pageNumber");
+        int pageSize = Integer.parseInt(request.getParameter("pageSize"));
 
+        String sort1 = request.getParameter("sort1");
+        String dir1 = request.getParameter("dir1");
+        String sort2 = request.getParameter("sort2");
+        String dir2 = request.getParameter("dir2");
+        if (sort1 == null) sort1 = "title";
+        if (dir1 == null) dir1 = "ASC";
+        if (sort2 == null) sort2 = "rating";
+        if (dir2 == null) dir2 = "DESC";
         String searchGenre = request.getParameter("genre");
         String startsWith = request.getParameter("startsWith");
         
@@ -55,8 +64,13 @@ public class MovieListServlet extends HttpServlet {
                 "SELECT s.id, s.name " +
                         "FROM stars s " +
                         "JOIN stars_in_movies sim ON s.id = sim.star_id " +
+                        "JOIN ( " +
+                        "   SELECT star_id, COUNT(movie_id) AS movie_count " +
+                        "   FROM stars_in_movies " +
+                        "   GROUP BY star_id " +
+                        ") AS star_popularity ON s.id = star_popularity.star_id " +
                         "WHERE sim.movie_id = ? " +
-                        "ORDER BY s.name " +
+                        "ORDER BY star_popularity.movie_count DESC, s.name ASC " +
                         "LIMIT 3";
 
         try {
@@ -100,12 +114,15 @@ public class MovieListServlet extends HttpServlet {
                 movieQuery += " AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ";
             }
 
-            movieQuery += " GROUP BY m.id, m.title, m.year, m.director, r.rating " +
-                    "ORDER BY r.rating DESC " +
-                    "LIMIT 10 ";
+            movieQuery += " GROUP BY m.id, m.title, m.year, m.director, r.rating ";
+            String col1 = sort1.equals("rating") ? "r.rating" : "m.title";
+            String col2 = sort2.equals("rating") ? "r.rating" : "m.title";
+            movieQuery += " ORDER BY " + col1 + " " + dir1 + ", " + col2 + " " + dir2;
+
+            movieQuery +=" LIMIT ? ";
 
             if (searchPageNumber != null && !searchPageNumber.trim().isEmpty() && isInteger(searchPageNumber)) {
-                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber) * 10;
+                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber) * pageSize;
             } else {
                 movieQuery += " OFFSET 0";
             }
@@ -139,6 +156,9 @@ public class MovieListServlet extends HttpServlet {
                 if (startsWith != null && !startsWith.trim().isEmpty()) {
                     movieStatement.setString(paramIndex++, startsWith);
                 }
+
+                    movieStatement.setInt(paramIndex++, pageSize + 1);
+
 
                 System.out.println(movieStatement.toString());
 

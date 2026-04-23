@@ -18,7 +18,7 @@ function submitSearchForm(formSubmitEvent) {
     if (director) params.append("director", director);
     if (star) params.append("star", star);
     params.append("pageNumber", 0);
-
+    params.append("pageSize", 10);
     let url = "movieList.html" + (params.toString() ? "?" + params.toString() : "");
 
     console.log("Redirecting to: " + url);
