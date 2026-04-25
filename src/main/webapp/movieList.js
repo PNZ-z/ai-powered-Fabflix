@@ -34,12 +34,13 @@ function handleMovieListResult(resultData) {
     }
     // Iterate through resultData, no more than 20 entries
     for (let i = 0; i < Math.min(pageSize, resultData.length); i++) {
+        let movieId = resultData[i]["movie_id"];
         let rowHTML = "";
         rowHTML += "<tr>";
 
         // Movie title with hyperlink to single-movie.html
         rowHTML += "<td>";
-        rowHTML += '<a href="single-movie.html?id=' + resultData[i]["movie_id"] + '">';
+        rowHTML += '<a href="single-movie.html?id=' + movieId + '">';
         rowHTML += resultData[i]["movie_title"];
         rowHTML += "</a>";
         rowHTML += "</td>";
@@ -84,11 +85,31 @@ function handleMovieListResult(resultData) {
         rowHTML += "</td>";
 
         rowHTML += "<td>" + resultData[i]["movie_rating"] + "</td>";
+        rowHTML += "<td>";
+        rowHTML += "<button onclick=\"addToCart('" + movieId + "')\">Add to Cart</button>";
+        rowHTML += "</td>";
         rowHTML += "</tr>";
 
         // Append the row to the table body
         movieListTableBodyElement.append(rowHTML);
     }
+}
+
+function addToCart(movieId) {
+    jQuery.ajax({
+        type: "POST",
+        url: "api/cart",
+        data: {
+            movieId: movieId,
+            action: "add"
+        },
+        success: function () {
+            alert("Added to shopping cart!");
+        },
+        error: function () {
+            alert("Failed to add movie to cart.");
+        }
+    });
 }
 
 

@@ -30,7 +30,12 @@ public class MovieListServlet extends HttpServlet {
         String searchDirector = request.getParameter("director");
         String searchStar = request.getParameter("star");
         String searchPageNumber = request.getParameter("pageNumber");
-        int pageSize = Integer.parseInt(request.getParameter("pageSize"));
+        String pageSizeParam = request.getParameter("pageSize");
+        int pageSize = 10;
+
+        if (pageSizeParam != null && !pageSizeParam.trim().isEmpty()) {
+            pageSize = Integer.parseInt(pageSizeParam);
+        }
 
         String sort1 = request.getParameter("sort1");
         String dir1 = request.getParameter("dir1");

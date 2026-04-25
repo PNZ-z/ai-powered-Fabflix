@@ -49,6 +49,10 @@ function handleSingleMovieResult(resultData) {
     let movieStarsElement = jQuery("#movie_stars");
     movieStarsElement.empty();
 
+    jQuery("#add_to_cart_button").click(function () {
+        addToCart(movieId);
+    });
+
     let starsArray = resultData["movie_stars"];
     for (let i = 0; i < starsArray.length; i++) {
         let currentStar = starsArray[i];
@@ -63,6 +67,23 @@ function handleSingleMovieResult(resultData) {
             movieStarsElement.append(", ");
         }
     }
+}
+
+function addToCart(movieId) {
+    jQuery.ajax({
+        type: "POST",
+        url: "api/cart",
+        data: {
+            movieId: movieId,
+            action: "add"
+        },
+        success: function () {
+            alert("Added to shopping cart!");
+        },
+        error: function () {
+            alert("Failed to add movie to cart.");
+        }
+    });
 }
 
 

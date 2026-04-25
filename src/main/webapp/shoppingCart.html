@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shopping Cart</title>
+</head>
+<body>
+
+<h1>Shopping Cart</h1>
+
+<p>
+<a href="main.html"> Back to Main Page</a>
+</p>
+
+<p>
+    <a href="api/jump-back">Back to Movie List</a>
+</p>
+<p>
+<a href="api/logout">Logout</a>
+</p>
+<table border="1">
+    <thead>
+    <tr>
+        <th>Movie Title</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Total Price</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+
+    <tbody id="cart_table_body">
+    <!-- shopping-cart.js will insert cart rows here -->
+    </tbody>
+</table>
+
+<h3 id="cart_total_price">Total Price: $0.00</h3>
+
+<p>
+<a href="payment.html">Proceed to Payment</a>
+</p>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="shoppingCart.js"></script>
+
+</body>
+</html>

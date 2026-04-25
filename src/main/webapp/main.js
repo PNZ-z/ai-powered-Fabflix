@@ -34,14 +34,14 @@ function renderTitleBrowseLinks() {
 
     for (let i = 0; i <= 9; i++) {
         titleBrowseList.append(
-            `<a href="movieList.html?startsWith=${i}&pageNumber=0">${i}</a> `
+            `<a href="movieList.html?startsWith=${i}&pageNumber=0&pageSize=10">${i}</a> `
         );
     }
 
     for (let i = 65; i <= 90; i++) {
         let ch = String.fromCharCode(i);
         titleBrowseList.append(
-            `<a href="movieList.html?startsWith=${ch}&pageNumber=0">${ch}</a> `
+            `<a href="movieList.html?startsWith=${ch}&pageNumber=0&pageSize=10">${ch}</a> `
         );
     }
 }
@@ -59,7 +59,7 @@ function handleGenreResult(resultData) {
     for (let i = 0; i < resultData.length; i++) {
         let genreName = resultData[i]["name"];
         genreBrowseList.append(
-            `<a href="movieList.html?genre=${encodeURIComponent(genreName)}&pageNumber=0">${genreName}</a> `
+            `<a href="movieList.html?genre=${encodeURIComponent(genreName)}&pageNumber=0&pageSize=10">${genreName}</a> `
         );
     }
 }
