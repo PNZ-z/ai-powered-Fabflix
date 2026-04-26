@@ -1,15 +1,18 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
@@ -18,9 +21,17 @@ import java.util.Map;
 @WebServlet(name = "CartServlet", urlPatterns = "/api/cart")
 public class CartServlet extends HttpServlet {
 
-    private final String loginUser = "mytestuser";
-    private final String loginPasswd = "My6$Password";
-    private final String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+    // 1. Declare the DataSource
+    private DataSource dataSource;
+
+    // 2. Add the init() method to initialize the connection pool
+    public void init(ServletConfig config) {
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
+        }
+    }
 
     private double getMoviePrice(String movieId) {
         int hash = Math.abs(movieId.hashCode());
@@ -46,35 +57,29 @@ public class CartServlet extends HttpServlet {
 
         String query = "SELECT id, title FROM movies WHERE id = ?";
 
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-
-            Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd);
-            PreparedStatement statement = conn.prepareStatement(query);
+        // 3. Use try-with-resources for the Connection and PreparedStatement
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement statement = conn.prepareStatement(query)) {
 
             for (String movieId : cart.keySet()) {
                 statement.setString(1, movieId);
 
-                ResultSet rs = statement.executeQuery();
+                // Use try-with-resources for the ResultSet inside the loop
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) {
+                        int quantity = cart.get(movieId);
+                        double price = getMoviePrice(movieId);
 
-                if (rs.next()) {
-                    int quantity = cart.get(movieId);
-                    double price = getMoviePrice(movieId);
+                        JsonObject movieJsonObject = new JsonObject();
+                        movieJsonObject.addProperty("movie_id", rs.getString("id"));
+                        movieJsonObject.addProperty("movie_title", rs.getString("title"));
+                        movieJsonObject.addProperty("quantity", quantity);
+                        movieJsonObject.addProperty("price", price);
 
-                    JsonObject movieJsonObject = new JsonObject();
-                    movieJsonObject.addProperty("movie_id", rs.getString("id"));
-                    movieJsonObject.addProperty("movie_title", rs.getString("title"));
-                    movieJsonObject.addProperty("quantity", quantity);
-                    movieJsonObject.addProperty("price", price);
-
-                    cartJsonArray.add(movieJsonObject);
+                        cartJsonArray.add(movieJsonObject);
+                    }
                 }
-
-                rs.close();
             }
-
-            statement.close();
-            conn.close();
 
             response.setContentType("application/json");
             response.getWriter().write(cartJsonArray.toString());

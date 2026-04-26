@@ -4,45 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <title>Fablix Main Page</title>
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="top-nav">
     <a href="shoppingCart.html" class="nav-button">Checkout</a>
     <a href="api/logout" class="nav-button">Logout</a>
 </div>
-<h2 style="text-align: center">Search Movies</h2>
-<!-- Set the method to POST to avoid showing the username/password in the URL
-     The default action is disabled to allow your own implementation. -->
-<form id="search_form" method="post" action="#" style="text-align: center">
+<div class="panel">
+    <h2 style="text-align: center">Search Movies</h2>
+    <!-- Set the method to POST to avoid showing the username/password in the URL
+         The default action is disabled to allow your own implementation. -->
+    <form id="search_form" method="post" action="#" style="text-align: center">
 
-    <div class="form-group">
-        <label for="movieTitle">Title</label>
-        <label>
-            <input id="movieTitle" name="movieTitle" placeholder="Enter Movie Title" type="text">
-        </label>
-    </div>
-    <div class="form-group">
-        <label for="movieYear">Year</label>
-        <label>
-            <input id="movieYear" name="movieYear" placeholder="Enter Movie Year" type="number" min="1000" max="2026">
-        </label>
-    </div>
-    <div class="form-group">
-        <label for="movieDirector">Director</label>
-        <label>
-            <input id="movieDirector" name="movieDirector" placeholder="Enter Movie Director" type="text">
-        </label>
-    </div>
-    <div class="form-group">
-        <label for="movieStar">Star</label>
-        <label>
-            <input id="movieStar" name="movieStar" placeholder="Enter Any Movie Star" type="text">
-        </label>
-    </div>
+        <div class="form-group">
+            <label for="movieTitle">Title</label>
+            <label>
+                <input id="movieTitle" name="movieTitle" placeholder="Enter Movie Title" type="text">
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="movieYear">Year</label>
+            <label>
+                <input id="movieYear" name="movieYear" placeholder="Enter Movie Year" type="number" min="1000" max="2026">
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="movieDirector">Director</label>
+            <label>
+                <input id="movieDirector" name="movieDirector" placeholder="Enter Movie Director" type="text">
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="movieStar">Star</label>
+            <label>
+                <input id="movieStar" name="movieStar" placeholder="Enter Any Movie Star" type="text">
+            </label>
+        </div>
 
-    <input type="Submit" value="Search">
-</form>
+        <input type="Submit" value="Search">
+    </form>
+</div>
+
 
 <div id="browse_container" style="text-align: center">
     <h2>Browse Movies</h2>

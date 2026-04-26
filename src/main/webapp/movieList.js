@@ -15,7 +15,8 @@
  */
 function handleMovieListResult(resultData) {
     console.log("handleMovieListResult: populating movie list table from resultData");
-
+    $("#loading").hide();
+    $("#movie_list_table").show();
     // Find the empty table body by id "movie_list_table_body"
     let movieListTableBodyElement = jQuery("#movie_list_table_body");
 
@@ -86,7 +87,7 @@ function handleMovieListResult(resultData) {
 
         rowHTML += "<td>" + resultData[i]["movie_rating"] + "</td>";
         rowHTML += "<td>";
-        rowHTML += "<button onclick=\"addToCart('" + movieId + "')\">Add to Cart</button>";
+        rowHTML += "<button onclick=\"addToCart('" + movieId + "')\" class=\"btn btn-outline-primary\">Add to Cart</button>";
         rowHTML += "</td>";
         rowHTML += "</tr>";
 
@@ -117,6 +118,8 @@ function addToCart(movieId) {
  * Once this .js is loaded, the following AJAX request is executed by the browser.
  */
 let params = new URLSearchParams(window.location.search);
+$("#loading").show();
+$("#movie_list_table").hide();
 jQuery.ajax({
     dataType: "json",
     method: "GET",

@@ -1,24 +1,34 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 @WebServlet("/api/single-movie")
 public class SingleMovieServlet extends HttpServlet {
+    private DataSource dataSource;
+
+    public void init(ServletConfig config) {
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -51,56 +61,54 @@ public class SingleMovieServlet extends HttpServlet {
                         "ORDER BY COUNT(sim2.movie_id) DESC, s.name ASC";
 
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-
-            try (Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd)) {
+            try (Connection dbCon = dataSource.getConnection();
+                 PreparedStatement movieStatement = dbCon.prepareStatement(movieQuery))
+            {
                 JsonObject jsonObject = new JsonObject();
                 boolean movieFound = false;
 
-                try (PreparedStatement movieStatement = conn.prepareStatement(movieQuery)) {
-                    movieStatement.setString(1, movieId);
+                movieStatement.setString(1, movieId);
 
-                    try (ResultSet rs = movieStatement.executeQuery()) {
-                        if (rs.next()) {
-                            movieFound = true;
+                try (ResultSet rs = movieStatement.executeQuery()) {
+                    if (rs.next()) {
+                        movieFound = true;
 
-                            String title = rs.getString("title");
-                            int year = rs.getInt("year");
-                            String director = rs.getString("director");
-                            String genres = rs.getString("genres");
-                            float rating = rs.getFloat("rating");
+                        String title = rs.getString("title");
+                        int year = rs.getInt("year");
+                        String director = rs.getString("director");
+                        String genres = rs.getString("genres");
+                        float rating = rs.getFloat("rating");
 
-                            if (genres == null) {
-                                genres = "";
-                            }
+                        if (genres == null) {
+                            genres = "";
+                        }
 
-                            jsonObject.addProperty("movie_id", movieId);
-                            jsonObject.addProperty("movie_title", title);
-                            jsonObject.addProperty("movie_year", year);
-                            jsonObject.addProperty("movie_director", director);
-                            jsonObject.addProperty("movie_genres", genres);
-                            jsonObject.addProperty("movie_rating", rating);
+                        jsonObject.addProperty("movie_id", movieId);
+                        jsonObject.addProperty("movie_title", title);
+                        jsonObject.addProperty("movie_year", year);
+                        jsonObject.addProperty("movie_director", director);
+                        jsonObject.addProperty("movie_genres", genres);
+                        jsonObject.addProperty("movie_rating", rating);
 
-                            JsonArray starArray = new JsonArray();
+                        JsonArray starArray = new JsonArray();
 
-                            try (PreparedStatement starStatement = conn.prepareStatement(starQuery)) {
-                                starStatement.setString(1, movieId);
+                        try (PreparedStatement starStatement = dbCon.prepareStatement(starQuery)) {
+                            starStatement.setString(1, movieId);
 
-                                try (ResultSet starRs = starStatement.executeQuery()) {
-                                    while (starRs.next()) {
-                                        String starId = starRs.getString("id");
-                                        String starName = starRs.getString("name");
+                            try (ResultSet starRs = starStatement.executeQuery()) {
+                                while (starRs.next()) {
+                                    String starId = starRs.getString("id");
+                                    String starName = starRs.getString("name");
 
-                                        JsonObject singleStar = new JsonObject();
-                                        singleStar.addProperty("star_id", starId);
-                                        singleStar.addProperty("star_name", starName);
-                                        starArray.add(singleStar);
-                                    }
+                                    JsonObject singleStar = new JsonObject();
+                                    singleStar.addProperty("star_id", starId);
+                                    singleStar.addProperty("star_name", starName);
+                                    starArray.add(singleStar);
                                 }
                             }
-
-                            jsonObject.add("movie_stars", starArray);
                         }
+
+                        jsonObject.add("movie_stars", starArray);
                     }
                 }
 

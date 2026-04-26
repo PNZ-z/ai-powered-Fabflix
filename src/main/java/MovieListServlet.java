@@ -1,30 +1,48 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-
+import java.sql.*;
+import java.util.concurrent.ConcurrentHashMap;
 @WebServlet("/api/movie-list")
 public class MovieListServlet extends HttpServlet {
+    private DataSource dataSource;
+    private final ConcurrentHashMap<String, String> queryCache = new ConcurrentHashMap<>();
+    public void init(ServletConfig config) {
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
+        }
+    }
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
+        String cacheKey = request.getQueryString();
+
+        // 3. Check if we have this result in the cache
+        if (cacheKey != null && queryCache.containsKey(cacheKey)) {
+            System.out.println("Cache Hit! Returning cached results for: " + cacheKey);
+            out.write(queryCache.get(cacheKey));
+            out.close();
+            return; // Stop here, no need to talk to MySQL!
+        }
+
+        System.out.println("Cache Miss. Querying database...");
         String searchTitle = request.getParameter("title");
         String searchYear = request.getParameter("year");
         String searchDirector = request.getParameter("director");
@@ -80,7 +98,7 @@ public class MovieListServlet extends HttpServlet {
                         "LIMIT 3";
 
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+
 
             if (searchStar != null && !searchStar.trim().isEmpty()) {
                 movieQuery += " JOIN stars_in_movies sim ON m.id = sim.movie_id " +
@@ -133,10 +151,10 @@ public class MovieListServlet extends HttpServlet {
                 movieQuery += " OFFSET 0";
             }
 
-            try (
-                    Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd)
-            ) {
-                PreparedStatement movieStatement = conn.prepareStatement(movieQuery);
+            try (Connection dbCon = dataSource.getConnection();
+                 PreparedStatement movieStatement = dbCon.prepareStatement(movieQuery))
+            {
+
                 int paramIndex = 1;
 
                 if (searchTitle != null && !searchTitle.trim().isEmpty()) {
@@ -193,7 +211,7 @@ public class MovieListServlet extends HttpServlet {
 
                     JsonArray starArray = new JsonArray();
 
-                    try (PreparedStatement starStatement = conn.prepareStatement(starQuery)) {
+                    try (PreparedStatement starStatement = dbCon.prepareStatement(starQuery)) {
                         starStatement.setString(1, movieId);
 
                         try (ResultSet starRs = starStatement.executeQuery()) {
@@ -211,14 +229,23 @@ public class MovieListServlet extends HttpServlet {
                     }
 
                     jsonArray.add(jsonObject);
+
+                }
+                String finalResult = jsonArray.toString();
+
+                // 4. Save the result to the cache before sending it back
+                if (cacheKey != null) {
+                    queryCache.put(cacheKey, finalResult);
                 }
 
-            out.write(jsonArray.toString());
+                out.write(finalResult);
+
+                // saving query for "Back to List" functionality
+                HttpSession session = request.getSession(true);
+                session.setAttribute("lastMovieQuery", cacheKey);
+
             }
-            //saving query
-            HttpSession session = request.getSession(true);
-            String fullQueryString = request.getQueryString();
-            session.setAttribute("lastMovieQuery", fullQueryString);
+
         } catch (Exception e) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("errorMessage", e.getMessage());

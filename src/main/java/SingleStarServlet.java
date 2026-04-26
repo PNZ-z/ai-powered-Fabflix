@@ -1,24 +1,37 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 @WebServlet("/api/single-star")
 public class SingleStarServlet extends HttpServlet {
+
+    // 1. Declare the DataSource
+    private DataSource dataSource;
+
+    // 2. Add the init() method to initialize the connection pool
+    public void init(ServletConfig config) {
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -39,9 +52,8 @@ public class SingleStarServlet extends HttpServlet {
                         "ORDER BY m.year DESC, m.title ASC";
 
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-
-            try (Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPasswd)) {
+            // 3. Connect using dataSource instead of DriverManager
+            try (Connection conn = dataSource.getConnection()) {
                 JsonObject jsonObject = new JsonObject();
                 boolean starFound = false;
 

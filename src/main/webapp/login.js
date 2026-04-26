@@ -4,8 +4,8 @@ let login_form = $("#login_form");
  * Handle the data returned by LoginServlet
  * @param resultDataString jsonObject
  */
-function handleLoginResult(resultDataString) {
-    let resultDataJson = JSON.parse(resultDataString);
+function handleLoginResult(resultDataJson) {
+
 
     console.log("handle login response");
     console.log(resultDataJson);
