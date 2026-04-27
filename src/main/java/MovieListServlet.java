@@ -26,6 +26,10 @@ public class MovieListServlet extends HttpServlet {
             e.printStackTrace();
         }
     }
+    private String getTrimmedParameter(HttpServletRequest request, String name) {
+        String value = request.getParameter(name);
+        return (value != null) ? value.trim() : null;
+    }
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         response.setContentType("application/json");
@@ -43,12 +47,12 @@ public class MovieListServlet extends HttpServlet {
         }
 
         System.out.println("Cache Miss. Querying database...");
-        String searchTitle = request.getParameter("title");
-        String searchYear = request.getParameter("year");
-        String searchDirector = request.getParameter("director");
-        String searchStar = request.getParameter("star");
-        String searchPageNumber = request.getParameter("pageNumber");
-        String pageSizeParam = request.getParameter("pageSize");
+        String searchTitle = getTrimmedParameter(request, "title");
+        String searchYear = getTrimmedParameter(request, "year");
+        String searchDirector = getTrimmedParameter(request, "director");
+        String searchStar = getTrimmedParameter(request, "star");
+        String searchPageNumber = getTrimmedParameter(request, "pageNumber");
+        String pageSizeParam = getTrimmedParameter(request, "pageSize");
         int pageSize = 10;
 
         if (pageSizeParam != null && !pageSizeParam.trim().isEmpty()) {
