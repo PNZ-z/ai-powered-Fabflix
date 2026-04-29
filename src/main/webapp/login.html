@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <title>Login to Fablix</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src='https://www.google.com/recaptcha/api.js' type="text/javascript"></script>
 </head>
 <body>
 <h2 style="text-align: center">Login to Fablix</h2>
 <!-- Set the method to POST to avoid showing the username/password in the URL
      The default action is disabled to allow your own implementation. -->
-<div style="text-align: center">
-    <form id="login_form" method="post" action="#">
+<div style="text-align: center; display: block" >
+    <form id="login_form" method="post" action="#" style="align-self: center">
         <label><b>Username</b></label>
         <label>
             <input name="username" placeholder="Enter Username" type="text">
@@ -23,9 +26,21 @@
         </label>
         <br>
         <input type="submit" value="Login">
+        <div class="d-flex justify-content-center mb-3">
+            <div id="recaptchaWrapper" style="display: inline-block">
+                <div class="g-recaptcha" data-sitekey="6Lf50s8sAAAAAHnpadzJ8maIb09eooIjm0MPkMV3"></div>
+                <div id="recaptchaErrorMessage" class="p-3 text-danger" style="display: none; font-size: 0.9rem;">
+                    Please complete the verification before logging in!
+                </div>
+            </div>
+
+        </div>
     </form>
+
 </div>
 
+<p id="recaptchaErrInfo" class="text-center">
+</p>
 
 <div id="login_error_message" style="text-align: center"></div>
 
