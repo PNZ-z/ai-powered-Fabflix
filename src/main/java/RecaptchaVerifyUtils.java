@@ -38,6 +38,7 @@ public class RecaptchaVerifyUtils {
         try (InputStream inputStream = httpsURLConnection.getInputStream();
              InputStreamReader inputStreamReader = new InputStreamReader(inputStream)) {
             JsonObject jsonObject = new Gson().fromJson(inputStreamReader, JsonObject.class);
+            System.out.println("reCAPTCHA Google response: " + jsonObject);
             return jsonObject.get("success").getAsBoolean();
         }
     }

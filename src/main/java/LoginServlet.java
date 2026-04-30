@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import org.jasypt.util.password.StrongPasswordEncryptor;
 
 @WebServlet(name = "LoginServlet", urlPatterns = "/api/login")
 public class LoginServlet extends HttpServlet {
@@ -56,7 +57,7 @@ public class LoginServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
-        String loginQuery = "SELECT * FROM customers WHERE email= ? and password= ? LIMIT 1";
+        String loginQuery = "SELECT id, email, password FROM customers WHERE email = ? LIMIT 1";
 
         try {
             // 3. Use try-with-resources with dataSource instead of DriverManager
@@ -65,16 +66,21 @@ public class LoginServlet extends HttpServlet {
             {
                 JsonObject jsonObject = new JsonObject();
                 loginStatement.setString(1, username);
-                loginStatement.setString(2, password);
 
                 try (ResultSet loginRs = loginStatement.executeQuery()) {
                     if (loginRs.next()) {
+                        String encryptedPassword = loginRs.getString("password");
+                        StrongPasswordEncryptor passwordEncryptor = new StrongPasswordEncryptor();
                         // Add this user into the session
-                        request.getSession().setAttribute("user", new User(username));
-
-
-                        jsonObject.addProperty("status", "success");
+                        if (passwordEncryptor.checkPassword(password, encryptedPassword)) {
+                            request.getSession().setAttribute("user", new User(username));
+                            jsonObject.addProperty("status", "success");
                     } else {
+                        jsonObject.addProperty("status", "fail");
+                        jsonObject.addProperty("message", "Invalid username or password");
+                    }
+                }
+                    else {
                         jsonObject.addProperty("status", "fail");
                         jsonObject.addProperty("message", "Invalid username or password");
                     }
