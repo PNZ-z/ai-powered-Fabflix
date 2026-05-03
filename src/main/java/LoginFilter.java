@@ -2,6 +2,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,18 +19,31 @@ public class LoginFilter implements Filter {
      */
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        System.out.println("LoginFilter: " + httpRequest.getRequestURI());
 
-        // Check if this URL is allowed to access without logging in
-        if (this.isUrlAllowedWithoutLogin(httpRequest.getRequestURI())) {
-            // Keep default action: pass along the filter chain
+        String requestURI = httpRequest.getRequestURI();
+
+        System.out.println("LoginFilter: " + requestURI);
+
+        // 1. Allow login pages, login JS, login APIs, and static files without login
+        if (this.isUrlAllowedWithoutLogin(requestURI)) {
             chain.doFilter(request, response);
             return;
         }
 
-        // Redirect to login page if the "user" attribute doesn't exist in session
+        // 2. Dashboard pages/APIs require employee login
+        if (this.isDashboardUrl(requestURI)) {
+            if (httpRequest.getSession().getAttribute("employee") == null) {
+                httpResponse.sendRedirect(httpRequest.getContextPath() + "/_dashboard.html");
+            } else {
+                chain.doFilter(request, response);
+            }
+            return;
+        }
+
+        // 3. Everything else requires normal customer login
         if (httpRequest.getSession().getAttribute("user") == null) {
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/login.html");
         } else {
@@ -38,17 +52,36 @@ public class LoginFilter implements Filter {
     }
 
     private boolean isUrlAllowedWithoutLogin(String requestURI) {
-        /*
-         Setup your own rules here to allow accessing some resources without logging in
-         Always allow your own login related requests(html, js, servlet, etc..)
-         You might also want to allow some CSS files, etc..
-         */
         return allowedURIs.stream().anyMatch(requestURI.toLowerCase()::endsWith);
     }
 
+    private boolean isDashboardUrl(String requestURI) {
+        String lowerCaseURI = requestURI.toLowerCase();
+
+        return lowerCaseURI.endsWith("dashboard.html")
+                || lowerCaseURI.endsWith("dashboard.js")
+                || lowerCaseURI.endsWith("/api/dashboard")
+                || lowerCaseURI.contains("/api/dashboard/");
+    }
+
     public void init(FilterConfig fConfig) {
+        // Customer login
         allowedURIs.add("login.html");
         allowedURIs.add("login.js");
         allowedURIs.add("api/login");
+
+        // Employee dashboard login
+        allowedURIs.add("_dashboard.html");
+        allowedURIs.add("_dashboard.js");
+        allowedURIs.add("api/employee-login");
+
+        // Static files
+        allowedURIs.add("styles.css");
+        allowedURIs.add(".css");
+        allowedURIs.add(".js");
+        allowedURIs.add(".png");
+        allowedURIs.add(".jpg");
+        allowedURIs.add(".jpeg");
+        allowedURIs.add(".gif");
     }
 }
