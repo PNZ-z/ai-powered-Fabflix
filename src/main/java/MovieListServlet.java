@@ -84,7 +84,7 @@ public class MovieListServlet extends HttpServlet {
                         "   3" +
                         ") AS genres " +
                         "FROM movies m " +
-                        "JOIN ratings r ON m.id = r.movie_id " +
+                        "LEFT JOIN ratings r ON m.id = r.movie_id " +
                         "LEFT JOIN genres_in_movies gim ON m.id = gim.movie_id " +
                         "LEFT JOIN genres g ON gim.genre_id = g.id ";
 
@@ -211,7 +211,11 @@ public class MovieListServlet extends HttpServlet {
                     jsonObject.addProperty("movie_year", year);
                     jsonObject.addProperty("movie_director", director);
                     jsonObject.addProperty("movie_genres", genres);
-                    jsonObject.addProperty("movie_rating", rating);
+                    if (rs.wasNull()) {
+                        jsonObject.add("movie_rating", null);
+                    } else {
+                        jsonObject.addProperty("movie_rating", rating);
+                    }
 
                     JsonArray starArray = new JsonArray();
 

@@ -84,8 +84,13 @@ function handleMovieListResult(resultData) {
             }
         }
         rowHTML += "</td>";
-
-        rowHTML += "<td>" + resultData[i]["movie_rating"] + "</td>";
+        let rating = resultData[i]["movie_rating"];
+        if(rating == null){
+            rowHTML += "<td>N/A</td>";
+        }
+        else{
+            rowHTML += "<td>" + resultData[i]["movie_rating"] + "</td>";
+        }
         rowHTML += "<td>";
         rowHTML += "<button onclick=\"addToCart('" + movieId + "')\" class=\"btn btn-outline-primary\">Add to Cart</button>";
         rowHTML += "</td>";

@@ -43,6 +43,7 @@ public class LoginServlet extends HttpServlet {
                 response.getWriter().write(jsonObjectRecaptcha.toString());
                 return;
             }catch (Exception e) {
+                e.printStackTrace();
                 // Write error message JSON object to output
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("errorMessage", e.getMessage());
@@ -89,6 +90,7 @@ public class LoginServlet extends HttpServlet {
                 response.getWriter().write(jsonObject.toString());
             }
         } catch (Exception e) {
+            e.printStackTrace();
             // Write error message JSON object to output
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("errorMessage", e.getMessage());
