@@ -133,33 +133,34 @@ public class CastXMLParser extends DefaultHandler {
     }
 
     private void loadExistingStarMoviePairs() throws SQLException {
-        String query = "SELECT starId, movieId FROM stars_in_movies";
+        String query = "SELECT star_id, movie_id FROM stars_in_movies";
 
         try (PreparedStatement statement = dbCon.prepareStatement(query);
              ResultSet rs = statement.executeQuery()) {
             while (rs.next()) {
                 existingStarMoviePairs.add(makePairKey(
-                        rs.getString("starId"),
-                        rs.getString("movieId")
+                        rs.getString("star_id"),
+                        rs.getString("movie_id")
                 ));
             }
         }
     }
 
     private void loadNextStarIdNumber() throws SQLException {
-        String query =
-                "SELECT MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)) AS max_id " +
-                        "FROM stars " +
-                        "WHERE id LIKE 'nm%'";
-
-        try (PreparedStatement statement = dbCon.prepareStatement(query);
-             ResultSet rs = statement.executeQuery()) {
-            if (rs.next()) {
-                nextStarIdNumber = rs.getInt("max_id") + 1;
-            } else {
-                nextStarIdNumber = 1;
-            }
-        }
+//        String query =
+//                "SELECT MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)) AS max_id " +
+//                        "FROM stars " +
+//                        "WHERE id LIKE 'nm%'";
+//
+//        try (PreparedStatement statement = dbCon.prepareStatement(query);
+//             ResultSet rs = statement.executeQuery()) {
+//            if (rs.next()) {
+//                nextStarIdNumber = rs.getInt("max_id") + 1;
+//            } else {
+//                nextStarIdNumber = 1;
+//            }
+//        }
+        nextStarIdNumber=1;
     }
 
     @Override
@@ -228,9 +229,8 @@ public class CastXMLParser extends DefaultHandler {
             boolean newStar = false;
 
             if (starId == null) {
-                starId = generateNewStarId();
+                starId = insertNewStar(cleanStarName);
                 starNameToId.put(starKey, starId);
-                newStar = true;
             }
 
             String pairKey = makePairKey(starId, currMovieId);
@@ -242,14 +242,32 @@ public class CastXMLParser extends DefaultHandler {
             }
 
             existingStarMoviePairs.add(pairKey);
-            queue.put(new CastInsertTask(starId, cleanStarName, currMovieId, newStar));
+            queue.put(new CastInsertTask(starId,currMovieId));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    private String insertNewStar(String starName) throws SQLException, IOException {
+        String starId = generateNewStarId();
+        String query = "INSERT INTO stars (id, name, birth_year) VALUES (?, ?, NULL)";
+
+        try (PreparedStatement statement = dbCon.prepareStatement(query)) {
+            statement.setString(1, starId);
+            statement.setString(2, starName);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println(starId + " " + starName);
+        }
+
+        dbCon.commit();
+        reportWriter.write("NEW STAR INSERTED: " + starId + " " + starName + "\n");
+        return starId;
+    }
+
     private String generateNewStarId() {
-        String starId = String.format("nm%07d", nextStarIdNumber);
+        String starId = String.format("ca%07d", nextStarIdNumber);
         nextStarIdNumber++;
         return starId;
     }

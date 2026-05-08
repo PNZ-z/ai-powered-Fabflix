@@ -25,11 +25,9 @@ public class CastInsertWorker implements Runnable {
 
     @Override
     public void run() {
-        String starQuery = "INSERT INTO stars (id, name, birthYear) VALUES (?, ?, NULL)";
-        String starMovieQuery = "INSERT INTO stars_in_movies (starId, movieId) VALUES (?, ?)";
+        String starMovieQuery = "INSERT INTO stars_in_movies (star_id, movie_id) VALUES (?, ?)";
 
         try (Connection conn = DriverManager.getConnection(loginUrl, loginUser, loginPass);
-             PreparedStatement starStatement = conn.prepareStatement(starQuery);
              PreparedStatement starMovieStatement = conn.prepareStatement(starMovieQuery)) {
 
             conn.setAutoCommit(false);
@@ -43,12 +41,6 @@ public class CastInsertWorker implements Runnable {
                     break;
                 }
 
-                if (task.isNewStar()) {
-                    starStatement.setString(1, task.getStarId());
-                    starStatement.setString(2, task.getStarName());
-                    starStatement.addBatch();
-                }
-
                 starMovieStatement.setString(1, task.getStarId());
                 starMovieStatement.setString(2, task.getMovieId());
                 starMovieStatement.addBatch();
@@ -56,14 +48,12 @@ public class CastInsertWorker implements Runnable {
                 batchCount++;
 
                 if (batchCount >= BATCH_SIZE) {
-                    starStatement.executeBatch();
                     starMovieStatement.executeBatch();
                     conn.commit();
                     batchCount = 0;
                 }
             }
 
-            starStatement.executeBatch();
             starMovieStatement.executeBatch();
             conn.commit();
         } catch (Exception e) {
