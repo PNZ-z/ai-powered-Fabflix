@@ -233,6 +233,14 @@ public class MovieListServlet extends HttpServlet {
                                 starArray.add(singleStar);
                             }
                             jsonObject.add("movie_stars", starArray);
+
+                            if (starArray.size() == 0) {
+                                JsonObject noStar = new JsonObject();
+                                noStar.addProperty("star_id", "");
+                                noStar.addProperty("star_name", "N/A");
+                                starArray.add(noStar);
+
+                            }
                         }
                     }
 

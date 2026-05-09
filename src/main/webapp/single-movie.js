@@ -56,12 +56,18 @@ function handleSingleMovieResult(resultData) {
     let starsArray = resultData["movie_stars"];
     for (let i = 0; i < starsArray.length; i++) {
         let currentStar = starsArray[i];
+        let starName = currentStar["star_name"];
+        let starId = currentStar["star_id"];
+        if (!starId || starName.trim() === "N/A") {
+            movieStarsElement.append("N/A");
+        } else {
+            movieStarsElement.append(
+                '<a href="single-star.html?id=' + starId + '">' +
+                starName +
+                '</a>'
+            );
 
-        movieStarsElement.append(
-            '<a href="single-star.html?id=' + currentStar["star_id"] + '">' +
-            currentStar["star_name"] +
-            '</a>'
-        );
+        }
 
         if (i < starsArray.length - 1) {
             movieStarsElement.append(", ");

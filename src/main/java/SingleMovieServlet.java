@@ -45,7 +45,7 @@ public class SingleMovieServlet extends HttpServlet {
                         "r.rating, " +
                         "GROUP_CONCAT(DISTINCT g.name ORDER BY g.name SEPARATOR ', ') AS genres " +
                         "FROM movies m " +
-                        "JOIN ratings r ON m.id = r.movie_id " +
+                        "LEFT JOIN ratings r ON m.id = r.movie_id " +
                         "LEFT JOIN genres_in_movies gim ON m.id = gim.movie_id " +
                         "LEFT JOIN genres g ON gim.genre_id = g.id " +
                         "WHERE m.id = ? " +
@@ -77,7 +77,13 @@ public class SingleMovieServlet extends HttpServlet {
                         int year = rs.getInt("year");
                         String director = rs.getString("director");
                         String genres = rs.getString("genres");
-                        float rating = rs.getFloat("rating");
+                        float ratingValue = rs.getFloat("rating");
+                        String rating;
+                        if (rs.wasNull()) {
+                            rating = "N/A";
+                        } else {
+                            rating = String.valueOf(ratingValue);
+                        }
 
                         if (genres == null) {
                             genres = "";
@@ -104,6 +110,13 @@ public class SingleMovieServlet extends HttpServlet {
                                     singleStar.addProperty("star_id", starId);
                                     singleStar.addProperty("star_name", starName);
                                     starArray.add(singleStar);
+                                }
+                                if (starArray.size() == 0) {
+                                    JsonObject noStar = new JsonObject();
+                                    noStar.addProperty("star_id", "");
+                                    noStar.addProperty("star_name", "N/A");
+                                    starArray.add(noStar);
+
                                 }
                             }
                         }

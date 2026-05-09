@@ -75,9 +75,13 @@ function handleMovieListResult(resultData) {
         for (let j = 0; j < starsArray.length; j++) {
             let currentStar = starsArray[j];
 
-            rowHTML += '<a href="single-star.html?id=' + currentStar["star_id"] + '">';
-            rowHTML += currentStar["star_name"];
-            rowHTML += "</a>";
+            if (currentStar["star_name"] === "N/A" || currentStar["star_id"] === "") {
+                rowHTML += "N/A";
+            } else {
+                rowHTML += '<a href="single-star.html?id=' + currentStar["star_id"] + '">';
+                rowHTML += currentStar["star_name"];
+                rowHTML += "</a>";
+            }
 
             if (j < starsArray.length - 1) {
                 rowHTML += ", ";
