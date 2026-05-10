@@ -29,21 +29,29 @@ function handleSingleMovieResult(resultData) {
     jQuery("#movie_director").text(resultData["movie_director"]);
 
     let movieGenresElement = jQuery("#movie_genres");
-    const genres = resultData["movie_genres"].split(',');
-    for(let i=0; i< genres.length; i++){
-        let trimmedGenre = genres[i].trim();
-        movieGenresElement.append(
-            '<a href="movieList.html?genre=' + encodeURIComponent(trimmedGenre)
-            + "&pageSize=10" + "&pageNumber=0" + '">' + trimmedGenre
-        )
-        if(i !== genres.length-1){
-            movieGenresElement.append('</a>, ');
-        }
-        else{
-            movieGenresElement.append('</a>');
-        }
+    let genreText = resultData["movie_genres"];
 
+    if (genreText == null || genreText.trim() === "") {
+        movieGenresElement.append("N/A");
     }
+    else{
+        const genres = resultData["movie_genres"].split(',');
+        for(let i=0; i< genres.length; i++){
+            let trimmedGenre = genres[i].trim();
+            movieGenresElement.append(
+                '<a href="movieList.html?genre=' + encodeURIComponent(trimmedGenre)
+                + "&pageSize=10" + "&pageNumber=0" + '">' + trimmedGenre
+            )
+            if(i !== genres.length-1){
+                movieGenresElement.append('</a>, ');
+            }
+            else{
+                movieGenresElement.append('</a>');
+            }
+
+        }
+    }
+
     jQuery("#movie_rating").text(resultData["movie_rating"]);
 
     let movieStarsElement = jQuery("#movie_stars");

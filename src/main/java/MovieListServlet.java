@@ -15,10 +15,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.util.concurrent.ConcurrentHashMap;
+
 @WebServlet("/api/movie-list")
 public class MovieListServlet extends HttpServlet {
     private DataSource dataSource;
     private final ConcurrentHashMap<String, String> queryCache = new ConcurrentHashMap<>();
+
     public void init(ServletConfig config) {
         try {
             dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
@@ -26,241 +28,280 @@ public class MovieListServlet extends HttpServlet {
             e.printStackTrace();
         }
     }
+
     private String getTrimmedParameter(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         return (value != null) ? value.trim() : null;
     }
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
         String cacheKey = request.getQueryString();
 
-        // 3. Check if we have this result in the cache
         if (cacheKey != null && queryCache.containsKey(cacheKey)) {
             System.out.println("Cache Hit! Returning cached results for: " + cacheKey);
             out.write(queryCache.get(cacheKey));
             out.close();
-            return; // Stop here, no need to talk to MySQL!
+            return;
         }
 
         System.out.println("Cache Miss. Querying database...");
+
         String searchTitle = getTrimmedParameter(request, "title");
         String searchYear = getTrimmedParameter(request, "year");
         String searchDirector = getTrimmedParameter(request, "director");
         String searchStar = getTrimmedParameter(request, "star");
         String searchPageNumber = getTrimmedParameter(request, "pageNumber");
         String pageSizeParam = getTrimmedParameter(request, "pageSize");
-        int pageSize = 10;
+        String searchGenre = getTrimmedParameter(request, "genre");
+        String startsWith = getTrimmedParameter(request, "startsWith");
 
-        if (pageSizeParam != null && !pageSizeParam.trim().isEmpty()) {
+        int pageSize = 10;
+        if (pageSizeParam != null && !pageSizeParam.isEmpty() && isInteger(pageSizeParam)) {
             pageSize = Integer.parseInt(pageSizeParam);
+        }
+
+        int offset = 0;
+        if (searchPageNumber != null && !searchPageNumber.isEmpty() && isInteger(searchPageNumber)) {
+            offset = Integer.parseInt(searchPageNumber) * pageSize;
         }
 
         String sort1 = request.getParameter("sort1");
         String dir1 = request.getParameter("dir1");
         String sort2 = request.getParameter("sort2");
         String dir2 = request.getParameter("dir2");
+
         if (sort1 == null) sort1 = "title";
-        if (dir1 == null) dir1 = "ASC";
         if (sort2 == null) sort2 = "rating";
-        if (dir2 == null) dir2 = "DESC";
-        String searchGenre = request.getParameter("genre");
-        String startsWith = request.getParameter("startsWith");
-        
+
+        dir1 = "DESC".equalsIgnoreCase(dir1) ? "DESC" : "ASC";
+        dir2 = "DESC".equalsIgnoreCase(dir2) ? "DESC" : "ASC";
+
+        String col1 = "rating".equalsIgnoreCase(sort1) ? "fm.rating" : "fm.title";
+        String col2 = "rating".equalsIgnoreCase(sort2) ? "fm.rating" : "fm.title";
 
         String movieQuery =
-                "SELECT " +
-                        "m.id, " +
-                        "m.title, " +
-                        "m.year, " +
-                        "m.director, " +
-                        "r.rating, " +
-                        "SUBSTRING_INDEX(" +
-                        "   GROUP_CONCAT(DISTINCT g.name ORDER BY g.name SEPARATOR ', '), " +
-                        "   ', ', " +
-                        "   3" +
-                        ") AS genres " +
+                "WITH FilteredMovies AS ( " +
+                        "SELECT DISTINCT m.id, m.title, m.year, m.director, r.rating " +
                         "FROM movies m " +
-                        "LEFT JOIN ratings r ON m.id = r.movie_id " +
-                        "LEFT JOIN genres_in_movies gim ON m.id = gim.movie_id " +
-                        "LEFT JOIN genres g ON gim.genre_id = g.id ";
+                        "LEFT JOIN ratings r ON m.id = r.movie_id ";
 
-        String starQuery =
-                "SELECT s.id, s.name " +
-                        "FROM stars s " +
-                        "JOIN stars_in_movies sim ON s.id = sim.star_id " +
-                        "JOIN ( " +
-                        "   SELECT star_id, COUNT(movie_id) AS movie_count " +
+        if (searchStar != null && !searchStar.isEmpty()) {
+            movieQuery +=
+                    "JOIN stars_in_movies sim_filter ON m.id = sim_filter.movie_id " +
+                            "JOIN stars s_filter ON s_filter.id = sim_filter.star_id ";
+        }
+
+        if (searchGenre != null && !searchGenre.isEmpty()) {
+            movieQuery +=
+                    "JOIN genres_in_movies gim_filter ON m.id = gim_filter.movie_id " +
+                            "JOIN genres g_filter ON gim_filter.genre_id = g_filter.id ";
+        }
+
+        movieQuery += "WHERE 1=1 ";
+
+        if (searchTitle != null && !searchTitle.isEmpty()) {
+            movieQuery += "AND m.title LIKE ? ";
+        }
+
+        if (searchYear != null && !searchYear.isEmpty()) {
+            movieQuery += "AND m.year = ? ";
+        }
+
+        if (searchDirector != null && !searchDirector.isEmpty()) {
+            movieQuery += "AND m.director LIKE ? ";
+        }
+
+        if (searchStar != null && !searchStar.isEmpty()) {
+            movieQuery += "AND s_filter.name LIKE ? ";
+        }
+
+        if (searchGenre != null && !searchGenre.isEmpty()) {
+            movieQuery += "AND g_filter.name = ? ";
+        }
+
+        if (startsWith != null && !startsWith.isEmpty()) {
+            movieQuery += "AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ";
+        }
+
+        movieQuery +=
+                "), " +
+                        "StarMovieCounts AS ( " +
+                        "   SELECT star_id, COUNT(*) AS movie_count " +
                         "   FROM stars_in_movies " +
                         "   GROUP BY star_id " +
-                        ") AS star_popularity ON s.id = star_popularity.star_id " +
-                        "WHERE sim.movie_id = ? " +
-                        "ORDER BY star_popularity.movie_count DESC, s.name ASC " +
-                        "LIMIT 3";
+                        "), " +
+                        "RankedStars AS ( " +
+                        "   SELECT " +
+                        "       sim.movie_id, " +
+                        "       s.id AS star_id, " +
+                        "       s.name AS star_name, " +
+                        "       smc.movie_count, " +
+                        "       ROW_NUMBER() OVER ( " +
+                        "           PARTITION BY sim.movie_id " +
+                        "           ORDER BY smc.movie_count DESC, s.name ASC, s.id ASC " +
+                        "       ) AS star_rank " +
+                        "   FROM stars_in_movies sim " +
+                        "   JOIN FilteredMovies fm ON sim.movie_id = fm.id " +
+                        "   JOIN stars s ON sim.star_id = s.id " +
+                        "   JOIN StarMovieCounts smc ON sim.star_id = smc.star_id " +
+                        "), " +
+                        "TopStars AS ( " +
+                        "   SELECT " +
+                        "       movie_id, " +
+                        "       GROUP_CONCAT(star_id ORDER BY star_rank SEPARATOR ',') AS star_ids, " +
+                        "       GROUP_CONCAT(star_name ORDER BY star_rank SEPARATOR '\\t') AS star_names " +
+                        "   FROM RankedStars " +
+                        "   WHERE star_rank <= 3 " +
+                        "   GROUP BY movie_id " +
+                        "), " +
+                        "MovieGenres AS ( " +
+                        "   SELECT " +
+                        "       fm.id AS movie_id, " +
+                        "       SUBSTRING_INDEX( " +
+                        "           GROUP_CONCAT(DISTINCT g.name ORDER BY g.name SEPARATOR ', '), " +
+                        "           ', ', " +
+                        "           3 " +
+                        "       ) AS genres " +
+                        "   FROM FilteredMovies fm " +
+                        "   LEFT JOIN genres_in_movies gim ON fm.id = gim.movie_id " +
+                        "   LEFT JOIN genres g ON gim.genre_id = g.id " +
+                        "   GROUP BY fm.id " +
+                        ") " +
+                        "SELECT " +
+                        "   fm.id, " +
+                        "   fm.title, " +
+                        "   fm.year, " +
+                        "   fm.director, " +
+                        "   fm.rating, " +
+                        "   mg.genres, " +
+                        "   ts.star_ids, " +
+                        "   ts.star_names " +
+                        "FROM FilteredMovies fm " +
+                        "LEFT JOIN MovieGenres mg ON fm.id = mg.movie_id " +
+                        "LEFT JOIN TopStars ts ON fm.id = ts.movie_id ";
 
-        try {
+        movieQuery += "ORDER BY ";
 
+        if ("rating".equalsIgnoreCase(sort1)) {
+            movieQuery += "fm.rating IS NULL, ";
+        }
 
-            if (searchStar != null && !searchStar.trim().isEmpty()) {
-                movieQuery += " JOIN stars_in_movies sim ON m.id = sim.movie_id " +
-                        " JOIN stars s ON s.id = sim.star_id ";
+        movieQuery += col1 + " " + dir1 + ", ";
+
+        if ("rating".equalsIgnoreCase(sort2)) {
+            movieQuery += "fm.rating IS NULL, ";
+        }
+
+        movieQuery += col2 + " " + dir2 + " ";
+
+        movieQuery += "LIMIT ? OFFSET ?";
+
+        try (Connection dbCon = dataSource.getConnection();
+             PreparedStatement movieStatement = dbCon.prepareStatement(movieQuery)) {
+
+            int paramIndex = 1;
+
+            if (searchTitle != null && !searchTitle.isEmpty()) {
+                movieStatement.setString(paramIndex++, "%" + searchTitle + "%");
             }
 
-            if (searchGenre != null && !searchGenre.trim().isEmpty()) {
-                movieQuery += " JOIN genres_in_movies gim_filter ON m.id = gim_filter.movie_id " +
-                        " JOIN genres g_filter ON gim_filter.genre_id = g_filter.id ";
+            if (searchYear != null && !searchYear.isEmpty()) {
+                movieStatement.setString(paramIndex++, searchYear);
             }
 
-            movieQuery += " WHERE 1=1 ";
-
-            if (searchTitle != null && !searchTitle.trim().isEmpty()) {
-                movieQuery += " AND m.title LIKE ? ";
-            } else {
-                System.out.println("title not detected");
+            if (searchDirector != null && !searchDirector.isEmpty()) {
+                movieStatement.setString(paramIndex++, "%" + searchDirector + "%");
             }
 
-            if (searchYear != null && !searchYear.trim().isEmpty()) {
-                movieQuery += " AND m.year = ? ";
+            if (searchStar != null && !searchStar.isEmpty()) {
+                movieStatement.setString(paramIndex++, "%" + searchStar + "%");
             }
 
-            if (searchDirector != null && !searchDirector.trim().isEmpty()) {
-                movieQuery += " AND m.director LIKE ? ";
+            if (searchGenre != null && !searchGenre.isEmpty()) {
+                movieStatement.setString(paramIndex++, searchGenre);
             }
 
-            if (searchStar != null && !searchStar.trim().isEmpty()) {
-                movieQuery += " AND s.name LIKE ? ";
+            if (startsWith != null && !startsWith.isEmpty()) {
+                movieStatement.setString(paramIndex++, startsWith);
             }
 
-            if (searchGenre != null && !searchGenre.trim().isEmpty()) {
-                movieQuery += " AND g_filter.name = ? ";
-            }
+            movieStatement.setInt(paramIndex++, pageSize + 1);
+            movieStatement.setInt(paramIndex++, offset);
 
-            if (startsWith != null && !startsWith.trim().isEmpty()) {
-                movieQuery += " AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ";
-            }
+            System.out.println(movieStatement.toString());
 
-            movieQuery += " GROUP BY m.id, m.title, m.year, m.director, r.rating ";
-            String col1 = sort1.equals("rating") ? "r.rating" : "m.title";
-            String col2 = sort2.equals("rating") ? "r.rating" : "m.title";
-            movieQuery += " ORDER BY " + col1 + " " + dir1 + ", " + col2 + " " + dir2;
+            ResultSet rs = movieStatement.executeQuery();
+            JsonArray jsonArray = new JsonArray();
 
-            movieQuery +=" LIMIT ? ";
+            while (rs.next()) {
+                String movieId = rs.getString("id");
+                String title = rs.getString("title");
+                int year = rs.getInt("year");
+                String director = rs.getString("director");
+                String genres = rs.getString("genres");
 
-            if (searchPageNumber != null && !searchPageNumber.trim().isEmpty() && isInteger(searchPageNumber)) {
-                movieQuery += " OFFSET " + Integer.parseInt(searchPageNumber) * pageSize;
-            } else {
-                movieQuery += " OFFSET 0";
-            }
-
-            try (Connection dbCon = dataSource.getConnection();
-                 PreparedStatement movieStatement = dbCon.prepareStatement(movieQuery))
-            {
-
-                int paramIndex = 1;
-
-                if (searchTitle != null && !searchTitle.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, "%" + searchTitle + "%");
+                if (genres == null) {
+                    genres = "";
                 }
 
-                if (searchYear != null && !searchYear.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, searchYear);
+                float rating = rs.getFloat("rating");
+                boolean ratingIsNull = rs.wasNull();
+
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("movie_id", movieId);
+                jsonObject.addProperty("movie_title", title);
+                jsonObject.addProperty("movie_year", year);
+                jsonObject.addProperty("movie_director", director);
+                jsonObject.addProperty("movie_genres", genres);
+
+                if (ratingIsNull) {
+                    jsonObject.add("movie_rating", null);
+                } else {
+                    jsonObject.addProperty("movie_rating", rating);
                 }
 
-                if (searchDirector != null && !searchDirector.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, "%" + searchDirector + "%");
-                }
+                JsonArray starArray = new JsonArray();
 
-                if (searchStar != null && !searchStar.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, "%" + searchStar + "%");
-                }
+                String starIds = rs.getString("star_ids");
+                String starNames = rs.getString("star_names");
 
-                if (searchGenre != null && !searchGenre.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, searchGenre);
-                }
+                if (starIds != null && starNames != null) {
+                    String[] starIdArray = starIds.split(",");
+                    String[] starNameArray = starNames.split("\t");
 
-                if (startsWith != null && !startsWith.trim().isEmpty()) {
-                    movieStatement.setString(paramIndex++, startsWith);
-                }
-
-                    movieStatement.setInt(paramIndex++, pageSize + 1);
-
-
-                System.out.println(movieStatement.toString());
-
-                ResultSet rs = movieStatement.executeQuery();
-                JsonArray jsonArray = new JsonArray();
-
-                while (rs.next()) {
-                    String movieId = rs.getString("id");
-                    String title = rs.getString("title");
-                    int year = rs.getInt("year");
-                    String director = rs.getString("director");
-                    String genres = rs.getString("genres");
-                    float rating = rs.getFloat("rating");
-
-                    if (genres == null) {
-                        genres = "";
+                    for (int i = 0; i < starIdArray.length && i < starNameArray.length; i++) {
+                        JsonObject singleStar = new JsonObject();
+                        singleStar.addProperty("star_id", starIdArray[i]);
+                        singleStar.addProperty("star_name", starNameArray[i]);
+                        starArray.add(singleStar);
                     }
-
-                    JsonObject jsonObject = new JsonObject();
-                    jsonObject.addProperty("movie_id", movieId);
-                    jsonObject.addProperty("movie_title", title);
-                    jsonObject.addProperty("movie_year", year);
-                    jsonObject.addProperty("movie_director", director);
-                    jsonObject.addProperty("movie_genres", genres);
-                    if (rs.wasNull()) {
-                        jsonObject.add("movie_rating", null);
-                    } else {
-                        jsonObject.addProperty("movie_rating", rating);
-                    }
-
-                    JsonArray starArray = new JsonArray();
-
-                    try (PreparedStatement starStatement = dbCon.prepareStatement(starQuery)) {
-                        starStatement.setString(1, movieId);
-
-                        try (ResultSet starRs = starStatement.executeQuery()) {
-                            while (starRs.next()) {
-                                String starId = starRs.getString("id");
-                                String starName = starRs.getString("name");
-
-                                JsonObject singleStar = new JsonObject();
-                                singleStar.addProperty("star_id", starId);
-                                singleStar.addProperty("star_name", starName);
-                                starArray.add(singleStar);
-                            }
-                            jsonObject.add("movie_stars", starArray);
-
-                            if (starArray.size() == 0) {
-                                JsonObject noStar = new JsonObject();
-                                noStar.addProperty("star_id", "");
-                                noStar.addProperty("star_name", "N/A");
-                                starArray.add(noStar);
-
-                            }
-                        }
-                    }
-
-                    jsonArray.add(jsonObject);
-
-                }
-                String finalResult = jsonArray.toString();
-
-                // 4. Save the result to the cache before sending it back
-                if (cacheKey != null) {
-                    queryCache.put(cacheKey, finalResult);
                 }
 
-                out.write(finalResult);
+                if (starArray.size() == 0) {
+                    JsonObject noStar = new JsonObject();
+                    noStar.addProperty("star_id", "");
+                    noStar.addProperty("star_name", "N/A");
+                    starArray.add(noStar);
+                }
 
-                // saving query for "Back to List" functionality
-                HttpSession session = request.getSession(true);
-                session.setAttribute("lastMovieQuery", cacheKey);
-
+                jsonObject.add("movie_stars", starArray);
+                jsonArray.add(jsonObject);
             }
+
+            String finalResult = jsonArray.toString();
+
+            if (cacheKey != null) {
+                queryCache.put(cacheKey, finalResult);
+            }
+
+            out.write(finalResult);
+
+            HttpSession session = request.getSession(true);
+            session.setAttribute("lastMovieQuery", cacheKey);
 
         } catch (Exception e) {
             JsonObject jsonObject = new JsonObject();
@@ -276,6 +317,7 @@ public class MovieListServlet extends HttpServlet {
         if (str == null || str.isEmpty()) {
             return false;
         }
+
         try {
             Integer.parseInt(str);
             return true;

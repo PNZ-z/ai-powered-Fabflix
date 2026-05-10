@@ -50,21 +50,31 @@ function handleMovieListResult(resultData) {
         rowHTML += "<td>" + resultData[i]["movie_director"] + "</td>";
         rowHTML += "<td>";
         // + resultData[i]["movie_genres"] + "</td>";
-        let genres = resultData[i]["movie_genres"].split(',');
-        for (let y=0; y<genres.length; y++){
-            let genre = genres[y];
-            let trimmedGenre = genre.trim();
-            let genreUrl = "movieList.html?genre=" + encodeURIComponent(trimmedGenre)
-                + "&pageSize=" + pageSize
-                + "&pageNumber=0";
-            rowHTML += '<a href="' + genreUrl + '">';
-            if(y !== genres.length-1){
-                rowHTML += trimmedGenre + "</a>" + ", ";
-            }
-            else{
-                rowHTML += trimmedGenre + "</a>";
+        let genreText = resultData[i]["movie_genres"];
+
+        if (genreText == null || genreText.trim() === "") {
+            rowHTML += "N/A";
+        } else {
+            let genres = genreText.split(',');
+
+            for (let y = 0; y < genres.length; y++) {
+                let trimmedGenre = genres[y].trim();
+                if (trimmedGenre === "") continue;
+
+                let genreUrl = "movieList.html?genre=" + encodeURIComponent(trimmedGenre)
+                    + "&pageSize=" + pageSize
+                    + "&pageNumber=0";
+
+                rowHTML += '<a href="' + genreUrl + '">';
+
+                if (y !== genres.length - 1) {
+                    rowHTML += trimmedGenre + "</a>" + ", ";
+                } else {
+                    rowHTML += trimmedGenre + "</a>";
+                }
             }
         }
+
 
         rowHTML += ""
 

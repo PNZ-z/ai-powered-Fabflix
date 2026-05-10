@@ -20,6 +20,9 @@ function handleLoginResult(resultDataJson) {
         console.log("show error message");
         console.log(resultDataJson["message"]);
         $("#login_error_message").text(resultDataJson["message"]);
+        if (typeof grecaptcha !== "undefined") {
+            grecaptcha.reset();
+        }
     }
 }
 
@@ -47,7 +50,25 @@ function submitLoginForm(formSubmitEvent) {
             method: "POST",
             // Serialize the login form to the data sent by POST request
             data: login_form.serialize(),
-            success: handleLoginResult
+            success: handleLoginResult,
+            error: function (xhr) {
+                let message = "Login failed";
+
+                if (xhr.responseText) {
+                    try {
+                        let responseJson = JSON.parse(xhr.responseText);
+                        message = responseJson["message"] || message;
+                    } catch (e) {
+                        message = xhr.responseText;
+                    }
+                }
+
+                $("#login_error_message").text(message);
+
+                if (typeof grecaptcha !== "undefined") {
+                    grecaptcha.reset();
+                }
+            }
         }
     );
 }
