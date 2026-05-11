@@ -31,9 +31,12 @@ public class MainXMLParser extends DefaultHandler {
     private Set<String> existingMovieIds;
     private Map<String, Integer> genreMapping;
     private Map<String, String> genreNormalizeMap;
+    private Map<String, List<String>> genreSplitNormalizeMap;
+    private Set<String> invalidGenreCodes;
     private static final int NUM_WORKERS = 4;
     private BlockingQueue<MovieInsertTask> queue;
     private ExecutorService executor;
+
     public void runExample() throws ParserConfigurationException, IOException, SAXException {
         String loginUser = "mytestuser";
         String loginPass = "My6$Password";
@@ -135,7 +138,8 @@ public class MainXMLParser extends DefaultHandler {
 
     private void initGenreNormalizeMap() {
         genreNormalizeMap = new HashMap<>();
-
+        genreSplitNormalizeMap = new HashMap<>();
+        invalidGenreCodes = new HashSet<>();
         genreNormalizeMap.put("actn", "Action");
         genreNormalizeMap.put("act", "Action");
         genreNormalizeMap.put("axtn", "Action");
@@ -155,6 +159,7 @@ public class MainXMLParser extends DefaultHandler {
 
         genreNormalizeMap.put("comd", "Comedy");
         genreNormalizeMap.put("comdx", "Comedy");
+        genreNormalizeMap.put("cond", "Comedy");
 
         genreNormalizeMap.put("crim", "Crime");
 
@@ -194,6 +199,7 @@ public class MainXMLParser extends DefaultHandler {
         genreNormalizeMap.put("scif", "Sci-Fi");
         genreNormalizeMap.put("s.f.", "Sci-Fi");
         genreNormalizeMap.put("sxfi", "Sci-Fi");
+        genreNormalizeMap.put("s f", "Sci-Fi");
 
         genreNormalizeMap.put("susp", "Thriller");
         genreNormalizeMap.put("sctn", "Thriller");
@@ -202,6 +208,49 @@ public class MainXMLParser extends DefaultHandler {
         genreNormalizeMap.put("west1", "Western");
 
         genreNormalizeMap.put("sports", "Sport");
+        genreNormalizeMap.put("cmr", "Crime");
+        genreNormalizeMap.put("cnr", "Crime");
+        genreNormalizeMap.put("cnrb", "Crime");
+        genreNormalizeMap.put("cnrbb", "Crime");
+        genreNormalizeMap.put("surr", "Surreal");
+        genreNormalizeMap.put("surl", "Surreal");
+        genreNormalizeMap.put("surreal", "Surreal");
+        genreNormalizeMap.put("s.f.", "Sci-Fi");
+        genreNormalizeMap.put("expm", "Experimental");
+        genreNormalizeMap.put("viol", "Violence");
+        genreNormalizeMap.put("undr", "Drama");
+
+
+        genreSplitNormalizeMap.put("comd noir", Arrays.asList("Comedy", "Noir"));
+        genreSplitNormalizeMap.put("noir comd", Arrays.asList("Noir", "Comedy"));
+        genreSplitNormalizeMap.put("romt dram", Arrays.asList("Romance", "Drama"));
+        genreSplitNormalizeMap.put("docu dram", Arrays.asList("Documentary", "Drama"));
+        genreSplitNormalizeMap.put("dram docu", Arrays.asList("Drama", "Documentary"));
+        genreSplitNormalizeMap.put("comd west", Arrays.asList("Comedy", "Western"));
+        genreSplitNormalizeMap.put("romt advt", Arrays.asList("Romance", "Adventure"));
+        genreSplitNormalizeMap.put("romt fant", Arrays.asList("Romance", "Fantasy"));
+        genreSplitNormalizeMap.put("romt comd", Arrays.asList("Romance", "Comedy"));
+        genreSplitNormalizeMap.put("romt. comd", Arrays.asList("Romance", "Comedy"));
+        genreSplitNormalizeMap.put("dram.actn", Arrays.asList("Drama", "Action"));
+        genreSplitNormalizeMap.put("noir comd romt", Arrays.asList("Noir", "Comedy", "Romance"));
+        genreSplitNormalizeMap.put("comd noir", Arrays.asList("Comedy", "Noir"));
+        genreSplitNormalizeMap.put("noir comd", Arrays.asList("Noir", "Comedy"));
+        genreSplitNormalizeMap.put("noir comd romt", Arrays.asList("Noir", "Comedy", "Romance"));
+        genreSplitNormalizeMap.put("romt dram", Arrays.asList("Romance", "Drama"));
+        genreSplitNormalizeMap.put("docu dram", Arrays.asList("Documentary", "Drama"));
+        genreSplitNormalizeMap.put("dram docu", Arrays.asList("Drama", "Documentary"));
+        genreSplitNormalizeMap.put("comd west", Arrays.asList("Comedy", "Western"));
+        genreSplitNormalizeMap.put("romt advt", Arrays.asList("Romance", "Adventure"));
+        genreSplitNormalizeMap.put("romt fant", Arrays.asList("Romance", "Fantasy"));
+        genreSplitNormalizeMap.put("romt comd", Arrays.asList("Romance", "Comedy"));
+        genreSplitNormalizeMap.put("dram actn", Arrays.asList("Drama", "Action"));
+        genreSplitNormalizeMap.put("fanth", Arrays.asList("Fantasy", "Horror"));
+        genreSplitNormalizeMap.put("rfp h", Collections.singletonList("Horror"));
+
+        invalidGenreCodes.add("ctxx");
+        invalidGenreCodes.add("ctcxx");
+        invalidGenreCodes.add("ctxxx");
+        invalidGenreCodes.add("txx");
     }
 
     @Override
@@ -265,6 +314,15 @@ public class MainXMLParser extends DefaultHandler {
         String currKey = makeMovieKey(mov.getTitle(), mov.getYear(), mov.getDirector());
 
         try {
+            if (isInvalidMovieTitle(mov.getTitle())) {
+                reportWriter.write("SKIPPED: invalid movie title '" + mov.getTitle()
+                        + "' id=" + mov.getMovieID() + "\n");
+                return;
+            }
+            if (mov.getTitle() == null || mov.getTitle().trim().isEmpty()) {
+                reportWriter.write("SKIPPED: movie has blank title id=" + mov.getMovieID() + "\n");
+                return;
+            }
             if (mov.getMovieID() == null || mov.getMovieID().trim().isEmpty()) {
                 reportWriter.write("SKIPPED: Movie '" + mov.getTitle() + "' has no FID (ID).\n");
                 return;
@@ -302,7 +360,15 @@ public class MainXMLParser extends DefaultHandler {
     private String makeMovieKey(String title, int year, String director) {
         return (title + year + director).toLowerCase().trim();
     }
+    private boolean isInvalidMovieTitle(String title) {
+        if (title == null || title.trim().isEmpty()) return true;
 
+        String cleanTitle = title.trim();
+
+        return cleanTitle.equalsIgnoreCase("\\UN")
+                || cleanTitle.equalsIgnoreCase("UN")
+                || cleanTitle.matches("^\\\\[A-Z]{1,3}$");
+    }
     private List<Integer> getOrCreateGenreIds(Movie mov) {
         List<Integer> genreIds = new ArrayList<>();
 
@@ -313,31 +379,79 @@ public class MainXMLParser extends DefaultHandler {
             String rawGenre = genre.trim();
             if (rawGenre.isEmpty()) continue;
 
-            String normGenre = rawGenre.toLowerCase();
-            String canonicalGenre = genreNormalizeMap.get(normGenre);
+            List<String> canonicalGenres = normalizeGenre(rawGenre);
 
-            if (canonicalGenre == null) {
-                canonicalGenre = rawGenre;
-            }
+            for (String canonicalGenre : canonicalGenres) {
+                String genreKey = canonicalGenre.toLowerCase().trim();
 
-            String genreKey = canonicalGenre.toLowerCase().trim();
+                Integer genreId = genreMapping.get(genreKey);
 
-            Integer genreId = genreMapping.get(genreKey);
+                if (genreId == null) {
+                    genreId = insertNewGenre(canonicalGenre);
 
-            if (genreId == null) {
-                genreId = insertNewGenre(canonicalGenre);
-
-                if (genreId != null) {
-                    genreMapping.put(genreKey, genreId);
+                    if (genreId != null) {
+                        genreMapping.put(genreKey, genreId);
+                    }
                 }
-            }
 
-            if (genreId != null) {
-                genreIds.add(genreId);
+                if (genreId != null && !genreIds.contains(genreId)) {
+                    genreIds.add(genreId);
+                }
             }
         }
 
         return genreIds;
+    }
+    private List<String> normalizeGenre(String rawGenre) {
+        String normalizedKey = normalizeGenreKey(rawGenre);
+        if (invalidGenreCodes.contains(normalizedKey)) {
+            try {
+                reportWriter.write("INVALID GENRE SKIPPED: " + rawGenre + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return Collections.emptyList();
+        }
+        List<String> splitGenres = genreSplitNormalizeMap.get(normalizedKey);
+        if (splitGenres != null) {
+            return splitGenres;
+        }
+
+        String canonicalGenre = genreNormalizeMap.get(normalizedKey);
+        if (canonicalGenre != null) {
+            return Collections.singletonList(canonicalGenre);
+        }
+
+        if (rawGenre.contains(".") || rawGenre.contains(";") || rawGenre.contains("*")) {
+            List<String> result = new ArrayList<>();
+            String[] tokens = normalizedKey.split("\\s+");
+
+            for (String token : tokens) {
+                String mappedGenre = genreNormalizeMap.get(token);
+
+                if (mappedGenre != null && !result.contains(mappedGenre)) {
+                    result.add(mappedGenre);
+                }
+            }
+
+            if (!result.isEmpty()) {
+                return result;
+            }
+        }
+
+        return Collections.singletonList(rawGenre.trim());
+    }
+
+    private String normalizeGenreKey(String genre) {
+        return genre.trim()
+                .toLowerCase()
+                .replace("*", "")
+                .replace(">", "")
+                .replace(".", " ")
+                .replace(";", " ")
+                .replace(",", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
     private Integer insertNewGenre(String genreName) {
         String query = "INSERT INTO genres (name) VALUES (?)";

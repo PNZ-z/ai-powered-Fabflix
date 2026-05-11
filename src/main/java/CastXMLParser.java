@@ -22,7 +22,8 @@ public class CastXMLParser extends DefaultHandler {
 
     private final String loginUser = "mytestuser";
     private final String loginPass = "My6$Password";
-    private final String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+    private final String loginUrl =
+            "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci";
 
     private StringBuilder tempVal;
     private String currMovieId;
@@ -34,6 +35,7 @@ public class CastXMLParser extends DefaultHandler {
 
     private Map<String, String> movieIdToTitle;
     private Map<String, String> starNameToId;
+    private Set<String> existingStarIds;
     private Set<String> existingStarMoviePairs;
 
     private int nextStarIdNumber;
@@ -66,7 +68,10 @@ public class CastXMLParser extends DefaultHandler {
             }
 
             executor.shutdown();
-            executor.awaitTermination(1, TimeUnit.HOURS);
+
+            if (!executor.awaitTermination(1, TimeUnit.HOURS)) {
+                System.out.println("Timed out waiting for cast workers.");
+            }
 
             long endTime = System.nanoTime();
             System.out.println("Finished cast parsing!");
@@ -85,13 +90,14 @@ public class CastXMLParser extends DefaultHandler {
     private void parseDocument() throws ParserConfigurationException, SAXException, IOException {
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
         SAXParser saxParser = saxParserFactory.newSAXParser();
-        saxParser.parse("C:/Users/Zhang/Downloads/stanford-movies/casts124.xml", this);
+        saxParser.parse("casts124.xml", this);
     }
 
     @Override
     public void startDocument() {
         movieIdToTitle = new HashMap<>();
         starNameToId = new HashMap<>();
+        existingStarIds = new HashSet<>();
         existingStarMoviePairs = new HashSet<>();
 
         try {
@@ -124,9 +130,14 @@ public class CastXMLParser extends DefaultHandler {
         try (PreparedStatement statement = dbCon.prepareStatement(query);
              ResultSet rs = statement.executeQuery()) {
             while (rs.next()) {
+                String starId = rs.getString("id");
+                String starName = rs.getString("name");
+
+                existingStarIds.add(starId);
+
                 starNameToId.put(
-                        normalizeKey(rs.getString("name")),
-                        rs.getString("id")
+                        normalizeKey(starName),
+                        starId
                 );
             }
         }
@@ -147,20 +158,24 @@ public class CastXMLParser extends DefaultHandler {
     }
 
     private void loadNextStarIdNumber() throws SQLException {
-//        String query =
-//                "SELECT MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)) AS max_id " +
-//                        "FROM stars " +
-//                        "WHERE id LIKE 'nm%'";
-//
-//        try (PreparedStatement statement = dbCon.prepareStatement(query);
-//             ResultSet rs = statement.executeQuery()) {
-//            if (rs.next()) {
-//                nextStarIdNumber = rs.getInt("max_id") + 1;
-//            } else {
-//                nextStarIdNumber = 1;
-//            }
-//        }
-        nextStarIdNumber=1;
+        String query =
+                "SELECT MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)) AS max_id " +
+                        "FROM stars " +
+                        "WHERE UPPER(id) LIKE 'CA%'";
+
+        try (PreparedStatement statement = dbCon.prepareStatement(query);
+             ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                int maxId = rs.getInt("max_id");
+                if (rs.wasNull()) {
+                    nextStarIdNumber = 1;
+                } else {
+                    nextStarIdNumber = maxId + 1;
+                }
+            } else {
+                nextStarIdNumber = 1;
+            }
+        }
     }
 
     @Override
@@ -226,7 +241,6 @@ public class CastXMLParser extends DefaultHandler {
             String cleanStarName = currStarName.trim();
             String starKey = normalizeKey(cleanStarName);
             String starId = starNameToId.get(starKey);
-            boolean newStar = false;
 
             if (starId == null) {
                 starId = insertNewStar(cleanStarName);
@@ -242,7 +256,7 @@ public class CastXMLParser extends DefaultHandler {
             }
 
             existingStarMoviePairs.add(pairKey);
-            queue.put(new CastInsertTask(starId,currMovieId));
+            queue.put(new CastInsertTask(starId, currMovieId));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -256,9 +270,6 @@ public class CastXMLParser extends DefaultHandler {
             statement.setString(1, starId);
             statement.setString(2, starName);
             statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.out.println(starId + " " + starName);
         }
 
         dbCon.commit();
@@ -267,8 +278,14 @@ public class CastXMLParser extends DefaultHandler {
     }
 
     private String generateNewStarId() {
-        String starId = String.format("ca%07d", nextStarIdNumber);
-        nextStarIdNumber++;
+        String starId;
+
+        do {
+            starId = String.format("CA%07d", nextStarIdNumber);
+            nextStarIdNumber++;
+        } while (existingStarIds.contains(starId));
+
+        existingStarIds.add(starId);
         return starId;
     }
 
