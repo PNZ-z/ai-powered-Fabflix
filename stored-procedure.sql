@@ -1,5 +1,7 @@
 USE moviedb;
 
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
 DROP PROCEDURE IF EXISTS add_movie;
 
 DELIMITER $$
@@ -17,82 +19,86 @@ BEGIN
     DECLARE v_star_id VARCHAR(10);
     DECLARE v_genre_id INT;
 
-    DECLARE v_max_movie_id VARCHAR(10);
-    DECLARE v_max_star_id VARCHAR(10);
-    DECLARE v_max_genre_id INT;
+    DECLARE v_max_movie_number INT DEFAULT 0;
+    DECLARE v_max_star_number INT DEFAULT 0;
+    DECLARE v_max_genre_id INT DEFAULT 0;
 
     DECLARE v_movie_count INT DEFAULT 0;
     DECLARE v_status_message VARCHAR(1000) DEFAULT '';
 
-    SELECT COUNT(*)
-    INTO v_movie_count
-    FROM movies
-    WHERE title = p_movie_title
-      AND year = p_movie_year
-      AND director = p_movie_director;
+SELECT COUNT(*)
+INTO v_movie_count
+FROM movies
+WHERE title = p_movie_title
+          AND year = p_movie_year
+  AND director = p_movie_director;
 
-    IF v_movie_count > 0 THEN
+IF v_movie_count > 0 THEN
 
-        SELECT
-            'fail' AS status,
-            CONCAT(
-                    'Movie already exists: ',
-                    p_movie_title,
-                    ' (',
-                    p_movie_year,
-                    '), directed by ',
-                    p_movie_director,
-                    '. No changes were made.'
-            ) AS message;
+SELECT
+    'fail' AS status,
+    CONCAT(
+            'Movie already exists: ',
+            p_movie_title,
+            ' (',
+            p_movie_year,
+            '), directed by ',
+            p_movie_director,
+            '. No changes were made.'
+    ) AS message;
 
-    ELSE
+ELSE
 
-        SELECT MAX(id)
-        INTO v_max_movie_id
-        FROM movies;
+SELECT COALESCE(MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)), 0)
+INTO v_max_movie_number
+FROM movies
+WHERE id LIKE 'tt%';
 
-        SET v_movie_id = CONCAT(
+SET v_movie_id = CONCAT(
                 'tt',
-                LPAD(CAST(CAST(SUBSTRING(v_max_movie_id, 3) AS UNSIGNED) + 1 AS CHAR), 7, '0')
+                LPAD(CAST(v_max_movie_number + 1 AS CHAR), 7, '0')
                          );
 
-        INSERT INTO movies (id, title, year, director)
-        VALUES (v_movie_id, p_movie_title, p_movie_year, p_movie_director);
+INSERT INTO movies (id, title, year, director)
+VALUES (v_movie_id, p_movie_title, p_movie_year, p_movie_director);
 
-        SET v_status_message = CONCAT(
+SET v_status_message = CONCAT(
                 'Movie added successfully with ID ',
                 v_movie_id,
                 '. '
                                );
 
-        SELECT id
-        INTO v_star_id
-        FROM stars
-        WHERE name = p_star_name
-        LIMIT 1;
+        SET v_star_id = NULL;
 
-        IF v_star_id IS NULL THEN
+SELECT id
+INTO v_star_id
+FROM stars
+WHERE name = p_star_name
+    LIMIT 1;
 
-            SELECT MAX(id)
-            INTO v_max_star_id
-            FROM stars;
+IF v_star_id IS NULL THEN
 
-            SET v_star_id = CONCAT(
+SELECT COALESCE(MAX(CAST(SUBSTRING(id, 3) AS UNSIGNED)), 0)
+INTO v_max_star_number
+FROM stars
+WHERE id LIKE 'nm%';
+
+SET v_star_id = CONCAT(
                     'nm',
-                    LPAD(CAST(CAST(SUBSTRING(v_max_star_id, 3) AS UNSIGNED) + 1 AS CHAR), 7, '0')
+                    LPAD(CAST(v_max_star_number + 1 AS CHAR), 7, '0')
                             );
 
-            INSERT INTO stars (id, name, birth_year)
-            VALUES (v_star_id, p_star_name, p_star_birth_year);
+INSERT INTO stars (id, name, birth_year)
+VALUES (v_star_id, p_star_name, p_star_birth_year);
 
-            SET v_status_message = CONCAT(
+SET v_status_message = CONCAT(
                     v_status_message,
                     'New star created with ID ',
                     v_star_id,
                     '. '
                                    );
 
-        ELSE
+ELSE
 
             SET v_status_message = CONCAT(
                     v_status_message,
@@ -101,36 +107,38 @@ BEGIN
                     '. '
                                    );
 
-        END IF;
+END IF;
 
-        INSERT INTO stars_in_movies (star_id, movie_id)
-        VALUES (v_star_id, v_movie_id);
+INSERT INTO stars_in_movies (star_id, movie_id)
+VALUES (v_star_id, v_movie_id);
 
-        SELECT id
-        INTO v_genre_id
-        FROM genres
-        WHERE name = p_genre_name
-        LIMIT 1;
+SET v_genre_id = NULL;
 
-        IF v_genre_id IS NULL THEN
+SELECT id
+INTO v_genre_id
+FROM genres
+WHERE name = p_genre_name
+    LIMIT 1;
 
-            SELECT MAX(id)
-            INTO v_max_genre_id
-            FROM genres;
+IF v_genre_id IS NULL THEN
 
-            SET v_genre_id = v_max_genre_id + 1;
+SELECT COALESCE(MAX(id), 0)
+INTO v_max_genre_id
+FROM genres;
 
-            INSERT INTO genres (id, name)
-            VALUES (v_genre_id, p_genre_name);
+SET v_genre_id = v_max_genre_id + 1;
 
-            SET v_status_message = CONCAT(
+INSERT INTO genres (id, name)
+VALUES (v_genre_id, p_genre_name);
+
+SET v_status_message = CONCAT(
                     v_status_message,
                     'New genre created with ID ',
                     v_genre_id,
                     '. '
                                    );
 
-        ELSE
+ELSE
 
             SET v_status_message = CONCAT(
                     v_status_message,
@@ -139,16 +147,16 @@ BEGIN
                     '. '
                                    );
 
-        END IF;
+END IF;
 
-        INSERT INTO genres_in_movies (genre_id, movie_id)
-        VALUES (v_genre_id, v_movie_id);
+INSERT INTO genres_in_movies (genre_id, movie_id)
+VALUES (v_genre_id, v_movie_id);
 
-        SELECT
-            'success' AS status,
-            v_status_message AS message;
+SELECT
+    'success' AS status,
+    v_status_message AS message;
 
-    END IF;
+END IF;
 
 END $$
 
