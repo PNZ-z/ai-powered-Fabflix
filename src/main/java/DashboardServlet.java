@@ -1,27 +1,52 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.bson.Document;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "DashboardServlet", urlPatterns = "/api/dashboard")
 public class DashboardServlet extends HttpServlet {
-    private DataSource dataSource;
+    private static final String MONGO_URI =
+            "mongodb://testuser:MyPassword6@localhost:27017/?authSource=myNewDB";
+    private static final String MONGO_DB_NAME = "moviedb_mongo";
 
+    private MongoClient mongoClient;
+    private MongoDatabase database;
+    private MongoCollection<Document> moviesCollection;
+    private MongoCollection<Document> starsCollection;
+    private MongoCollection<Document> genresCollection;
+
+    @Override
     public void init() throws ServletException {
-        try {
-            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
-        } catch (NamingException e) {
-            throw new ServletException(e);
+        mongoClient = MongoClients.create(MONGO_URI);
+        database = mongoClient.getDatabase(MONGO_DB_NAME);
+        moviesCollection = database.getCollection("movies");
+        starsCollection = database.getCollection("stars");
+        genresCollection = database.getCollection("genres");
+    }
+
+    @Override
+    public void destroy() {
+        if (mongoClient != null) {
+            mongoClient.close();
+            mongoClient = null;
         }
     }
 
@@ -48,68 +73,39 @@ public class DashboardServlet extends HttpServlet {
     }
 
     private void handleAddStar(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType("application/json");
-
         JsonObject responseJsonObject = new JsonObject();
 
-        String starName = request.getParameter("star_name");
-        String birthYearString = request.getParameter("birth_year");
+        String starName = clean(request.getParameter("star_name"));
+        String birthYearString = clean(request.getParameter("birth_year"));
 
-        if (starName == null || starName.trim().isEmpty()) {
+        if (starName.isEmpty()) {
             responseJsonObject.addProperty("status", "fail");
             responseJsonObject.addProperty("message", "Star name cannot be empty.");
             writeJson(response, responseJsonObject);
             return;
         }
 
-        Integer birthYear = null;
-
-        if (birthYearString != null && !birthYearString.trim().isEmpty()) {
-            try {
-                birthYear = Integer.parseInt(birthYearString);
-
-                if (birthYear < 0) {
-                    responseJsonObject.addProperty("status", "fail");
-                    responseJsonObject.addProperty("message", "Birth year cannot be negative.");
-                    writeJson(response, responseJsonObject);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                responseJsonObject.addProperty("status", "fail");
-                responseJsonObject.addProperty("message", "Birth year must be a valid number.");
-                writeJson(response, responseJsonObject);
-                return;
-            }
+        Integer birthYear = parseOptionalYear(birthYearString, "Birth year", responseJsonObject);
+        if (responseJsonObject.has("status")) {
+            writeJson(response, responseJsonObject);
+            return;
         }
 
-        try (Connection connection = dataSource.getConnection()) {
-            String newStarId = generateNewStarId(connection);
+        try {
+            String newStarId = generateNewPrefixedId(starsCollection, "DS");
 
-            String insertQuery = "INSERT INTO stars (id, name, birth_year) VALUES (?, ?, ?)";
+            Document starDocument = new Document("_id", newStarId)
+                    .append("name", starName)
+                    .append("birth_year", birthYear)
+                    .append("movies", new ArrayList<Document>());
 
-            try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
-                insertStatement.setString(1, newStarId);
-                insertStatement.setString(2, starName.trim());
+            starsCollection.insertOne(starDocument);
 
-                if (birthYear == null) {
-                    insertStatement.setNull(3, Types.INTEGER);
-                } else {
-                    insertStatement.setInt(3, birthYear);
-                }
-
-                int affectedRows = insertStatement.executeUpdate();
-
-                if (affectedRows == 1) {
-                    responseJsonObject.addProperty("status", "success");
-                    responseJsonObject.addProperty(
-                            "message",
-                            "Star inserted successfully. New star ID: " + newStarId
-                    );
-                } else {
-                    responseJsonObject.addProperty("status", "fail");
-                    responseJsonObject.addProperty("message", "Failed to insert star.");
-                }
-            }
+            responseJsonObject.addProperty("status", "success");
+            responseJsonObject.addProperty(
+                    "message",
+                    "Star inserted successfully. New star ID: " + newStarId
+            );
         } catch (Exception e) {
             responseJsonObject.addProperty("status", "error");
             responseJsonObject.addProperty("message", e.getMessage());
@@ -120,59 +116,34 @@ public class DashboardServlet extends HttpServlet {
     }
 
     private void handleMetadata(HttpServletResponse response) throws IOException {
-        response.setContentType("application/json");
-
         JsonObject responseJsonObject = new JsonObject();
 
-        try (Connection connection = dataSource.getConnection()) {
-            DatabaseMetaData databaseMetaData = connection.getMetaData();
+        try {
+            JsonArray collectionsJsonArray = new JsonArray();
+            MongoIterable<String> collectionNames = database.listCollectionNames();
 
-            JsonArray tablesJsonArray = new JsonArray();
+            for (String collectionName : collectionNames) {
+                JsonObject collectionJsonObject = new JsonObject();
+                collectionJsonObject.addProperty("table_name", collectionName);
 
-            try (ResultSet tables = databaseMetaData.getTables(
-                    connection.getCatalog(),
-                    null,
-                    "%",
-                    new String[]{"TABLE"})) {
+                JsonArray fieldsJsonArray = new JsonArray();
+                Document sampleDocument = database.getCollection(collectionName).find().first();
 
-                while (tables.next()) {
-                    String tableName = tables.getString("TABLE_NAME");
-
-                    JsonObject tableJsonObject = new JsonObject();
-                    tableJsonObject.addProperty("table_name", tableName);
-
-                    JsonArray columnsJsonArray = new JsonArray();
-
-                    try (ResultSet columns = databaseMetaData.getColumns(
-                            connection.getCatalog(),
-                            null,
-                            tableName,
-                            "%")) {
-
-                        while (columns.next()) {
-                            String columnName = columns.getString("COLUMN_NAME");
-                            String columnType = columns.getString("TYPE_NAME");
-                            int columnSize = columns.getInt("COLUMN_SIZE");
-
-                            JsonObject columnJsonObject = new JsonObject();
-                            columnJsonObject.addProperty("column_name", columnName);
-                            columnJsonObject.addProperty(
-                                    "column_type",
-                                    columnType + "(" + columnSize + ")"
-                            );
-
-                            columnsJsonArray.add(columnJsonObject);
-                        }
+                if (sampleDocument != null) {
+                    for (Map.Entry<String, Object> entry : sampleDocument.entrySet()) {
+                        JsonObject fieldJsonObject = new JsonObject();
+                        fieldJsonObject.addProperty("column_name", entry.getKey());
+                        fieldJsonObject.addProperty("column_type", getMongoType(entry.getValue()));
+                        fieldsJsonArray.add(fieldJsonObject);
                     }
-
-                    tableJsonObject.add("columns", columnsJsonArray);
-                    tablesJsonArray.add(tableJsonObject);
                 }
+
+                collectionJsonObject.add("columns", fieldsJsonArray);
+                collectionsJsonArray.add(collectionJsonObject);
             }
 
             responseJsonObject.addProperty("status", "success");
-            responseJsonObject.add("tables", tablesJsonArray);
-
+            responseJsonObject.add("tables", collectionsJsonArray);
         } catch (Exception e) {
             responseJsonObject.addProperty("status", "error");
             responseJsonObject.addProperty("message", e.getMessage());
@@ -182,25 +153,229 @@ public class DashboardServlet extends HttpServlet {
         writeJson(response, responseJsonObject);
     }
 
-    private String generateNewStarId(Connection connection) throws Exception {
-        String query = "SELECT MAX(id) AS max_id FROM stars";
+    private void handleAddMovie(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        JsonObject responseJsonObject = new JsonObject();
 
-        try (PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet rs = statement.executeQuery()) {
+        String movieTitle = clean(request.getParameter("movie_title"));
+        String movieYearString = clean(request.getParameter("movie_year"));
+        String movieDirector = clean(request.getParameter("movie_director"));
+        String starName = clean(request.getParameter("movie_star_name"));
+        String starBirthYearString = clean(request.getParameter("movie_star_birth_year"));
+        String genreName = clean(request.getParameter("movie_genre_name"));
 
-            if (rs.next()) {
-                String maxId = rs.getString("max_id");
+        if (movieTitle.isEmpty() || movieYearString.isEmpty() || movieDirector.isEmpty()
+                || starName.isEmpty() || genreName.isEmpty()) {
+            responseJsonObject.addProperty("status", "fail");
+            responseJsonObject.addProperty("message", "Please fill in all required fields.");
+            writeJson(response, responseJsonObject);
+            return;
+        }
 
-                if (maxId != null && maxId.length() > 2) {
-                    int number = Integer.parseInt(maxId.substring(2));
-                    number++;
+        Integer movieYear = parseRequiredYear(movieYearString, "Movie year", responseJsonObject);
+        if (responseJsonObject.has("status")) {
+            writeJson(response, responseJsonObject);
+            return;
+        }
 
-                    return String.format("nm%07d", number);
+        Integer starBirthYear = parseOptionalYear(starBirthYearString, "Star birth year", responseJsonObject);
+        if (responseJsonObject.has("status")) {
+            writeJson(response, responseJsonObject);
+            return;
+        }
+
+        try {
+            Document existingMovie = moviesCollection.find(Filters.and(
+                    Filters.eq("title", movieTitle),
+                    Filters.eq("year", movieYear),
+                    Filters.eq("director", movieDirector)
+            )).first();
+
+            if (existingMovie != null) {
+                responseJsonObject.addProperty("status", "fail");
+                responseJsonObject.addProperty("message", "Movie already exists.");
+                writeJson(response, responseJsonObject);
+                return;
+            }
+
+            Document starDocument = starsCollection.find(Filters.eq("name", starName)).first();
+            String starId;
+            Integer finalStarBirthYear = starBirthYear;
+
+            if (starDocument == null) {
+                starId = generateNewPrefixedId(starsCollection, "DS");
+
+                Document newStarDocument = new Document("_id", starId)
+                        .append("name", starName)
+                        .append("birth_year", starBirthYear)
+                        .append("movies", new ArrayList<Document>());
+
+                starsCollection.insertOne(newStarDocument);
+            } else {
+                starId = starDocument.getString("_id");
+                finalStarBirthYear = starDocument.getInteger("birth_year");
+            }
+
+            Document genreDocument = genresCollection.find(Filters.eq("name", genreName)).first();
+            int genreId;
+
+            if (genreDocument == null) {
+                genreId = generateNewGenreId();
+
+                Document newGenreDocument = new Document("_id", genreId)
+                        .append("name", genreName);
+
+                genresCollection.insertOne(newGenreDocument);
+            } else {
+                genreId = genreDocument.getInteger("_id");
+            }
+
+            String movieId = generateNewPrefixedId(moviesCollection, "DM");
+
+            Document embeddedGenre = new Document("genre_id", genreId)
+                    .append("name", genreName);
+
+            Document embeddedStar = new Document("star_id", starId)
+                    .append("name", starName)
+                    .append("birth_year", finalStarBirthYear);
+
+            Document ratingDocument = new Document("rating", null)
+                    .append("vote_count", null);
+
+            Document movieDocument = new Document("_id", movieId)
+                    .append("title", movieTitle)
+                    .append("year", movieYear)
+                    .append("director", movieDirector)
+                    .append("rating", ratingDocument)
+                    .append("genres", List.of(embeddedGenre))
+                    .append("stars", List.of(embeddedStar));
+
+            moviesCollection.insertOne(movieDocument);
+
+            Document starMovieDocument = new Document("movie_id", movieId)
+                    .append("title", movieTitle)
+                    .append("year", movieYear)
+                    .append("director", movieDirector);
+
+            starsCollection.updateOne(
+                    Filters.eq("_id", starId),
+                    Updates.addToSet("movies", starMovieDocument)
+            );
+
+            responseJsonObject.addProperty("status", "success");
+            responseJsonObject.addProperty(
+                    "message",
+                    "Movie inserted successfully. Movie ID: " + movieId
+                            + ", Star ID: " + starId
+                            + ", Genre ID: " + genreId
+            );
+        } catch (Exception e) {
+            responseJsonObject.addProperty("status", "error");
+            responseJsonObject.addProperty("message", e.getMessage());
+            e.printStackTrace();
+        }
+
+        writeJson(response, responseJsonObject);
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private Integer parseRequiredYear(String value, String fieldName, JsonObject responseJsonObject) {
+        try {
+            int year = Integer.parseInt(value);
+
+            if (year < 0) {
+                responseJsonObject.addProperty("status", "fail");
+                responseJsonObject.addProperty("message", fieldName + " cannot be negative.");
+                return null;
+            }
+
+            return year;
+        } catch (NumberFormatException e) {
+            responseJsonObject.addProperty("status", "fail");
+            responseJsonObject.addProperty("message", fieldName + " must be a valid number.");
+            return null;
+        }
+    }
+
+    private Integer parseOptionalYear(String value, String fieldName, JsonObject responseJsonObject) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        return parseRequiredYear(value, fieldName, responseJsonObject);
+    }
+
+    private String generateNewPrefixedId(MongoCollection<Document> collection, String prefix) {
+        int maxNumber = 0;
+
+        FindIterable<Document> documents = collection.find(
+                Filters.regex("_id", "^" + prefix + "\\d{7}$")
+        ).projection(new Document("_id", 1));
+
+        for (Document document : documents) {
+            String id = document.getString("_id");
+
+            if (id != null && id.length() > prefix.length()) {
+                try {
+                    int number = Integer.parseInt(id.substring(prefix.length()));
+                    maxNumber = Math.max(maxNumber, number);
+                } catch (NumberFormatException ignored) {
                 }
             }
         }
 
-        return "nm0000001";
+        return String.format("%s%07d", prefix, maxNumber + 1);
+    }
+
+    private int generateNewGenreId() {
+        Document maxGenre = genresCollection.find()
+                .sort(new Document("_id", -1))
+                .projection(new Document("_id", 1))
+                .first();
+
+        if (maxGenre == null) {
+            return 1;
+        }
+
+        return maxGenre.getInteger("_id") + 1;
+    }
+
+    private String getMongoType(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        if (value instanceof String) {
+            return "string";
+        }
+
+        if (value instanceof Integer) {
+            return "int";
+        }
+
+        if (value instanceof Long) {
+            return "long";
+        }
+
+        if (value instanceof Double || value instanceof Float) {
+            return "double";
+        }
+
+        if (value instanceof Boolean) {
+            return "boolean";
+        }
+
+        if (value instanceof Document) {
+            return "document";
+        }
+
+        if (value instanceof List<?>) {
+            return "array";
+        }
+
+        return value.getClass().getSimpleName();
     }
 
     private void writeError(HttpServletResponse response, String message) throws IOException {
@@ -216,111 +391,5 @@ public class DashboardServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         out.write(jsonObject.toString());
         out.close();
-    }
-
-    private void handleAddMovie(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        JsonObject responseJsonObject = new JsonObject();
-
-        String movieTitle = request.getParameter("movie_title");
-        String movieYearString = request.getParameter("movie_year");
-        String movieDirector = request.getParameter("movie_director");
-        String starName = request.getParameter("movie_star_name");
-        String starBirthYearString = request.getParameter("movie_star_birth_year");
-        String genreName = request.getParameter("movie_genre_name");
-
-        if (movieTitle == null || movieTitle.trim().isEmpty()
-                || movieYearString == null || movieYearString.trim().isEmpty()
-                || movieDirector == null || movieDirector.trim().isEmpty()
-                || starName == null || starName.trim().isEmpty()
-                || genreName == null || genreName.trim().isEmpty()) {
-
-            responseJsonObject.addProperty("status", "fail");
-            responseJsonObject.addProperty("message", "Please fill in all required fields.");
-            writeJson(response, responseJsonObject);
-            return;
-        }
-
-        int movieYear;
-
-        try {
-            movieYear = Integer.parseInt(movieYearString);
-
-            if (movieYear < 0) {
-                responseJsonObject.addProperty("status", "fail");
-                responseJsonObject.addProperty("message", "Movie year cannot be negative.");
-                writeJson(response, responseJsonObject);
-                return;
-            }
-        } catch (NumberFormatException e) {
-            responseJsonObject.addProperty("status", "fail");
-            responseJsonObject.addProperty("message", "Movie year must be a valid number.");
-            writeJson(response, responseJsonObject);
-            return;
-        }
-
-        Integer starBirthYear = null;
-
-        if (starBirthYearString != null && !starBirthYearString.trim().isEmpty()) {
-            try {
-                starBirthYear = Integer.parseInt(starBirthYearString);
-
-                if (starBirthYear < 0) {
-                    responseJsonObject.addProperty("status", "fail");
-                    responseJsonObject.addProperty("message", "Star birth year cannot be negative.");
-                    writeJson(response, responseJsonObject);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                responseJsonObject.addProperty("status", "fail");
-                responseJsonObject.addProperty("message", "Star birth year must be a valid number.");
-                writeJson(response, responseJsonObject);
-                return;
-            }
-        }
-
-        try (Connection connection = dataSource.getConnection()) {
-            String procedureCall = "{CALL add_movie(?, ?, ?, ?, ?, ?)}";
-
-            try (CallableStatement callableStatement = connection.prepareCall(procedureCall)) {
-                callableStatement.setString(1, movieTitle.trim());
-                callableStatement.setInt(2, movieYear);
-                callableStatement.setString(3, movieDirector.trim());
-                callableStatement.setString(4, starName.trim());
-
-                if (starBirthYear == null) {
-                    callableStatement.setNull(5, Types.INTEGER);
-                } else {
-                    callableStatement.setInt(5, starBirthYear);
-                }
-
-                callableStatement.setString(6, genreName.trim());
-
-                boolean hasResultSet = callableStatement.execute();
-
-                if (hasResultSet) {
-                    try (ResultSet rs = callableStatement.getResultSet()) {
-                        if (rs.next()) {
-                            String status = rs.getString("status");
-                            String message = rs.getString("message");
-
-                            responseJsonObject.addProperty("status", status);
-                            responseJsonObject.addProperty("message", message);
-                        } else {
-                            responseJsonObject.addProperty("status", "fail");
-                            responseJsonObject.addProperty("message", "Stored procedure returned no result.");
-                        }
-                    }
-                } else {
-                    responseJsonObject.addProperty("status", "fail");
-                    responseJsonObject.addProperty("message", "Stored procedure returned no result set.");
-                }
-            }
-        } catch (Exception e) {
-            responseJsonObject.addProperty("status", "error");
-            responseJsonObject.addProperty("message", e.getMessage());
-            e.printStackTrace();
-        }
-
-        writeJson(response, responseJsonObject);
     }
 }
