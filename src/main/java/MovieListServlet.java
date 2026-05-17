@@ -1,328 +1,315 @@
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Filters;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.sql.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.regex.Pattern;
+import java.util.Arrays;
 @WebServlet("/api/movie-list")
 public class MovieListServlet extends HttpServlet {
-    private DataSource dataSource;
+    private static final String MONGO_URI =
+            "mongodb://testuser:MyPassword6@localhost:27017/?authSource=myNewDB";
+    private static final String MONGO_DB_NAME = "moviedb_mongo";
+    private static final String MOVIES_COLLECTION = "movies";
+
+    private MongoClient mongoClient;
+    private MongoCollection<Document> moviesCollection;
+
     private final ConcurrentHashMap<String, String> queryCache = new ConcurrentHashMap<>();
 
     public void init(ServletConfig config) {
-        try {
-            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
-        } catch (NamingException e) {
-            e.printStackTrace();
-        }
+        mongoClient = MongoClients.create(MONGO_URI);
+        MongoDatabase database = mongoClient.getDatabase(MONGO_DB_NAME);
+        moviesCollection = database.getCollection(MOVIES_COLLECTION);
     }
 
-    private String getTrimmedParameter(HttpServletRequest request, String name) {
-        String value = request.getParameter(name);
-        return (value != null) ? value.trim() : null;
+    public void destroy() {
+        if (mongoClient != null) {
+            mongoClient.close();
+        }
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        PrintWriter out = response.getWriter();
+
+        String searchTitle = clean(request.getParameter("title"));
+        String searchYear = clean(request.getParameter("year"));
+        String searchDirector = clean(request.getParameter("director"));
+        String searchStar = clean(request.getParameter("star"));
+        String searchGenre = clean(request.getParameter("genre"));
+        String startsWith = clean(request.getParameter("startsWith"));
+
+        int pageNumber = parsePositiveInt(request.getParameter("pageNumber"), 0);
+        int pageSize = parsePositiveInt(request.getParameter("pageSize"), 10);
+
+        String sort1 = clean(request.getParameter("sort1"));
+        String sort1Direction = clean(request.getParameter("dir1"));
+        String sort2 = clean(request.getParameter("sort2"));
+        String sort2Direction = clean(request.getParameter("dir2"));
+
+        if (sort1.isEmpty()) sort1 = "title";
+        if (sort2.isEmpty()) sort2 = "rating";
+        if (!isValidSortField(sort1)) sort1 = "title";
+        if (!isValidSortField(sort2)) sort2 = "rating";
+
+        if (!isValidSortDirection(sort1Direction)) sort1Direction = "ASC";
+        if (!isValidSortDirection(sort2Direction)) sort2Direction = "DESC";
 
         String cacheKey = request.getQueryString();
+        if (cacheKey == null) {
+            cacheKey = "";
+        }
 
-        if (cacheKey != null && queryCache.containsKey(cacheKey)) {
-            System.out.println("Cache Hit! Returning cached results for: " + cacheKey);
-            out.write(queryCache.get(cacheKey));
-            out.close();
+        HttpSession session = request.getSession();
+        session.setAttribute("lastMovieQuery", "movieList.html?" + cacheKey);
+
+        String cached = queryCache.get(cacheKey);
+        if (cached != null) {
+            response.getWriter().write(cached);
             return;
         }
 
-        System.out.println("Cache Miss. Querying database...");
+        try {
+            List<Bson> filters = new ArrayList<>();
 
-        String searchTitle = getTrimmedParameter(request, "title");
-        String searchYear = getTrimmedParameter(request, "year");
-        String searchDirector = getTrimmedParameter(request, "director");
-        String searchStar = getTrimmedParameter(request, "star");
-        String searchPageNumber = getTrimmedParameter(request, "pageNumber");
-        String pageSizeParam = getTrimmedParameter(request, "pageSize");
-        String searchGenre = getTrimmedParameter(request, "genre");
-        String startsWith = getTrimmedParameter(request, "startsWith");
-
-        int pageSize = 10;
-        if (pageSizeParam != null && !pageSizeParam.isEmpty() && isInteger(pageSizeParam)) {
-            pageSize = Integer.parseInt(pageSizeParam);
-        }
-
-        int offset = 0;
-        if (searchPageNumber != null && !searchPageNumber.isEmpty() && isInteger(searchPageNumber)) {
-            offset = Integer.parseInt(searchPageNumber) * pageSize;
-        }
-
-        String sort1 = request.getParameter("sort1");
-        String dir1 = request.getParameter("dir1");
-        String sort2 = request.getParameter("sort2");
-        String dir2 = request.getParameter("dir2");
-
-        if (sort1 == null) sort1 = "title";
-        if (sort2 == null) sort2 = "rating";
-
-        dir1 = "DESC".equalsIgnoreCase(dir1) ? "DESC" : "ASC";
-        dir2 = "DESC".equalsIgnoreCase(dir2) ? "DESC" : "ASC";
-
-        String col1 = "rating".equalsIgnoreCase(sort1) ? "fm.rating" : "fm.title";
-        String col2 = "rating".equalsIgnoreCase(sort2) ? "fm.rating" : "fm.title";
-
-        String movieQuery =
-                "WITH FilteredMovies AS ( " +
-                        "SELECT DISTINCT m.id, m.title, m.year, m.director, r.rating " +
-                        "FROM movies m " +
-                        "LEFT JOIN ratings r ON m.id = r.movie_id ";
-
-        if (searchStar != null && !searchStar.isEmpty()) {
-            movieQuery +=
-                    "JOIN stars_in_movies sim_filter ON m.id = sim_filter.movie_id " +
-                            "JOIN stars s_filter ON s_filter.id = sim_filter.star_id ";
-        }
-
-        if (searchGenre != null && !searchGenre.isEmpty()) {
-            movieQuery +=
-                    "JOIN genres_in_movies gim_filter ON m.id = gim_filter.movie_id " +
-                            "JOIN genres g_filter ON gim_filter.genre_id = g_filter.id ";
-        }
-
-        movieQuery += "WHERE 1=1 ";
-
-        if (searchTitle != null && !searchTitle.isEmpty()) {
-            movieQuery += "AND m.title LIKE ? ";
-        }
-
-        if (searchYear != null && !searchYear.isEmpty()) {
-            movieQuery += "AND m.year = ? ";
-        }
-
-        if (searchDirector != null && !searchDirector.isEmpty()) {
-            movieQuery += "AND m.director LIKE ? ";
-        }
-
-        if (searchStar != null && !searchStar.isEmpty()) {
-            movieQuery += "AND s_filter.name LIKE ? ";
-        }
-
-        if (searchGenre != null && !searchGenre.isEmpty()) {
-            movieQuery += "AND g_filter.name = ? ";
-        }
-
-        if (startsWith != null && !startsWith.isEmpty()) {
-            movieQuery += "AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ";
-        }
-
-        movieQuery +=
-                "), " +
-                        "StarMovieCounts AS ( " +
-                        "   SELECT star_id, COUNT(*) AS movie_count " +
-                        "   FROM stars_in_movies " +
-                        "   GROUP BY star_id " +
-                        "), " +
-                        "RankedStars AS ( " +
-                        "   SELECT " +
-                        "       sim.movie_id, " +
-                        "       s.id AS star_id, " +
-                        "       s.name AS star_name, " +
-                        "       smc.movie_count, " +
-                        "       ROW_NUMBER() OVER ( " +
-                        "           PARTITION BY sim.movie_id " +
-                        "           ORDER BY smc.movie_count DESC, s.name ASC, s.id ASC " +
-                        "       ) AS star_rank " +
-                        "   FROM stars_in_movies sim " +
-                        "   JOIN FilteredMovies fm ON sim.movie_id = fm.id " +
-                        "   JOIN stars s ON sim.star_id = s.id " +
-                        "   JOIN StarMovieCounts smc ON sim.star_id = smc.star_id " +
-                        "), " +
-                        "TopStars AS ( " +
-                        "   SELECT " +
-                        "       movie_id, " +
-                        "       GROUP_CONCAT(star_id ORDER BY star_rank SEPARATOR ',') AS star_ids, " +
-                        "       GROUP_CONCAT(star_name ORDER BY star_rank SEPARATOR '\\t') AS star_names " +
-                        "   FROM RankedStars " +
-                        "   WHERE star_rank <= 3 " +
-                        "   GROUP BY movie_id " +
-                        "), " +
-                        "MovieGenres AS ( " +
-                        "   SELECT " +
-                        "       fm.id AS movie_id, " +
-                        "       SUBSTRING_INDEX( " +
-                        "           GROUP_CONCAT(DISTINCT g.name ORDER BY g.name SEPARATOR ', '), " +
-                        "           ', ', " +
-                        "           3 " +
-                        "       ) AS genres " +
-                        "   FROM FilteredMovies fm " +
-                        "   LEFT JOIN genres_in_movies gim ON fm.id = gim.movie_id " +
-                        "   LEFT JOIN genres g ON gim.genre_id = g.id " +
-                        "   GROUP BY fm.id " +
-                        ") " +
-                        "SELECT " +
-                        "   fm.id, " +
-                        "   fm.title, " +
-                        "   fm.year, " +
-                        "   fm.director, " +
-                        "   fm.rating, " +
-                        "   mg.genres, " +
-                        "   ts.star_ids, " +
-                        "   ts.star_names " +
-                        "FROM FilteredMovies fm " +
-                        "LEFT JOIN MovieGenres mg ON fm.id = mg.movie_id " +
-                        "LEFT JOIN TopStars ts ON fm.id = ts.movie_id ";
-
-        movieQuery += "ORDER BY ";
-
-        if ("rating".equalsIgnoreCase(sort1)) {
-            movieQuery += "fm.rating IS NULL, ";
-        }
-
-        movieQuery += col1 + " " + dir1 + ", ";
-
-        if ("rating".equalsIgnoreCase(sort2)) {
-            movieQuery += "fm.rating IS NULL, ";
-        }
-
-        movieQuery += col2 + " " + dir2 + " ";
-
-        movieQuery += "LIMIT ? OFFSET ?";
-
-        try (Connection dbCon = dataSource.getConnection();
-             PreparedStatement movieStatement = dbCon.prepareStatement(movieQuery)) {
-
-            int paramIndex = 1;
-
-            if (searchTitle != null && !searchTitle.isEmpty()) {
-                movieStatement.setString(paramIndex++, "%" + searchTitle + "%");
+            if (!searchTitle.isEmpty()) {
+                filters.add(Filters.regex("title", containsPattern(searchTitle)));
             }
 
-            if (searchYear != null && !searchYear.isEmpty()) {
-                movieStatement.setString(paramIndex++, searchYear);
+            if (!searchYear.isEmpty()) {
+                try {
+                    filters.add(Filters.eq("year", Integer.parseInt(searchYear)));
+                } catch (NumberFormatException e) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    JsonObject error = new JsonObject();
+                    error.addProperty("error", "Year must be a number.");
+                    response.getWriter().write(error.toString());
+                    return;
+                }
             }
 
-            if (searchDirector != null && !searchDirector.isEmpty()) {
-                movieStatement.setString(paramIndex++, "%" + searchDirector + "%");
+            if (!searchDirector.isEmpty()) {
+                filters.add(Filters.regex("director", containsPattern(searchDirector)));
             }
 
-            if (searchStar != null && !searchStar.isEmpty()) {
-                movieStatement.setString(paramIndex++, "%" + searchStar + "%");
+            if (!searchStar.isEmpty()) {
+                filters.add(Filters.regex("stars.name", containsPattern(searchStar)));
             }
 
-            if (searchGenre != null && !searchGenre.isEmpty()) {
-                movieStatement.setString(paramIndex++, searchGenre);
+            if (!searchGenre.isEmpty()) {
+                filters.add(Filters.eq("genres.name", searchGenre));
             }
 
-            if (startsWith != null && !startsWith.isEmpty()) {
-                movieStatement.setString(paramIndex++, startsWith);
+            if (!startsWith.isEmpty()) {
+                filters.add(Filters.regex("title", startsWithPattern(startsWith)));
             }
 
-            movieStatement.setInt(paramIndex++, pageSize + 1);
-            movieStatement.setInt(paramIndex++, offset);
+            Bson matchFilter = filters.isEmpty() ? new Document() : Filters.and(filters);
 
-            System.out.println(movieStatement.toString());
+            Document addFields = new Document()
+                    .append("rating_is_null",
+                            new Document("$cond", Arrays.asList(
+                                    new Document("$eq", Arrays.asList("$rating.rating", null)),
+                                    1,
+                                    0
+                            )))
+                    .append("title_sort", new Document("$toLower", "$title"));
 
-            ResultSet rs = movieStatement.executeQuery();
+            Document sortDocument = new Document();
+            appendSort(sortDocument, sort1, sort1Direction);
+            appendSort(sortDocument, sort2, sort2Direction);
+            sortDocument.append("_id", 1);
+
+            int offset = pageNumber * pageSize;
+
+            List<Bson> pipeline = new ArrayList<>();
+            pipeline.add(Aggregates.match(matchFilter));
+            pipeline.add(new Document("$addFields", addFields));
+            pipeline.add(Aggregates.sort(sortDocument));
+            pipeline.add(Aggregates.skip(offset));
+            pipeline.add(Aggregates.limit(pageSize + 1));
+
+            AggregateIterable<Document> movies = moviesCollection.aggregate(pipeline);
+
             JsonArray jsonArray = new JsonArray();
 
-            while (rs.next()) {
-                String movieId = rs.getString("id");
-                String title = rs.getString("title");
-                int year = rs.getInt("year");
-                String director = rs.getString("director");
-                String genres = rs.getString("genres");
-
-                if (genres == null) {
-                    genres = "";
-                }
-
-                float rating = rs.getFloat("rating");
-                boolean ratingIsNull = rs.wasNull();
-
+            for (Document movie : movies) {
                 JsonObject jsonObject = new JsonObject();
-                jsonObject.addProperty("movie_id", movieId);
-                jsonObject.addProperty("movie_title", title);
-                jsonObject.addProperty("movie_year", year);
-                jsonObject.addProperty("movie_director", director);
-                jsonObject.addProperty("movie_genres", genres);
 
-                if (ratingIsNull) {
-                    jsonObject.add("movie_rating", null);
+                jsonObject.addProperty("movie_id", movie.getString("_id"));
+                jsonObject.addProperty("movie_title", movie.getString("title"));
+                jsonObject.addProperty("movie_year", movie.getInteger("year"));
+                jsonObject.addProperty("movie_director", movie.getString("director"));
+
+                jsonObject.addProperty("movie_genres", getGenreText(movie));
+
+                Float rating = getRating(movie);
+                if (rating == null) {
+                    jsonObject.add("movie_rating", JsonNull.INSTANCE);
                 } else {
                     jsonObject.addProperty("movie_rating", rating);
                 }
 
-                JsonArray starArray = new JsonArray();
+                JsonArray starsJsonArray = getStarsJsonArray(movie);
+                jsonObject.add("movie_stars", starsJsonArray);
 
-                String starIds = rs.getString("star_ids");
-                String starNames = rs.getString("star_names");
-
-                if (starIds != null && starNames != null) {
-                    String[] starIdArray = starIds.split(",");
-                    String[] starNameArray = starNames.split("\t");
-
-                    for (int i = 0; i < starIdArray.length && i < starNameArray.length; i++) {
-                        JsonObject singleStar = new JsonObject();
-                        singleStar.addProperty("star_id", starIdArray[i]);
-                        singleStar.addProperty("star_name", starNameArray[i]);
-                        starArray.add(singleStar);
-                    }
-                }
-
-                if (starArray.size() == 0) {
-                    JsonObject noStar = new JsonObject();
-                    noStar.addProperty("star_id", "");
-                    noStar.addProperty("star_name", "N/A");
-                    starArray.add(noStar);
-                }
-
-                jsonObject.add("movie_stars", starArray);
                 jsonArray.add(jsonObject);
             }
 
-            String finalResult = jsonArray.toString();
+            String jsonResponse = jsonArray.toString();
+            queryCache.put(cacheKey, jsonResponse);
 
-            if (cacheKey != null) {
-                queryCache.put(cacheKey, finalResult);
-            }
-
-            out.write(finalResult);
-
-            HttpSession session = request.getSession(true);
-            session.setAttribute("lastMovieQuery", cacheKey);
-
+            response.getWriter().write(jsonResponse);
         } catch (Exception e) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("errorMessage", e.getMessage());
-            out.write(jsonObject.toString());
-            response.setStatus(500);
-        } finally {
-            out.close();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+            JsonObject error = new JsonObject();
+            error.addProperty("error", e.getMessage());
+
+            response.getWriter().write(error.toString());
         }
     }
 
-    public static boolean isInteger(String str) {
-        if (str == null || str.isEmpty()) {
-            return false;
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private int parsePositiveInt(String value, int defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
         }
 
         try {
-            Integer.parseInt(str);
-            return true;
+            int parsed = Integer.parseInt(value.trim());
+            return Math.max(parsed, 0);
         } catch (NumberFormatException e) {
-            return false;
+            return defaultValue;
         }
+    }
+
+    private Pattern containsPattern(String value) {
+        return Pattern.compile(Pattern.quote(value), Pattern.CASE_INSENSITIVE);
+    }
+
+    private Pattern startsWithPattern(String value) {
+        return Pattern.compile("^" + Pattern.quote(value), Pattern.CASE_INSENSITIVE);
+    }
+
+    private boolean isValidSortField(String value) {
+        return "title".equalsIgnoreCase(value) || "rating".equalsIgnoreCase(value);
+    }
+
+    private boolean isValidSortDirection(String value) {
+        return "ASC".equalsIgnoreCase(value) || "DESC".equalsIgnoreCase(value);
+    }
+
+    private void appendSort(Document sortDocument, String sortField, String direction) {
+        int sortDirection = "DESC".equalsIgnoreCase(direction) ? -1 : 1;
+
+        if ("rating".equalsIgnoreCase(sortField)) {
+            if (!sortDocument.containsKey("rating_is_null")) {
+                sortDocument.append("rating_is_null", 1);
+            }
+            sortDocument.append("rating.rating", sortDirection);
+        } else {
+            sortDocument.append("title_sort", sortDirection);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getGenreText(Document movie) {
+        List<Document> genres = (List<Document>) movie.get("genres");
+
+        if (genres == null || genres.isEmpty()) {
+            return "";
+        }
+
+        List<String> genreNames = new ArrayList<>();
+
+        for (Document genre : genres) {
+            String name = genre.getString("name");
+            if (name != null && !name.trim().isEmpty()) {
+                genreNames.add(name.trim());
+            }
+        }
+
+        genreNames.sort(String::compareToIgnoreCase);
+
+        if (genreNames.size() > 3) {
+            genreNames = genreNames.subList(0, 3);
+        }
+
+        return String.join(", ", genreNames);
+    }
+
+    private Float getRating(Document movie) {
+        Document ratingDocument = movie.get("rating", Document.class);
+
+        if (ratingDocument == null) {
+            return null;
+        }
+
+        Object ratingValue = ratingDocument.get("rating");
+
+        if (ratingValue == null) {
+            return null;
+        }
+
+        if (ratingValue instanceof Number) {
+            return ((Number) ratingValue).floatValue();
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private JsonArray getStarsJsonArray(Document movie) {
+        JsonArray starsJsonArray = new JsonArray();
+
+        List<Document> stars = (List<Document>) movie.get("stars");
+
+        if (stars == null || stars.isEmpty()) {
+            return starsJsonArray;
+        }
+
+        stars.sort(Comparator.comparing(
+                star -> {
+                    String name = star.getString("name");
+                    return name == null ? "" : name.toLowerCase();
+                }
+        ));
+
+        int limit = Math.min(3, stars.size());
+
+        for (int i = 0; i < limit; i++) {
+            Document star = stars.get(i);
+
+            JsonObject starJson = new JsonObject();
+            starJson.addProperty("star_id", star.getString("star_id"));
+            starJson.addProperty("star_name", star.getString("name"));
+
+            starsJsonArray.add(starJson);
+        }
+
+        return starsJsonArray;
     }
 }
