@@ -5,20 +5,16 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.mongodb.client.AggregateIterable;
+
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Aggregates;
+
 import com.mongodb.client.model.Filters;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
+
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+
 
 import org.bson.Document;
 import org.jasypt.util.password.StrongPasswordEncryptor;
@@ -40,7 +36,8 @@ public class LoginServlet extends HttpServlet {
         MongoDatabase database = mongoClient.getDatabase(MONGO_DB_NAME);
         customersCollection = database.getCollection(CUSTOMERS_COLLECTION);
     }
-    public void destory(){
+    @Override
+    public void destroy(){
         if(mongoClient!= null){
             mongoClient.close();
         }
