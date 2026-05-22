@@ -341,11 +341,13 @@ public class ConvertMongoDB {
         ) {
             while (rs.next()) {
                 Date expirationDate = rs.getDate("expiration");
-
+                String expiration = expirationDate == null
+                        ? null
+                        : expirationDate.toLocalDate().toString();
                 Document creditCardDocument = new Document("_id", rs.getString("id"))
                         .append("first_name", rs.getString("first_name"))
                         .append("last_name", rs.getString("last_name"))
-                        .append("expiration", expirationDate);
+                        .append("expiration", expiration);
 
                 creditCardDocuments.add(creditCardDocument);
             }
