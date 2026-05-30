@@ -139,24 +139,35 @@ function addToCart(movieId) {
 let params = new URLSearchParams(window.location.search);
 $("#loading").show();
 $("#movie_list_table").hide();
+let apiUrl = params.get("mode") === "fulltext"
+    ? "api/full-text-search"
+    : "api/movie-list";
+
+let requestData = {
+    pageNumber: params.get("pageNumber"),
+    pageSize: params.get("pageSize"),
+    sort1: params.get("sort1"),
+    dir1: params.get("dir1"),
+    sort2: params.get("sort2"),
+    dir2: params.get("dir2")
+};
+
+if (params.get("mode") === "fulltext") {
+    requestData.query = params.get("query");
+} else {
+    requestData.title = params.get("title");
+    requestData.year = params.get("year");
+    requestData.director = params.get("director");
+    requestData.star = params.get("star");
+    requestData.genre = params.get("genre");
+    requestData.startsWith = params.get("startsWith");
+}
+
 jQuery.ajax({
     dataType: "json",
     method: "GET",
-    url: "api/movie-list",
-    data: {
-        title: params.get("title"),
-        year: params.get("year"),
-        director: params.get("director"),
-        star: params.get("star"),
-        genre: params.get("genre"),
-        startsWith: params.get("startsWith"),
-        pageNumber: params.get("pageNumber"),
-        pageSize: params.get("pageSize"),
-        sort1: params.get("sort1"),
-        dir1:params.get("dir1"),
-        sort2: params.get("sort2"),
-        dir2: params.get("dir2")
-    },
+    url: apiUrl,
+    data: requestData,
     success: (resultData) => handleMovieListResult(resultData),
     error: function(xhr, status, error) {
         console.error("Error fetching movie list:", error);
