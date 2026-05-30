@@ -11,6 +11,29 @@
     <a href="shoppingCart.html" class="nav-button">Checkout</a>
     <a href="api/logout" class="nav-button">Logout</a>
 </div>
+<!-- add a new panel to do the full text search on the same main page -->
+<div class="panel">
+    <h2 style="text-align: center">Full-text Movie Search</h2>
+
+    <form id="fulltext_search_form" method="get" action="movieList.html" style="text-align: center">
+        <div class="form-group">
+            <label for="fulltext_query">Movie Title</label>
+            <input
+                    id="fulltext_query"
+                    name="query"
+                    placeholder="Search movie title"
+                    type="text"
+                    autocomplete="off"
+            >
+        </div>
+
+        <!-- This tells movieList.js to call the new full-text servlet later -->
+        <input type="hidden" name="mode" value="fulltext">
+
+        <input type="submit" value="Search">
+    </form>
+</div>
+<!-- old page -->
 <div class="panel">
     <h2 style="text-align: center">Search Movies</h2>
     <!-- Set the method to POST to avoid showing the username/password in the URL
@@ -75,6 +98,7 @@
 <!-- include jQuery-->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <!-- include our own JS file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.11/jquery.autocomplete.min.js"></script>
 <script src="./main.js"></script>
 
 </body>
