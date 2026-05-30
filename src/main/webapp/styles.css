@@ -22,7 +22,20 @@
     border-radius: 4px;
     width: 100%;
 }
+.fulltext-search-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
 
+.fulltext-search-form .form-group {
+    margin-bottom: 0;
+}
+
+.fulltext-search-button {
+    padding: 4px 12px;
+}
 #browse_container {
     max-width: 400px;
     margin: 30px auto 0 auto;

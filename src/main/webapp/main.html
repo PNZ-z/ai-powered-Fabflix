@@ -15,7 +15,7 @@
 <div class="panel">
     <h2 style="text-align: center">Full-text Movie Search</h2>
 
-    <form id="fulltext_search_form" method="get" action="movieList.html" style="text-align: center">
+    <form id="fulltext_search_form" class="fulltext-search-form" method="get" action="movieList.html">
         <div class="form-group">
             <label for="fulltext_query">Movie Title</label>
             <input
@@ -30,7 +30,7 @@
         <!-- This tells movieList.js to call the new full-text servlet later -->
         <input type="hidden" name="mode" value="fulltext">
 
-        <input type="submit" value="Search">
+        <input class="fulltext-search-button" type="submit" value="Search">
     </form>
 </div>
 <!-- old page -->
