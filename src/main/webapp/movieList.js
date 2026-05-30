@@ -137,33 +137,23 @@ function addToCart(movieId) {
  * Once this .js is loaded, the following AJAX request is executed by the browser.
  */
 let params = new URLSearchParams(window.location.search);
-let mode = params.get("mode");
-let apiUrl = "api/movie-list";
-if (mode === "fulltext") {
-    apiUrl = "api/full-text-search";
-}
 $("#loading").show();
 $("#movie_list_table").hide();
 jQuery.ajax({
     dataType: "json",
     method: "GET",
-    url: apiUrl,
+    url: "api/movie-list",
     data: {
-        // New full-text search parameter
-        query: params.get("query"),
-        mode: params.get("mode"),
-        // Old advanced search / browse parameters
         title: params.get("title"),
         year: params.get("year"),
         director: params.get("director"),
         star: params.get("star"),
         genre: params.get("genre"),
         startsWith: params.get("startsWith"),
-        // Shared pagination / sorting parameters
         pageNumber: params.get("pageNumber"),
         pageSize: params.get("pageSize"),
         sort1: params.get("sort1"),
-        dir1: params.get("dir1"),
+        dir1:params.get("dir1"),
         sort2: params.get("sort2"),
         dir2: params.get("dir2")
     },

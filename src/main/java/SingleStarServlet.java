@@ -1,120 +1,124 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
+
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.bson.Document;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Comparator;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 @WebServlet("/api/single-star")
 public class SingleStarServlet extends HttpServlet {
-    private static final String MONGO_URI =
-            "mongodb://testuser:MyPassword6@localhost:27017/?authSource=myNewDB";
-    private static final String MONGO_DB_NAME = "moviedb_mongo";
 
-    private MongoClient mongoClient;
-    private MongoCollection<Document> starsCollection;
+    // 1. Declare the DataSource
+    private DataSource dataSource;
 
-    @Override
+    // 2. Add the init() method to initialize the connection pool
     public void init(ServletConfig config) {
-        mongoClient = MongoClients.create(MONGO_URI);
-        MongoDatabase database = mongoClient.getDatabase(MONGO_DB_NAME);
-        starsCollection = database.getCollection("stars");
-    }
-
-    @Override
-    public void destroy() {
-        if (mongoClient != null) {
-            mongoClient.close();
-            mongoClient = null;
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
         }
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-
         PrintWriter out = response.getWriter();
+
         String starId = request.getParameter("id");
 
+        String starQuery =
+                "SELECT s.id, s.name, s.birth_year " +
+                        "FROM stars s " +
+                        "WHERE s.id = ?";
+
+        String movieQuery =
+                "SELECT m.id, m.title " +
+                        "FROM movies m " +
+                        "JOIN stars_in_movies sim ON m.id = sim.movie_id " +
+                        "WHERE sim.star_id = ? " +
+                        "ORDER BY m.year DESC, m.title ASC";
+
         try {
-            Document star = starsCollection.find(Filters.eq("_id", starId)).first();
+            // 3. Connect using dataSource instead of DriverManager
+            try (Connection conn = dataSource.getConnection()) {
+                JsonObject jsonObject = new JsonObject();
+                boolean starFound = false;
 
-            if (star == null) {
-                JsonObject errorObject = new JsonObject();
-                errorObject.addProperty("errorMessage", "Star not found.");
-                response.setStatus(404);
-                out.write(errorObject.toString());
-                return;
+                try (PreparedStatement starStatement = conn.prepareStatement(starQuery)) {
+                    starStatement.setString(1, starId);
+
+                    try (ResultSet rs = starStatement.executeQuery()) {
+                        if (rs.next()) {
+                            starFound = true;
+
+                            String name = rs.getString("name");
+                            int birthYear = rs.getInt("birth_year");
+                            boolean birthYearIsNull = rs.wasNull();
+
+                            jsonObject.addProperty("star_id", starId);
+                            jsonObject.addProperty("star_name", name);
+
+                            if (birthYearIsNull) {
+                                jsonObject.addProperty("star_birth_year", "N/A");
+                            } else {
+                                jsonObject.addProperty("star_birth_year", birthYear);
+                            }
+
+                            JsonArray movieArray = new JsonArray();
+
+                            try (PreparedStatement movieStatement = conn.prepareStatement(movieQuery)) {
+                                movieStatement.setString(1, starId);
+
+                                try (ResultSet movieRs = movieStatement.executeQuery()) {
+                                    while (movieRs.next()) {
+                                        String movieId = movieRs.getString("id");
+                                        String movieTitle = movieRs.getString("title");
+
+                                        JsonObject singleMovie = new JsonObject();
+                                        singleMovie.addProperty("movie_id", movieId);
+                                        singleMovie.addProperty("movie_title", movieTitle);
+                                        movieArray.add(singleMovie);
+                                    }
+                                }
+                            }
+
+                            jsonObject.add("star_movies", movieArray);
+                        }
+                    }
+                }
+
+                if (!starFound) {
+                    JsonObject errorObject = new JsonObject();
+                    errorObject.addProperty("errorMessage", "Star not found.");
+                    out.write(errorObject.toString());
+                    response.setStatus(404);
+                } else {
+                    out.write(jsonObject.toString());
+                    response.setStatus(200);
+                }
             }
-
-            JsonObject jsonObject = new JsonObject();
-
-            jsonObject.addProperty("star_id", star.getString("_id"));
-            jsonObject.addProperty("star_name", star.getString("name"));
-
-            Integer birthYear = star.getInteger("birth_year");
-            if (birthYear == null) {
-                jsonObject.addProperty("star_birth_year", "N/A");
-            } else {
-                jsonObject.addProperty("star_birth_year", birthYear);
-            }
-
-            jsonObject.add("star_movies", getMoviesJsonArray(star));
-
-            response.setStatus(200);
-            out.write(jsonObject.toString());
         } catch (Exception e) {
             request.getServletContext().log("Error in SingleStarServlet", e);
 
             JsonObject errorObject = new JsonObject();
             errorObject.addProperty("errorMessage", e.getMessage());
-
-            response.setStatus(500);
             out.write(errorObject.toString());
+            response.setStatus(500);
         } finally {
             out.close();
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private JsonArray getMoviesJsonArray(Document star) {
-        JsonArray movieArray = new JsonArray();
-
-        List<Document> movies = (List<Document>) star.get("movies");
-
-        if (movies == null || movies.isEmpty()) {
-            return movieArray;
-        }
-
-        movies.sort(Comparator
-                .comparing((Document movie) -> {
-                    Integer year = movie.getInteger("year");
-                    return year == null ? 0 : year;
-                }).reversed()
-                .thenComparing(movie -> {
-                    String title = movie.getString("title");
-                    return title == null ? "" : title.toLowerCase();
-                }));
-
-        for (Document movie : movies) {
-            JsonObject singleMovie = new JsonObject();
-            singleMovie.addProperty("movie_id", movie.getString("movie_id"));
-            singleMovie.addProperty("movie_title", movie.getString("title"));
-            movieArray.add(singleMovie);
-        }
-
-        return movieArray;
     }
 }

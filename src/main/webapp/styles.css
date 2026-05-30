@@ -79,28 +79,3 @@
     margin-left: 8rem;
     margin-right: 8rem;
 }
-
-div.autocomplete-suggestions {
-    background-color: white !important;
-    border: 2px solid black !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    z-index: 999999 !important;
-    max-height: 250px !important;
-    overflow-y: auto !important;
-    text-align: left !important;
-}
-
-div.autocomplete-suggestion {
-    background-color: white !important;
-    color: black !important;
-    padding: 8px 12px !important;
-    font-size: 16px !important;
-    line-height: 22px !important;
-    cursor: pointer !important;
-    border-bottom: 1px solid #ddd !important;
-}
-
-div.autocomplete-suggestion:hover,
-div.autocomplete-selected {
-    background-color: #dcecff !important;
-}

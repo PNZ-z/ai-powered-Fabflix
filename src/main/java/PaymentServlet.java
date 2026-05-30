@@ -1,55 +1,40 @@
 import com.google.gson.JsonObject;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
+
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.bson.Document;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Map;
 
 @WebServlet(name = "PaymentServlet", urlPatterns = "/api/payment")
 public class PaymentServlet extends HttpServlet {
-    private static final String MONGO_URI =
-            "mongodb://testuser:MyPassword6@localhost:27017/?authSource=myNewDB";
-    private static final String MONGO_DB_NAME = "moviedb_mongo";
 
-    private MongoClient mongoClient;
-    private MongoCollection<Document> customersCollection;
-    private MongoCollection<Document> creditCardsCollection;
-    private MongoCollection<Document> salesCollection;
+    // 1. Declare the DataSource
+    private DataSource dataSource;
 
-    @Override
+    // 2. Add the init() method to initialize the connection pool
     public void init(ServletConfig config) {
-        mongoClient = MongoClients.create(MONGO_URI);
-        MongoDatabase database = mongoClient.getDatabase(MONGO_DB_NAME);
-
-        customersCollection = database.getCollection("customers");
-        creditCardsCollection = database.getCollection("credit_cards");
-        salesCollection = database.getCollection("sales");
-    }
-
-    @Override
-    public void destroy() {
-        if (mongoClient != null) {
-            mongoClient.close();
-            mongoClient = null;
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest request,
                           HttpServletResponse response) throws IOException {
+
         JsonObject responseJsonObject = new JsonObject();
         response.setContentType("application/json");
 
@@ -80,79 +65,74 @@ public class PaymentServlet extends HttpServlet {
             return;
         }
 
-        try {
-            Document creditCard = creditCardsCollection.find(Filters.and(
-                    Filters.eq("_id", creditCardNumber),
-                    Filters.eq("first_name", firstName),
-                    Filters.eq("last_name", lastName),
-                    Filters.eq("expiration", expirationDate)
-            )).first();
+        String checkCardQuery =
+                "SELECT * FROM credit_cards " +
+                        "WHERE id = ? AND first_name = ? AND last_name = ? AND expiration = ?";
 
-            if (creditCard == null) {
-                responseJsonObject.addProperty("status", "fail");
-                responseJsonObject.addProperty("message", "Invalid payment information.");
-                response.getWriter().write(responseJsonObject.toString());
-                return;
-            }
+        String getCustomerIdQuery =
+                "SELECT id FROM customers WHERE email = ?";
 
-            Document customer = customersCollection.find(Filters.eq("email", email))
-                    .projection(new Document("_id", 1))
-                    .first();
+        String insertSaleQuery =
+                "INSERT INTO sales (customer_id, movie_id, sale_date) " +
+                        "VALUES (?, ?, CURDATE())";
 
-            if (customer == null) {
-                responseJsonObject.addProperty("status", "fail");
-                responseJsonObject.addProperty("message", "Customer not found.");
-                response.getWriter().write(responseJsonObject.toString());
-                return;
-            }
+        // 3. Use try-with-resources for the database connection
+        try (Connection conn = dataSource.getConnection()) {
 
-            Integer customerId = customer.getInteger("_id");
+            try (PreparedStatement checkCardStatement = conn.prepareStatement(checkCardQuery)) {
+                checkCardStatement.setString(1, creditCardNumber);
+                checkCardStatement.setString(2, firstName);
+                checkCardStatement.setString(3, lastName);
+                checkCardStatement.setString(4, expirationDate);
 
-            List<Document> saleDocuments = new ArrayList<>();
-            String saleDate = LocalDate.now().toString();
-
-            int nextSaleId = generateNextSaleId();
-
-            for (String movieId : cart.keySet()) {
-                int quantity = cart.get(movieId);
-
-                for (int i = 0; i < quantity; i++) {
-                    Document saleDocument = new Document("_id", nextSaleId++)
-                            .append("customer_id", customerId)
-                            .append("movie_id", movieId)
-                            .append("sale_date", saleDate);
-
-                    saleDocuments.add(saleDocument);
+                try (ResultSet cardRs = checkCardStatement.executeQuery()) {
+                    if (!cardRs.next()) {
+                        responseJsonObject.addProperty("status", "fail");
+                        responseJsonObject.addProperty("message", "Invalid payment information.");
+                        response.getWriter().write(responseJsonObject.toString());
+                        // try-with-resources auto-closes ResultSet, Statement, and Connection here!
+                        return;
+                    }
                 }
             }
 
-            if (!saleDocuments.isEmpty()) {
-                salesCollection.insertMany(saleDocuments);
+            try (PreparedStatement customerStatement = conn.prepareStatement(getCustomerIdQuery)) {
+                customerStatement.setString(1, email);
+
+                try (ResultSet customerRs = customerStatement.executeQuery()) {
+                    if (!customerRs.next()) {
+                        responseJsonObject.addProperty("status", "fail");
+                        responseJsonObject.addProperty("message", "Customer not found.");
+                        response.getWriter().write(responseJsonObject.toString());
+                        return;
+                    }
+
+                    int customerId = customerRs.getInt("id");
+
+                    try (PreparedStatement insertSaleStatement = conn.prepareStatement(insertSaleQuery)) {
+                        for (String movieId : cart.keySet()) {
+                            int quantity = cart.get(movieId);
+                            for (int i = 0; i < quantity; i++) {
+                                insertSaleStatement.setInt(1, customerId);
+                                insertSaleStatement.setString(2, movieId);
+                                insertSaleStatement.executeUpdate();
+                            }
+                        }
+                    }
+                }
             }
 
+            // If everything succeeded, clear cart and return success
             cart.clear();
-
             responseJsonObject.addProperty("status", "success");
             responseJsonObject.addProperty("message", "Order placed successfully.");
             response.getWriter().write(responseJsonObject.toString());
+
         } catch (Exception e) {
             response.setStatus(500);
             responseJsonObject.addProperty("status", "error");
             responseJsonObject.addProperty("message", e.getMessage());
             response.getWriter().write(responseJsonObject.toString());
         }
-    }
-
-    private int generateNextSaleId() {
-        Document maxSale = salesCollection.find()
-                .sort(new Document("_id", -1))
-                .projection(new Document("_id", 1))
-                .first();
-
-        if (maxSale == null) {
-            return 1;
-        }
-
-        return maxSale.getInteger("_id") + 1;
     }
 }

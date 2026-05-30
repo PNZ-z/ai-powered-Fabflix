@@ -1,13 +1,6 @@
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,36 +8,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import org.bson.Document;
-
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 @WebServlet(name = "CartServlet", urlPatterns = "/api/cart")
 public class CartServlet extends HttpServlet {
-    private static final String MONGO_URI =
-            "mongodb://testuser:MyPassword6@localhost:27017/?authSource=myNewDB";
-    private static final String MONGO_DB_NAME = "moviedb_mongo";
-    private static final String MOVIES_COLLECTION = "movies";
 
-    private MongoClient mongoClient;
-    private MongoCollection<Document> moviesCollection;
+    // 1. Declare the DataSource
+    private DataSource dataSource;
 
-    @Override
+    // 2. Add the init() method to initialize the connection pool
     public void init(ServletConfig config) {
-        mongoClient = MongoClients.create(MONGO_URI);
-        MongoDatabase database = mongoClient.getDatabase(MONGO_DB_NAME);
-        moviesCollection = database.getCollection(MOVIES_COLLECTION);
-    }
-
-    @Override
-    public void destroy() {
-        if (mongoClient != null) {
-            mongoClient.close();
-            mongoClient = null;
+        try {
+            dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/moviedb");
+        } catch (NamingException e) {
+            e.printStackTrace();
         }
     }
 
@@ -56,7 +41,6 @@ public class CartServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response) throws IOException {
-        response.setContentType("application/json");
 
         HttpSession session = request.getSession();
 
@@ -71,60 +55,51 @@ public class CartServlet extends HttpServlet {
 
         JsonArray cartJsonArray = new JsonArray();
 
-        if (cart.isEmpty()) {
-            response.getWriter().write(cartJsonArray.toString());
-            return;
-        }
+        String query = "SELECT id, title FROM movies WHERE id = ?";
 
-        try {
-            Set<String> movieIds = new HashSet<>(cart.keySet());
+        // 3. Use try-with-resources for the Connection and PreparedStatement
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement statement = conn.prepareStatement(query)) {
 
-            FindIterable<Document> movies = moviesCollection
-                    .find(Filters.in("_id", movieIds))
-                    .projection(new Document("_id", 1).append("title", 1));
+            for (String movieId : cart.keySet()) {
+                statement.setString(1, movieId);
 
-            for (Document movie : movies) {
-                String movieId = movie.getString("_id");
-                String movieTitle = movie.getString("title");
+                // Use try-with-resources for the ResultSet inside the loop
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) {
+                        int quantity = cart.get(movieId);
+                        double price = getMoviePrice(movieId);
 
-                int quantity = cart.getOrDefault(movieId, 0);
-                double price = getMoviePrice(movieId);
+                        JsonObject movieJsonObject = new JsonObject();
+                        movieJsonObject.addProperty("movie_id", rs.getString("id"));
+                        movieJsonObject.addProperty("movie_title", rs.getString("title"));
+                        movieJsonObject.addProperty("quantity", quantity);
+                        movieJsonObject.addProperty("price", price);
 
-                JsonObject movieJsonObject = new JsonObject();
-                movieJsonObject.addProperty("movie_id", movieId);
-                movieJsonObject.addProperty("movie_title", movieTitle);
-                movieJsonObject.addProperty("quantity", quantity);
-                movieJsonObject.addProperty("price", price);
-
-                cartJsonArray.add(movieJsonObject);
+                        cartJsonArray.add(movieJsonObject);
+                    }
+                }
             }
 
+            response.setContentType("application/json");
             response.getWriter().write(cartJsonArray.toString());
+
         } catch (Exception e) {
             response.setStatus(500);
-
-            JsonObject errorJsonObject = new JsonObject();
-            errorJsonObject.addProperty("errorMessage", e.getMessage());
-
-            response.getWriter().write(errorJsonObject.toString());
+            response.getWriter().write(e.getMessage());
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest request,
                           HttpServletResponse response) throws IOException {
-        response.setContentType("application/json");
 
         String movieId = request.getParameter("movieId");
         String action = request.getParameter("action");
 
         if (movieId == null || action == null) {
             response.setStatus(400);
-
-            JsonObject errorJsonObject = new JsonObject();
-            errorJsonObject.addProperty("errorMessage", "Missing movieId or action");
-
-            response.getWriter().write(errorJsonObject.toString());
+            response.getWriter().write("Missing movieId or action");
             return;
         }
 
@@ -154,11 +129,7 @@ public class CartServlet extends HttpServlet {
                 cart.remove(movieId);
             } else {
                 response.setStatus(400);
-
-                JsonObject errorJsonObject = new JsonObject();
-                errorJsonObject.addProperty("errorMessage", "Unknown action");
-
-                response.getWriter().write(errorJsonObject.toString());
+                response.getWriter().write("Unknown action");
                 return;
             }
         }
@@ -166,6 +137,7 @@ public class CartServlet extends HttpServlet {
         JsonObject responseJsonObject = new JsonObject();
         responseJsonObject.addProperty("status", "success");
 
+        response.setContentType("application/json");
         response.getWriter().write(responseJsonObject.toString());
     }
 }
