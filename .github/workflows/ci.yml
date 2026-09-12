@@ -60,14 +60,14 @@ jobs:
               line_percent = line_total == 0 ? 0 : 100 * line_covered / line_total
               branch_percent = branch_total == 0 ? 0 : 100 * branch_covered / branch_total
 
-              print "## JaCoCo coverage"
+              print "## JaCoCo online web application coverage"
               print ""
               print "| Metric | Covered | Total | Coverage |"
               print "| --- | ---: | ---: | ---: |"
               printf "| Lines | %d | %d | %.2f%% |\n", line_covered, line_total, line_percent
               printf "| Branches | %d | %d | %.2f%% |\n", branch_covered, branch_total, branch_percent
               print ""
-              print "The current baseline is reported for visibility; the 85% quality gate will be enabled incrementally during migration."
+              print "Offline XML import, batch worker/task, password initialization, and index maintenance utilities are outside this report scope. The 85% quality gate will be enabled incrementally during migration."
             }
           ' "$report" >> "$GITHUB_STEP_SUMMARY"
 
