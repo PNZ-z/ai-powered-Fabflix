@@ -68,6 +68,15 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*XMLParser.class</exclude>
+                        <exclude>**/*InsertWorker.class</exclude>
+                        <exclude>**/*InsertTask*.class</exclude>
+                        <exclude>**/Update*SecurePassword.class</exclude>
+                        <exclude>**/CreateFullTextIndex.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
