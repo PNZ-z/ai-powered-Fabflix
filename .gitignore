@@ -172,3 +172,7 @@ buildNumber.properties
 # Local planning documents
 docs/
 
+# Legacy XML datasets (replaced by database/dev-seed.sql in v2)
+/actors63.xml
+/casts124.xml
+
