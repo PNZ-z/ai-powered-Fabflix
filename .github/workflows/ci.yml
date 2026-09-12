@@ -35,6 +35,42 @@ jobs:
       - name: Verify with Maven
         run: mvn --batch-mode --no-transfer-progress verify
 
+      - name: Publish coverage summary
+        if: always()
+        shell: bash
+        run: |
+          report="target/site/jacoco/jacoco.csv"
+
+          if [[ ! -f "$report" ]]; then
+            echo "## JaCoCo coverage" >> "$GITHUB_STEP_SUMMARY"
+            echo "Coverage report was not generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          awk -F, '
+            NR > 1 {
+              branch_missed += $6
+              branch_covered += $7
+              line_missed += $8
+              line_covered += $9
+            }
+            END {
+              line_total = line_missed + line_covered
+              branch_total = branch_missed + branch_covered
+              line_percent = line_total == 0 ? 0 : 100 * line_covered / line_total
+              branch_percent = branch_total == 0 ? 0 : 100 * branch_covered / branch_total
+
+              print "## JaCoCo coverage"
+              print ""
+              print "| Metric | Covered | Total | Coverage |"
+              print "| --- | ---: | ---: | ---: |"
+              printf "| Lines | %d | %d | %.2f%% |\n", line_covered, line_total, line_percent
+              printf "| Branches | %d | %d | %.2f%% |\n", branch_covered, branch_total, branch_percent
+              print ""
+              print "The current baseline is reported for visibility; the 85% quality gate will be enabled incrementally during migration."
+            }
+          ' "$report" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,4 +78,13 @@ jobs:
           name: test-reports
           path: target/surefire-reports/
           if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: target/site/jacoco/
+          if-no-files-found: error
           retention-days: 14
