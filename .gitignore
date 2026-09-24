@@ -169,8 +169,10 @@ buildNumber.properties
 
 # End of https://www.gitignore.io/api/java,maven,eclipse,java-web,intellij
 
-# Local planning documents
-docs/
+# Local environment files may contain credentials.
+.env
+.env.*
+!.env.example
 
 # Legacy XML datasets (replaced by database/dev-seed.sql in v2)
 /actors63.xml

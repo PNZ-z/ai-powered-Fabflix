@@ -1,0 +1,27 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: fabflix-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: moviedb
+      MYSQL_USER: ${FABFLIX_DB_USER}
+      MYSQL_PASSWORD: ${FABFLIX_DB_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - fabflix-mysql-data:/var/lib/mysql
+      - ./createtable.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./create_employees.sql:/docker-entrypoint-initdb.d/002-employees.sql:ro
+      - ./stored-procedure.sql:/docker-entrypoint-initdb.d/003-stored-procedure.sql:ro
+      - ./database/dev-seed.sql:/docker-entrypoint-initdb.d/004-dev-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  fabflix-mysql-data:

@@ -16,9 +16,9 @@ public class UpdateEmployeeSecurePassword {
      * If you run it again, it will encrypt an already encrypted password.
      */
     public static void main(String[] args) throws Exception {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+        String loginUser = DatabaseEnvironment.user();
+        String loginPasswd = DatabaseEnvironment.password();
+        String loginUrl = DatabaseEnvironment.url();
 
         Class.forName("com.mysql.cj.jdbc.Driver");
 

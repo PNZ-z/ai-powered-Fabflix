@@ -23,7 +23,7 @@ public class RecaptchaVerifyUtils {
         httpsURLConnection.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 
         // The verify ReCaptcha request is sent as a URL and parameters
-        String postParams = "secret=" + RecaptchaConstants.SECRET_KEY + "&response=" + gRecaptchaResponse;
+        String postParams = "secret=" + RecaptchaConstants.getSecretKey() + "&response=" + gRecaptchaResponse;
 
         // Send Request
         httpsURLConnection.setDoOutput(true);

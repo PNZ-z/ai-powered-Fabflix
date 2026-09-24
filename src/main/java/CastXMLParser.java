@@ -20,10 +20,9 @@ import org.xml.sax.helpers.DefaultHandler;
 public class CastXMLParser extends DefaultHandler {
     private static final int NUM_WORKERS = 4;
 
-    private final String loginUser = "mytestuser";
-    private final String loginPass = "My6$Password";
-    private final String loginUrl =
-            "jdbc:mysql://localhost:3306/moviedb?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci";
+    private final String loginUser = DatabaseEnvironment.user();
+    private final String loginPass = DatabaseEnvironment.password();
+    private final String loginUrl = DatabaseEnvironment.url();
 
     private StringBuilder tempVal;
     private String currMovieId;
