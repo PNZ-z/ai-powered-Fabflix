@@ -53,6 +53,20 @@ Secrets are supplied through environment variables and must not be committed:
 
 The Tomcat JNDI datasource currently remains part of the legacy deployment. It will be replaced by Spring Boot datasource configuration during the vertical-slice migration.
 
+## Spring Boot migration scaffold
+
+The Spring Boot application is introduced alongside the legacy WAR so endpoints can move one vertical slice at a time. Start the Docker database first, then run:
+
+```shell
+mvn spring-boot:run
+```
+
+The scaffold listens on `FABFLIX_BOOT_PORT` or `8081` by default. Its first endpoint is:
+
+```text
+GET http://localhost:8081/api/boot/health
+```
+
 ## Tests and coverage
 
 Run the complete verification lifecycle with:
