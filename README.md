@@ -67,6 +67,12 @@ The scaffold listens on `FABFLIX_BOOT_PORT` or `8081` by default. Its first endp
 GET http://localhost:8081/api/boot/health
 ```
 
+The first migrated read endpoint mirrors the legacy genre list contract without replacing `/api/main` yet:
+
+```text
+GET http://localhost:8081/api/boot/main
+```
+
 ## Tests and coverage
 
 Run the complete verification lifecycle with:
