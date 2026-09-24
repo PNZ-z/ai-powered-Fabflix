@@ -38,9 +38,9 @@ public class MainXMLParser extends DefaultHandler {
     private ExecutorService executor;
 
     public void runExample() throws ParserConfigurationException, IOException, SAXException {
-        String loginUser = "mytestuser";
-        String loginPass = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+        String loginUser = DatabaseEnvironment.user();
+        String loginPass = DatabaseEnvironment.password();
+        String loginUrl = DatabaseEnvironment.url();
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
              BufferedWriter reportWriter = new BufferedWriter(new FileWriter("report.txt"))) {

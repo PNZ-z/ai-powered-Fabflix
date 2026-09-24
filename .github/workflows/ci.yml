@@ -32,7 +32,7 @@ jobs:
           java-version: "11"
           cache: maven
 
-      - name: Verify with Maven
+      - name: Verify tests and online application coverage gate
         run: mvn --batch-mode --no-transfer-progress verify
 
       - name: Publish coverage summary
@@ -67,7 +67,7 @@ jobs:
               printf "| Lines | %d | %d | %.2f%% |\n", line_covered, line_total, line_percent
               printf "| Branches | %d | %d | %.2f%% |\n", branch_covered, branch_total, branch_percent
               print ""
-              print "Offline XML import, batch worker/task, password initialization, and index maintenance utilities are outside this report scope. The 85% quality gate will be enabled incrementally during migration."
+              print "The 57% non-regression gate applies to the deployed online web application (current baseline: 57.41%; target: 85%). Offline XML imports, batch worker/tasks, password initialization, and index maintenance utilities are intentionally outside this scope."
             }
           ' "$report" >> "$GITHUB_STEP_SUMMARY"
 

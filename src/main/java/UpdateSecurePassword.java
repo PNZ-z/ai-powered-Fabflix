@@ -16,9 +16,9 @@ public class UpdateSecurePassword {
      *  replace them. If you run it more again it will encrypt the already encrypted password then replace it.
      */
     public static void main(String[] args) throws Exception {
-        String loginUser = "mytestuser";
-        String loginPasswd = "My6$Password";
-        String loginUrl = "jdbc:mysql://localhost:3306/moviedb";
+        String loginUser = DatabaseEnvironment.user();
+        String loginPasswd = DatabaseEnvironment.password();
+        String loginUrl = DatabaseEnvironment.url();
         Class.forName("com.mysql.cj.jdbc.Driver");
         try (Connection connection = DriverManager.getConnection(loginUrl, loginUser, loginPasswd);
              Statement statement = connection.createStatement()) {

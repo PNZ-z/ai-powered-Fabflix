@@ -5,9 +5,9 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class CreateFullTextIndex {
-    private static final String MYSQL_USER = "mytestuser";
-    private static final String MYSQL_PASSWORD = "My6$Password";
-    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/moviedb";
+    private static final String MYSQL_USER = DatabaseEnvironment.user();
+    private static final String MYSQL_PASSWORD = DatabaseEnvironment.password();
+    private static final String MYSQL_URL = DatabaseEnvironment.url();
 
     private static final String INDEX_NAME = "ft_movie_title";
 

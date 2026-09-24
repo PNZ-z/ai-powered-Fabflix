@@ -69,12 +69,19 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <configuration>
+                    <!--
+                      Coverage is intentionally scoped to the online web application.
+                      The excluded classes are one-off XML imports, batch workers, and
+                      database maintenance utilities that are not part of the deployed
+                      request path.
+                    -->
                     <excludes>
                         <exclude>**/*XMLParser.class</exclude>
                         <exclude>**/*InsertWorker.class</exclude>
                         <exclude>**/*InsertTask*.class</exclude>
                         <exclude>**/Update*SecurePassword.class</exclude>
                         <exclude>**/CreateFullTextIndex.class</exclude>
+                        <exclude>**/DatabaseEnvironment.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -89,6 +96,28 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>online-web-application-coverage-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <!-- Current legacy baseline is 57.41%; ratchet upward as slices migrate. -->
+                                            <minimum>0.57</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

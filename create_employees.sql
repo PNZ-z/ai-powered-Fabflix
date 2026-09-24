@@ -5,6 +5,3 @@ CREATE TABLE IF NOT EXISTS employees (
                                          password VARCHAR(128) NOT NULL,
                                          fullname VARCHAR(100)
 );
-
-INSERT INTO employees (email, password, fullname)
-VALUES ('classta@email.edu', 'classta', 'TA CS122B');
