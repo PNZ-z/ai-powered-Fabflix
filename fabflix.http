@@ -1,0 +1,77 @@
+@baseUrl = http://localhost:8081
+@customerEmail = dev.customer@fabflix.local
+@customerPassword = dev-password
+@recaptchaToken = replace-with-a-valid-recaptcha-token
+@movieId = tt9000001
+
+### 健康检查
+GET {{baseUrl}}/api/boot/health
+
+### 电影列表
+GET {{baseUrl}}/api/boot/movie-list?title=Terminator&pageNumber=0&pageSize=10
+
+### 电影详情
+GET {{baseUrl}}/api/boot/single-movie?id=JGl10
+
+### 不存在的电影
+GET {{baseUrl}}/api/boot/single-movie?id=missing-id
+
+### 缺少电影 ID
+GET {{baseUrl}}/api/boot/single-movie
+
+### 登录（后续请求会自动复用该响应设置的 JSESSIONID）
+POST {{baseUrl}}/api/boot/login
+Content-Type: application/x-www-form-urlencoded
+
+username={{customerEmail}}&password={{customerPassword}}&g-recaptcha-response={{recaptchaToken}}
+
+### 查看空购物车
+GET {{baseUrl}}/api/boot/cart
+
+### 添加电影
+POST {{baseUrl}}/api/boot/cart
+Content-Type: application/x-www-form-urlencoded
+
+movieId={{movieId}}&action=add
+
+### 增加电影数量
+POST {{baseUrl}}/api/boot/cart
+Content-Type: application/x-www-form-urlencoded
+
+movieId={{movieId}}&action=increase
+
+### 查看购物车（此时 quantity 应为 2）
+GET {{baseUrl}}/api/boot/cart
+
+### 使用无效信用卡支付（应失败并保留购物车）
+POST {{baseUrl}}/api/boot/payment
+Content-Type: application/x-www-form-urlencoded
+
+firstName=Dev&lastName=Customer&creditCardNumber=INVALID-CARD&expirationDate=2035-12-31
+
+### 验证支付失败后购物车仍然存在
+GET {{baseUrl}}/api/boot/cart
+
+### 使用本地种子信用卡支付（会为两件商品创建两条 sale）
+POST {{baseUrl}}/api/boot/payment
+Content-Type: application/x-www-form-urlencoded
+
+firstName=Dev&lastName=Customer&creditCardNumber=DEV-CARD-0001&expirationDate=2035-12-31
+
+### 验证支付成功后购物车已清空
+GET {{baseUrl}}/api/boot/cart
+
+### 删除测试（先重新添加）
+POST {{baseUrl}}/api/boot/cart
+Content-Type: application/x-www-form-urlencoded
+
+movieId={{movieId}}&action=add
+
+### 删除购物车中的电影
+POST {{baseUrl}}/api/boot/cart
+Content-Type: application/x-www-form-urlencoded
+
+movieId={{movieId}}&action=delete
+
+### 验证删除结果
+GET {{baseUrl}}/api/boot/cart
