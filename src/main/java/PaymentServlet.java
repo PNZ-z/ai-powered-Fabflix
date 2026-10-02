@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+
+import com.fabflix.boot.auth.CustomerIdentity;
 import java.util.Map;
 
 @WebServlet(name = "PaymentServlet", urlPatterns = "/api/payment")
@@ -44,7 +46,7 @@ public class PaymentServlet extends HttpServlet {
         String expirationDate = request.getParameter("expirationDate");
 
         HttpSession session = request.getSession();
-        User user = (User) session.getAttribute("user");
+            CustomerIdentity user = (CustomerIdentity) session.getAttribute("user");
 
         if (user == null) {
             responseJsonObject.addProperty("status", "fail");

@@ -2,6 +2,8 @@ package com.fabflix.boot.star;
 
 import java.util.List;
 
+import com.fabflix.boot.auth.AuthenticatedCustomer;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,7 +36,9 @@ class StarDetailControllerTest {
         );
         when(starDetailService.getStar("nm0000244")).thenReturn(star);
 
-        mockMvc.perform(get("/api/boot/single-star").param("id", "nm0000244"))
+        mockMvc.perform(get("/api/boot/single-star")
+                        .param("id", "nm0000244")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.star_id").value("nm0000244"))
                 .andExpect(jsonPath("$.star_name").value("Sigourney Weaver"))
@@ -50,7 +54,8 @@ class StarDetailControllerTest {
         when(starDetailService.getStar(null))
                 .thenThrow(new IllegalArgumentException("Star id is required."));
 
-        mockMvc.perform(get("/api/boot/single-star"))
+        mockMvc.perform(get("/api/boot/single-star")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Star id is required."));
     }
@@ -60,7 +65,9 @@ class StarDetailControllerTest {
         when(starDetailService.getStar("missing-id"))
                 .thenThrow(new StarNotFoundException("missing-id"));
 
-        mockMvc.perform(get("/api/boot/single-star").param("id", "missing-id"))
+        mockMvc.perform(get("/api/boot/single-star")
+                        .param("id", "missing-id")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorMessage").value("Star not found."));
     }
@@ -70,7 +77,9 @@ class StarDetailControllerTest {
         when(starDetailService.getStar("nm0000244"))
                 .thenThrow(new RuntimeException("database unavailable"));
 
-        mockMvc.perform(get("/api/boot/single-star").param("id", "nm0000244"))
+        mockMvc.perform(get("/api/boot/single-star")
+                        .param("id", "nm0000244")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.errorMessage").value("database unavailable"));
     }

@@ -2,6 +2,8 @@ package com.fabflix.boot.movie;
 
 import java.util.List;
 
+import com.fabflix.boot.auth.AuthenticatedCustomer;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,7 +39,9 @@ class MovieDetailControllerTest {
         );
         when(movieDetailService.getMovie("tt0078748")).thenReturn(movie);
 
-        mockMvc.perform(get("/api/boot/single-movie").param("id", "tt0078748"))
+        mockMvc.perform(get("/api/boot/single-movie")
+                        .param("id", "tt0078748")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.movie_id").value("tt0078748"))
                 .andExpect(jsonPath("$.movie_title").value("Alien"))
@@ -56,7 +60,8 @@ class MovieDetailControllerTest {
         when(movieDetailService.getMovie(null))
                 .thenThrow(new IllegalArgumentException("Movie id is required."));
 
-        mockMvc.perform(get("/api/boot/single-movie"))
+        mockMvc.perform(get("/api/boot/single-movie")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Movie id is required."));
     }
@@ -66,7 +71,9 @@ class MovieDetailControllerTest {
         when(movieDetailService.getMovie("missing-id"))
                 .thenThrow(new MovieNotFoundException("missing-id"));
 
-        mockMvc.perform(get("/api/boot/single-movie").param("id", "missing-id"))
+        mockMvc.perform(get("/api/boot/single-movie")
+                        .param("id", "missing-id")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorMessage").value("Movie not found."));
     }
@@ -76,7 +83,9 @@ class MovieDetailControllerTest {
         when(movieDetailService.getMovie("tt0078748"))
                 .thenThrow(new RuntimeException("database unavailable"));
 
-        mockMvc.perform(get("/api/boot/single-movie").param("id", "tt0078748"))
+        mockMvc.perform(get("/api/boot/single-movie")
+                        .param("id", "tt0078748")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.errorMessage").value("database unavailable"));
     }
