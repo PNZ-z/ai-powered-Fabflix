@@ -2,6 +2,8 @@ package com.fabflix.boot.movie;
 
 import java.util.List;
 
+import com.fabflix.boot.auth.AuthenticatedCustomer;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +43,8 @@ public class MovieListControllerTest {
         mockMvc.perform(get("/api/boot/movie-list")
                         .param("title", "Alien")
                         .param("pageNumber", "1")
-                        .param("pageSize", "10"))
+                        .param("pageSize", "10")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].movie_id").value("tt0078748"))
                 .andExpect(jsonPath("$[0].movie_title").value("Alien"))
@@ -66,7 +69,8 @@ public class MovieListControllerTest {
         when(movieListService.listMovies(org.mockito.ArgumentMatchers.any(MovieListRequest.class)))
                 .thenThrow(new RuntimeException("database unavailable"));
 
-        mockMvc.perform(get("/api/boot/movie-list"))
+        mockMvc.perform(get("/api/boot/movie-list")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.errorMessage").value("database unavailable"));
     }
