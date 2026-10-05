@@ -67,7 +67,7 @@ jobs:
               printf "| Lines | %d | %d | %.2f%% |\n", line_covered, line_total, line_percent
               printf "| Branches | %d | %d | %.2f%% |\n", branch_covered, branch_total, branch_percent
               print ""
-              print "The 57% non-regression gate applies to the deployed online web application (current baseline: 57.41%; target: 85%). Offline XML imports, batch worker/tasks, password initialization, and index maintenance utilities are intentionally outside this scope."
+              print "The 85% gate applies to the Spring Boot online application. Offline XML imports and their model, batch worker/tasks, local account setup, password initialization, and index maintenance utilities are intentionally outside this scope."
             }
           ' "$report" >> "$GITHUB_STEP_SUMMARY"
 

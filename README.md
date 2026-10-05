@@ -1,6 +1,6 @@
 # AI-powered Fabflix
 
-Fabflix is a legacy Java movie-commerce application being modernized incrementally into a Spring Boot and Spring AI agent platform. The current application uses Jakarta Servlet, JDBC, MySQL, and a browser-based JavaScript frontend.
+Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application now uses Spring Boot, JDBC, MySQL, and a browser-based JavaScript frontend. Legacy servlet endpoints have been retired; offline import and maintenance programs remain available as standalone utilities.
 
 ## Modernization roadmap
 
@@ -14,14 +14,12 @@ Fabflix is a legacy Java movie-commerce application being modernized incremental
 ```text
 Browser (HTML + JavaScript)
           |
-Jakarta Servlet endpoints
+Spring MVC controllers and authentication filters
           |
-JDBC / MySQL stored procedures
+Services and JDBC repositories
           |
         MySQL
 ```
-
-The initial tests are characterization tests: they protect existing endpoint behavior while application boundaries are introduced during migration.
 
 ## Local database
 
@@ -31,7 +29,7 @@ Requirements: Docker with Compose support.
 2. Start MySQL with `docker compose up -d mysql`.
 3. Wait for `docker compose ps` to report the database as healthy.
 
-The first startup creates the schema, stored procedure, and deterministic development data. The named Docker volume preserves the database. To intentionally rebuild it from scratch, remove the volume explicitly before starting MySQL again.
+The first startup creates the schema, stored procedure, and deterministic development data. The named Docker volume `fabflix-mysql-data` preserves the database across container restarts and `docker compose down`. To intentionally rebuild it from scratch, run `docker compose down -v` before starting MySQL again. This permanently removes the Compose-managed database volume.
 
 Development-only accounts seeded by `database/dev-seed.sql`:
 
@@ -51,27 +49,35 @@ Secrets are supplied through environment variables and must not be committed:
 | `FABFLIX_DB_URL` | JDBC URL used by maintenance utilities |
 | `RECAPTCHA_SECRET_KEY` | Server-side reCAPTCHA verification secret |
 
-The Tomcat JNDI datasource currently remains part of the legacy deployment. It will be replaced by Spring Boot datasource configuration during the vertical-slice migration.
+Spring Boot creates the application datasource from these variables. The default JDBC URL targets the Compose MySQL port at `localhost:3307`.
 
-## Spring Boot migration scaffold
+## Run the application
 
-The Spring Boot application is introduced alongside the legacy WAR so endpoints can move one vertical slice at a time. Start the Docker database first, then run:
+Start MySQL, wait for it to become healthy, and run the application with the local profile:
 
 ```shell
-mvn spring-boot:run
+docker compose up -d mysql
+docker compose ps
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The scaffold listens on `FABFLIX_BOOT_PORT` or `8081` by default. Its first endpoint is:
+The local profile bypasses external reCAPTCHA verification and must never be used in production. The application listens on `FABFLIX_BOOT_PORT` or `8081` by default. Open:
+
+```text
+http://localhost:8081/login.html
+```
+
+For a quick health check:
 
 ```text
 GET http://localhost:8081/api/boot/health
 ```
 
-The first migrated read endpoint mirrors the legacy genre list contract without replacing `/api/main` yet:
+The executable application is built at `target/fablix.jar` by `mvn package` or `mvn verify` and can be run with `java -jar target/fablix.jar --spring.profiles.active=local`.
 
-```text
-GET http://localhost:8081/api/boot/main
-```
+## API verification
+
+[`fabflix.http`](fabflix.http) contains customer and employee request examples that can be run from IntelliJ IDEA's HTTP client. Run requests in order so the client retains the authenticated session cookie.
 
 ## Tests and coverage
 
@@ -81,9 +87,7 @@ Run the complete verification lifecycle with:
 mvn verify
 ```
 
-CI enforces a **57% non-regression line-coverage baseline** for the legacy online web application (measured baseline: 57.41%). One-off XML parsers, importer worker/tasks, password initialization programs, and index-maintenance utilities are deliberately excluded because they are not part of the deployed request path. Their exclusion is defined centrally in `pom.xml`; new online application classes are covered by default.
-
-The baseline should be ratcheted upward as legacy slices are improved. New Spring Boot application code will start with an 85% line-coverage target rather than inheriting the lower legacy baseline.
+CI enforces an **85% line-coverage gate** for the Spring Boot online application. One-off XML parsers and their import model, importer worker/tasks, local account setup, password initialization programs, and index-maintenance utilities are deliberately excluded because they are not part of the deployed request path. Their exclusion is defined centrally in `pom.xml`; new online application classes are covered by default.
 
 JaCoCo HTML reports are generated under `target/site/jacoco/`.
 
