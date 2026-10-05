@@ -2,6 +2,8 @@
 @customerEmail = test.user@fabflix.local
 @customerPassword = test-password
 @movieId = AA1
+@employeeEmail = dev.admin@fabflix.local
+@employeePassword = admin-password
 
 ### 健康检查
 GET {{baseUrl}}/api/boot/health
@@ -41,6 +43,27 @@ GET {{baseUrl}}/api/boot/jump-back
 
 ### 查看空购物车
 GET {{baseUrl}}/api/boot/cart
+
+### 员工登录（请按本地 employees 数据替换账号）
+POST {{baseUrl}}/api/boot/employee-login
+Content-Type: application/x-www-form-urlencoded
+
+username={{employeeEmail}}&password={{employeePassword}}
+
+### 查看数据库 metadata（需要员工登录会话）
+GET {{baseUrl}}/api/boot/dashboard?action=metadata
+
+### 添加 star（会真实写入本地数据库，请按需运行）
+POST {{baseUrl}}/api/boot/dashboard
+Content-Type: application/x-www-form-urlencoded
+
+action=add-star&star_name=HTTP Test Star&birth_year=1990
+
+### 添加 movie（会调用 add_movie 存储过程并真实写入，请按需运行）
+POST {{baseUrl}}/api/boot/dashboard
+Content-Type: application/x-www-form-urlencoded
+
+action=add-movie&movie_title=HTTP Test Movie&movie_year=2026&movie_director=HTTP Test Director&movie_star_name=HTTP Test Star&movie_star_birth_year=1990&movie_genre_name=Drama
 
 ### 添加电影
 POST {{baseUrl}}/api/boot/cart

@@ -19,6 +19,8 @@ public class CustomerAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return !path.startsWith("/api/boot/")
                 || path.equals("/api/boot/login")
+                || path.equals("/api/boot/employee-login")
+                || path.startsWith("/api/boot/dashboard")
                 || path.equals("/api/boot/health");
     }
 
