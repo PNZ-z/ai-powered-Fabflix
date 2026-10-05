@@ -24,6 +24,21 @@ Content-Type: application/x-www-form-urlencoded
 
 username={{customerEmail}}&password={{customerPassword}}
 
+### 自动补全（最多返回 10 条，并保持 value/data.movie_id 格式）
+GET {{baseUrl}}/api/boot/autocomplete?query=Sho
+
+### 自动补全短查询（应返回空数组）
+GET {{baseUrl}}/api/boot/autocomplete?query=Sh
+
+### 全文搜索
+GET {{baseUrl}}/api/boot/full-text-search?query=Shooting&pageNumber=0&pageSize=10&sort1=title&dir1=ASC&sort2=rating&dir2=DESC
+
+### 全文搜索空查询（应返回空数组）
+GET {{baseUrl}}/api/boot/full-text-search?query=&pageNumber=0&pageSize=10
+
+### 返回最近一次全文搜索结果页（应返回 302）
+GET {{baseUrl}}/api/boot/jump-back
+
 ### 查看空购物车
 GET {{baseUrl}}/api/boot/cart
 
