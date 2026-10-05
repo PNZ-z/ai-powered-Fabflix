@@ -118,7 +118,7 @@ function handleMovieListResult(resultData) {
 function addToCart(movieId) {
     jQuery.ajax({
         type: "POST",
-        url: "api/cart",
+        url: "api/boot/cart",
         data: {
             movieId: movieId,
             action: "add"
@@ -140,8 +140,8 @@ let params = new URLSearchParams(window.location.search);
 $("#loading").show();
 $("#movie_list_table").hide();
 let apiUrl = params.get("mode") === "fulltext"
-    ? "api/full-text-search"
-    : "api/movie-list";
+    ? "api/boot/full-text-search"
+    : "api/boot/movie-list";
 
 let requestData = {
     pageNumber: params.get("pageNumber"),

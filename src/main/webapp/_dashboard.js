@@ -27,7 +27,7 @@ function submitEmployeeLoginForm(formSubmitEvent) {
     $.ajax({
         dataType: "json",
         method: "POST",
-        url: "api/employee-login",
+        url: "api/boot/employee-login",
         data: $("#employee_login_form").serialize(),
         success: handleEmployeeLoginResult
     });

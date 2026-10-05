@@ -68,7 +68,7 @@ function handleGenreResult(resultData) {
  * Load genres from backend
  */
 function loadGenres() {
-    $.ajax("api/main", {
+    $.ajax("api/boot/main", {
         method: "GET",
         dataType: "json",
         success: handleGenreResult,
@@ -146,7 +146,7 @@ function handleLookup(query, doneCallback) {
 
     jQuery.ajax({
         method: "GET",
-        url: "api/autocomplete",
+        url: "api/boot/autocomplete",
         data: {
             query: query
         },

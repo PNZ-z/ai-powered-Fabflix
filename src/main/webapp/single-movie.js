@@ -86,7 +86,7 @@ function handleSingleMovieResult(resultData) {
 function addToCart(movieId) {
     jQuery.ajax({
         type: "POST",
-        url: "api/cart",
+        url: "api/boot/cart",
         data: {
             movieId: movieId,
             action: "add"
@@ -115,7 +115,7 @@ let movieId = urlParams.get("id");
 jQuery.ajax({
     dataType: "json",
     method: "GET",
-    url: "api/single-movie?id=" + movieId,
+    url: "api/boot/single-movie?id=" + movieId,
     success: (resultData) => handleSingleMovieResult(resultData),
     error: function(xhr, status, error) {
         console.error("Error fetching single movie:", error);

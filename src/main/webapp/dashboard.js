@@ -35,7 +35,7 @@ function submitAddStarForm(formSubmitEvent) {
     $.ajax({
         dataType: "json",
         method: "POST",
-        url: "api/dashboard",
+        url: "api/boot/dashboard",
         data: $("#add_star_form").serialize() + "&action=add-star",
         success: handleAddStarResult,
         error: function (xhr, status, error) {
@@ -141,7 +141,7 @@ function requestMetadata() {
     $.ajax({
         dataType: "json",
         method: "GET",
-        url: "api/dashboard?action=metadata",
+        url: "api/boot/dashboard?action=metadata",
         success: handleMetadataResult,
         error: function () {
             $("#metadata_result")
@@ -187,7 +187,7 @@ function submitAddMovieForm(formSubmitEvent) {
     $.ajax({
         dataType: "json",
         method: "POST",
-        url: "api/dashboard",
+        url: "api/boot/dashboard",
         data: $("#add_movie_form").serialize() + "&action=add-movie",
         success: handleAddMovieResult,
         error: function (xhr, status, error) {

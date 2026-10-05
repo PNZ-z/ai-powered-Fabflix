@@ -37,7 +37,7 @@ function handleCartResult(resultData) {
 function updateCart(movieId, action) {
     jQuery.ajax({
         type: "POST",
-        url: "api/cart",
+        url: "api/boot/cart",
         data: {
             movieId: movieId,
             action: action
@@ -51,7 +51,7 @@ function updateCart(movieId, action) {
 function loadCart() {
     jQuery.ajax({
         type: "GET",
-        url: "api/cart",
+        url: "api/boot/cart",
         success: handleCartResult
     });
 }
