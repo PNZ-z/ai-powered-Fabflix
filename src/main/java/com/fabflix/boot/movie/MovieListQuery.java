@@ -7,6 +7,7 @@ public class MovieListQuery {
     private final String star;
     private final String genre;
     private final String startsWith;
+    private final String fullText;
     private final int pageSize;
     private final int offset;
     private final String sort1;
@@ -27,6 +28,14 @@ public class MovieListQuery {
             String dir1,
             String sort2,
             String dir2) {
+        this(title, year, director, star, genre, startsWith, pageSize, offset,
+                sort1, dir1, sort2, dir2, null);
+    }
+
+    public MovieListQuery(
+            String title, String year, String director, String star, String genre,
+            String startsWith, int pageSize, int offset, String sort1, String dir1,
+            String sort2, String dir2, String fullText) {
         // Store normalized request values that are safe for the repository to use.
         this.title = title;
         this.year = year;
@@ -34,6 +43,7 @@ public class MovieListQuery {
         this.star = star;
         this.genre = genre;
         this.startsWith = startsWith;
+        this.fullText = fullText;
         this.pageSize = pageSize;
         this.offset = offset;
         this.sort1 = sort1;
@@ -70,6 +80,10 @@ public class MovieListQuery {
     public String getStartsWith() {
         // Return the normalized startsWith filter.
         return startsWith;
+    }
+
+    public String getFullText() {
+        return fullText;
     }
 
     public int getPageSize() {

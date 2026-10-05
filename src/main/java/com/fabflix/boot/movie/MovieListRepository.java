@@ -45,6 +45,9 @@ public class MovieListRepository {
         if (query.getStartsWith() != null) {
             parameters.add(query.getStartsWith());
         }
+        if (query.getFullText() != null) {
+            parameters.add(query.getFullText());
+        }
 
         parameters.add(query.getPageSize() + 1);
         parameters.add(query.getOffset());
@@ -111,6 +114,9 @@ public class MovieListRepository {
         }
         if (query.getStartsWith() != null) {
             sql.append("AND UPPER(m.title) LIKE CONCAT(UPPER(?), '%') ");
+        }
+        if (query.getFullText() != null) {
+            sql.append("AND MATCH(m.title) AGAINST(? IN BOOLEAN MODE) ");
         }
 
         sql.append(
