@@ -58,7 +58,7 @@ let starId = urlParams.get("id");
 jQuery.ajax({
     dataType: "json",
     method: "GET",
-    url: "api/single-star?id=" + starId,
+    url: "api/boot/single-star?id=" + starId,
     success: (resultData) => handleSingleStarResult(resultData),
     error: function(xhr, status, error) {
         console.error("Error fetching single star:", error);

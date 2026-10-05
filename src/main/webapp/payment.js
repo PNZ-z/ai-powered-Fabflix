@@ -16,7 +16,7 @@ function handleCartResult(resultData) {
 function loadCartTotal() {
     jQuery.ajax({
         type: "GET",
-        url: "api/cart",
+        url: "api/boot/cart",
         success: handleCartResult,
         error: function () {
             jQuery("#payment_total_price").text("Failed to load total price.");
@@ -29,7 +29,7 @@ function submitPaymentForm(formSubmitEvent) {
 
     jQuery.ajax({
         type: "POST",
-        url: "api/payment",
+        url: "api/boot/payment",
         data: jQuery("#payment_form").serialize(),
         success: function (resultData) {
             if (resultData["status"] === "success") {
