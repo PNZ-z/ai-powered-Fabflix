@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const backendTarget = env.FABFLIX_BACKEND_TARGET || 'http://localhost:8081'
 
   return {
+    appType: 'spa',
     plugins: [react()],
     server: {
       proxy: {
