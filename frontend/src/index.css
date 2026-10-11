@@ -109,3 +109,179 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+.button-link {
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+.site-header,
+.site-footer {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 24px;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.site-header nav:last-child {
+  margin-left: auto;
+}
+
+.brand {
+  color: var(--text-h);
+  font-size: 24px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.nav-link {
+  border-radius: 8px;
+  padding: 7px 10px;
+  text-decoration: none;
+}
+
+.nav-link:hover,
+.nav-link--active {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.page-content {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding: 48px 24px;
+}
+
+.site-footer {
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.route-placeholder,
+.page-state,
+.playground {
+  width: min(760px, 100%);
+}
+
+.route-placeholder__eyebrow,
+.page-state__eyebrow {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.route-placeholder h1,
+.page-state h1,
+.playground h1 {
+  margin-bottom: 12px;
+}
+
+.route-placeholder__id {
+  margin-top: 20px;
+  font-family: var(--mono);
+}
+
+.page-state__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.playground__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.playground__controls input,
+.playground__controls select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  padding: 8px 10px;
+}
+
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.movie-grid article {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .site-header nav:last-child {
+    margin-left: 0;
+  }
+
+  .page-content {
+    padding: 32px 16px;
+  }
+
+  .movie-grid {
+    grid-template-columns: 1fr;
+  }
+}

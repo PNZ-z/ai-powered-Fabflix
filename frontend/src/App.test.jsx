@@ -1,58 +1,56 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import App from './App.jsx'
+import { MemoryRouter } from 'react-router-dom'
+import { describe, expect, it } from 'vitest'
+import AppRoutes from './app/AppRoutes.jsx'
+import { routeDefinitions } from './app/routeDefinitions.js'
 
-describe('App', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'UP' }),
-    }))
+function renderRoute(path) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AppRoutes />
+    </MemoryRouter>,
+  )
+}
+
+describe('application routing', () => {
+  it.each(routeDefinitions)('renders the $title placeholder at $samplePath', (route) => {
+    renderRoute(route.samplePath)
+
+    expect(screen.getByRole('heading', { name: route.title })).toBeInTheDocument()
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('paginates the local movie list', async () => {
+  it('uses client-side navigation from the shared shell', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderRoute('/home')
 
-    expect(screen.getByText('The Shawshank Redemption')).toBeInTheDocument()
-    expect(screen.getByText('The Godfather')).toBeInTheDocument()
-    expect(screen.queryByText('The Dark Knight')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Movies' }))
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-
-    expect(screen.getByText('The Dark Knight')).toBeInTheDocument()
-    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Movie catalog' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Movies' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('filters movies and resets pagination', async () => {
-    const user = userEvent.setup()
-    render(<App />)
+  it('redirects the root route to the customer home page', async () => {
+    renderRoute('/')
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await user.type(screen.getByRole('textbox', { name: 'Search movies:' }), 'god')
-
-    expect(screen.getByText('The Godfather')).toBeInTheDocument()
-    expect(screen.queryByText('The Dark Knight')).not.toBeInTheDocument()
-    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Browse movies' })).toBeInTheDocument()
   })
 
-  it('sorts the displayed movies', async () => {
+  it('renders the requested identifier on detail placeholders', () => {
+    renderRoute('/movies/tt7654321')
+
+    expect(screen.getByText('Requested ID: tt7654321')).toBeInTheDocument()
+  })
+
+  it('renders a recovery link for unknown routes', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderRoute('/missing-page')
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Sort movies:' }),
-      'year-desc',
-    )
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+    expect(screen.getByText('No Fabflix page matches /missing-page.')).toBeInTheDocument()
 
-    const titles = screen.getAllByRole('heading', { level: 3 })
-      .map((heading) => heading.textContent)
+    await user.click(screen.getByRole('link', { name: 'Return home' }))
 
-    expect(titles).toEqual(['The Dark Knight', 'The Shawshank Redemption'])
+    expect(screen.getByRole('heading', { name: 'Browse movies' })).toBeInTheDocument()
   })
 })

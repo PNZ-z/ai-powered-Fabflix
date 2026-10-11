@@ -1,6 +1,6 @@
 # Fabflix React frontend
 
-This directory contains the React + Vite frontend introduced in Phase 2. It currently provides a small learning page that proves the frontend toolchain, Spring Boot development proxy, component structure, state handling, and automated tests. The legacy HTML/JavaScript frontend remains available while routes are migrated incrementally.
+This directory contains the React + Vite frontend introduced in Phase 2. It provides the client-side routing and shared application shell used while pages are migrated incrementally. The Issue #24 learning page remains available at `/playground`, and the legacy HTML/JavaScript frontend remains available until feature parity is complete.
 
 ## Requirements
 
@@ -59,9 +59,21 @@ The production assets are written to `dist/`. Spring Boot integration and remova
 
 ```text
 src/
-├── components/       reusable React components and component tests
+├── app/              route definitions and the route tree
+├── components/       shared layout, UI states, and small components
 ├── data/             temporary local learning data
+├── features/         feature-owned pages and components
 ├── test/             shared test setup
-├── App.jsx           page state and derived movie-list data
+├── App.jsx           browser-router boundary
 └── main.jsx          React application entry point
 ```
+
+## Route placeholders
+
+Issue #25 reserves the stable URLs used by later migration work:
+
+- Customer: `/login`, `/home`, `/movies`, `/movies/:movieId`, `/stars/:starId`, `/cart`, `/checkout`, and `/confirmation`
+- Employee: `/employee/login` and `/employee/dashboard`
+- Learning page: `/playground`
+
+Vite is explicitly configured as a single-page application, so opening or refreshing one of these routes returns `index.html` and lets React Router choose the page.

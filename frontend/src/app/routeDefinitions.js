@@ -1,0 +1,69 @@
+const customerRoutes = [
+  {
+    path: 'login',
+    samplePath: '/login',
+    title: 'Customer login',
+    description: 'Customer authentication will be migrated in Issue #27.',
+  },
+  {
+    path: 'home',
+    samplePath: '/home',
+    title: 'Browse movies',
+    description: 'Genre browsing, title browsing, search, and autocomplete will be migrated in Issue #27.',
+  },
+  {
+    path: 'movies',
+    samplePath: '/movies',
+    title: 'Movie catalog',
+    description: 'Movie filtering, sorting, and pagination will be migrated in Issue #28.',
+  },
+  {
+    path: 'movies/:movieId',
+    samplePath: '/movies/tt0123456',
+    title: 'Movie details',
+    description: 'Single-movie content will be migrated in Issue #29.',
+  },
+  {
+    path: 'stars/:starId',
+    samplePath: '/stars/nm0000001',
+    title: 'Star details',
+    description: 'Single-star content will be migrated in Issue #29.',
+  },
+  {
+    path: 'cart',
+    samplePath: '/cart',
+    title: 'Shopping cart',
+    description: 'Cart management will be migrated in Issue #30.',
+  },
+  {
+    path: 'checkout',
+    samplePath: '/checkout',
+    title: 'Checkout',
+    description: 'Payment will be migrated in Issue #30.',
+  },
+  {
+    path: 'confirmation',
+    samplePath: '/confirmation',
+    title: 'Order confirmation',
+    description: 'The confirmation flow will be migrated in Issue #30.',
+  },
+]
+
+const employeeRoutes = [
+  {
+    path: 'employee/login',
+    samplePath: '/employee/login',
+    title: 'Employee login',
+    description: 'Employee authentication will be migrated in Issue #31.',
+  },
+  {
+    path: 'employee/dashboard',
+    samplePath: '/employee/dashboard',
+    title: 'Employee dashboard',
+    description: 'Metadata and movie-management tools will be migrated in Issue #31.',
+  },
+]
+
+const routeDefinitions = [...customerRoutes, ...employeeRoutes]
+
+export { customerRoutes, employeeRoutes, routeDefinitions }
