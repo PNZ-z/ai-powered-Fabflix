@@ -1,6 +1,6 @@
 # AI-powered Fabflix
 
-Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application now uses Spring Boot, JDBC, MySQL, and a browser-based JavaScript frontend. Legacy servlet endpoints have been retired; offline import and maintenance programs remain available as standalone utilities.
+Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application uses Spring Boot, JDBC, and MySQL. A React + Vite frontend now lives alongside the existing browser-based JavaScript frontend so pages can be migrated incrementally. Legacy servlet endpoints have been retired; offline import and maintenance programs remain available as standalone utilities.
 
 ## Modernization roadmap
 
@@ -12,7 +12,7 @@ Fabflix is a Java movie-commerce application being modernized into a Spring Boot
 ## Current architecture
 
 ```text
-Browser (HTML + JavaScript)
+Browser (React + Vite during migration, legacy HTML + JavaScript retained)
           |
 Spring MVC controllers and authentication filters
           |
@@ -74,6 +74,29 @@ GET http://localhost:8081/api/boot/health
 ```
 
 The executable application is built at `target/fablix.jar` by `mvn package` or `mvn verify` and can be run with `java -jar target/fablix.jar --spring.profiles.active=local`.
+
+## React frontend development
+
+The Phase 2 React application is isolated under `frontend/`. It runs independently from Spring Boot during development and forwards `/api` requests to the backend.
+
+```shell
+cd frontend
+npm install
+npm run dev
+```
+
+Copy `frontend/.env.example` to `frontend/.env` before the first run. By default, Vite serves React on `http://localhost:5173` and proxies API requests to Spring Boot on `http://localhost:8081`.
+
+Run all current frontend checks with:
+
+```shell
+cd frontend
+npm run lint
+npm test
+npm run build
+```
+
+The existing HTML/JavaScript frontend remains the supported application while React routes are migrated. See [`frontend/README.md`](frontend/README.md) for the frontend structure and commands.
 
 ## API verification
 
