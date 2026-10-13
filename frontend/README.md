@@ -83,3 +83,5 @@ Vite is explicitly configured as a single-page application, so opening or refres
 Issue #26 adds a shared API client under `src/api/`. It sends session cookies with every request, parses JSON responses, and turns HTTP or network failures into a consistent `ApiError`.
 
 `AuthProvider` checks customer and employee sessions independently when the application starts. Customer pages redirect anonymous users to `/login`; employee pages redirect them to `/employee/login`. A temporary backend failure displays the shared retryable error state instead of incorrectly treating the user as logged out.
+
+Set `VITE_RECAPTCHA_SITE_KEY` for deployments that use Google reCAPTCHA. Leave it empty with the Spring Boot `local` profile, whose local verifier intentionally accepts login requests without a token.

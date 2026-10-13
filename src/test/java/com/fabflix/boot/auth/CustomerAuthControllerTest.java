@@ -99,6 +99,15 @@ class CustomerAuthControllerTest {
     }
 
     @Test
+    void returnsNoContentForReactLogout() throws Exception {
+        mockMvc.perform(get("/api/boot/logout")
+                        .header("Accept", "application/json")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
+                .andExpect(status().isNoContent())
+                .andExpect(request -> assertNull(request.getRequest().getSession(false)));
+    }
+
+    @Test
     void returnsSafeErrorWhenAuthenticationDependencyFails() throws Exception {
         when(recaptchaVerifier.verify("valid-token"))
                 .thenThrow(new RuntimeException("secret upstream details"));

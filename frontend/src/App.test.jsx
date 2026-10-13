@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppRoutes from './app/AppRoutes.jsx'
 import { AuthContext } from './auth/authContext.js'
 import { routeDefinitions } from './app/routeDefinitions.js'
@@ -33,6 +33,17 @@ function renderRoute(path, sessions = {}) {
 }
 
 describe('application routing', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify([{ name: 'Drama' }]),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it.each(routeDefinitions)('renders the $title placeholder at $samplePath', (route) => {
     renderRoute(route.samplePath)
 
@@ -52,7 +63,7 @@ describe('application routing', () => {
   it('redirects the root route to the customer home page', async () => {
     renderRoute('/')
 
-    expect(await screen.findByRole('heading', { name: 'Browse movies' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Find your next Fabflix movie' })).toBeInTheDocument()
   })
 
   it('renders the requested identifier on detail placeholders', () => {
@@ -64,7 +75,7 @@ describe('application routing', () => {
   it('redirects anonymous customers to customer login', async () => {
     renderRoute('/cart', { customer: anonymousSession })
 
-    expect(await screen.findByRole('heading', { name: 'Customer login' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sign in to Fabflix' })).toBeInTheDocument()
   })
 
   it('redirects anonymous employees to employee login', async () => {
@@ -89,6 +100,6 @@ describe('application routing', () => {
 
     await user.click(screen.getByRole('link', { name: 'Return home' }))
 
-    expect(screen.getByRole('heading', { name: 'Browse movies' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Find your next Fabflix movie' })).toBeInTheDocument()
   })
 })

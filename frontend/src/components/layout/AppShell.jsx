@@ -1,4 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { useAuth } from '../../auth/authContext.js'
+import LogoutButton from '../../features/auth/LogoutButton.jsx'
 
 const customerLinks = [
   { to: '/home', label: 'Home' },
@@ -16,6 +18,8 @@ function navigationClass({ isActive }) {
 }
 
 function AppShell() {
+  const { customer } = useAuth()
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -46,7 +50,9 @@ function AppShell() {
 
       <footer className="site-footer">
         <span>Fabflix</span>
-        <NavLink to="/login">Customer login</NavLink>
+        {customer.status === 'authenticated'
+          ? <LogoutButton />
+          : <NavLink to="/login">Customer login</NavLink>}
       </footer>
     </div>
   )
