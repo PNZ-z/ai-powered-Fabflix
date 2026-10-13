@@ -4,6 +4,7 @@ import EmptyState from '../../components/states/EmptyState.jsx'
 import ErrorState from '../../components/states/ErrorState.jsx'
 import LoadingState from '../../components/states/LoadingState.jsx'
 import { fetchMovieList } from './movieListApi.js'
+import { saveLastMovieListQuery } from './lastMovieList.js'
 import MovieTable from './MovieTable.jsx'
 
 const DEFAULT_PAGE_NUMBER = 0
@@ -77,6 +78,11 @@ function MovieCatalog() {
         if (!active) return
         setMovies(results)
         setStatus('success')
+        // Remember the last list that showed movies so the detail pages can
+        // send the visitor back to it, replacing the legacy jump-back session.
+        if (results.length > 0) {
+          saveLastMovieListQuery(searchParams.toString())
+        }
       })
       .catch((requestError) => {
         if (!active) return

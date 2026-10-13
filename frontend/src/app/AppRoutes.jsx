@@ -4,8 +4,10 @@ import AppShell from '../components/layout/AppShell.jsx'
 import NotFoundPage from '../components/states/NotFoundPage.jsx'
 import LoginPage from '../features/auth/LoginPage.jsx'
 import HomePage from '../features/home/HomePage.jsx'
+import MovieDetailPage from '../features/movies/MovieDetailPage.jsx'
 import MovieListPage from '../features/movies/MovieListPage.jsx'
 import RoutePlaceholderPage from '../features/placeholders/RoutePlaceholderPage.jsx'
+import StarDetailPage from '../features/stars/StarDetailPage.jsx'
 import PlaygroundPage from '../features/playground/PlaygroundPage.jsx'
 import {
   customerProtectedRoutes,
@@ -34,6 +36,8 @@ function AppRoutes() {
         <Route element={<ProtectedRoute audience="customer" />}>
           <Route path="home" element={<HomePage />} />
           <Route path="movies" element={<MovieListPage />} />
+          <Route path="movies/:movieId" element={<MovieDetailPage />} />
+          <Route path="stars/:starId" element={<StarDetailPage />} />
           {customerProtectedRoutes.map(placeholderRoute)}
         </Route>
         {employeePublicRoutes.map(placeholderRoute)}
