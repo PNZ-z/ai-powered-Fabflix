@@ -3,12 +3,31 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import AppRoutes from './app/AppRoutes.jsx'
+import { AuthContext } from './auth/authContext.js'
 import { routeDefinitions } from './app/routeDefinitions.js'
 
-function renderRoute(path) {
+const authenticatedSession = { status: 'authenticated', user: {}, error: null }
+const anonymousSession = { status: 'anonymous', user: null, error: null }
+const failedSession = {
+  status: 'error',
+  user: null,
+  error: new Error('Unable to reach the Fabflix server.'),
+}
+
+function renderRoute(path, sessions = {}) {
+  const auth = {
+    customer: authenticatedSession,
+    employee: authenticatedSession,
+    refreshCustomer: () => {},
+    refreshEmployee: () => {},
+    ...sessions,
+  }
+
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <AppRoutes />
+      <AuthContext.Provider value={auth}>
+        <AppRoutes />
+      </AuthContext.Provider>
     </MemoryRouter>,
   )
 }
@@ -40,6 +59,25 @@ describe('application routing', () => {
     renderRoute('/movies/tt7654321')
 
     expect(screen.getByText('Requested ID: tt7654321')).toBeInTheDocument()
+  })
+
+  it('redirects anonymous customers to customer login', async () => {
+    renderRoute('/cart', { customer: anonymousSession })
+
+    expect(await screen.findByRole('heading', { name: 'Customer login' })).toBeInTheDocument()
+  })
+
+  it('redirects anonymous employees to employee login', async () => {
+    renderRoute('/employee/dashboard', { employee: anonymousSession })
+
+    expect(await screen.findByRole('heading', { name: 'Employee login' })).toBeInTheDocument()
+  })
+
+  it('shows a user-facing error when session validation fails', () => {
+    renderRoute('/movies', { customer: failedSession })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to reach the Fabflix server.')
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
   })
 
   it('renders a recovery link for unknown routes', async () => {

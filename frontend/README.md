@@ -77,3 +77,9 @@ Issue #25 reserves the stable URLs used by later migration work:
 - Learning page: `/playground`
 
 Vite is explicitly configured as a single-page application, so opening or refreshing one of these routes returns `index.html` and lets React Router choose the page.
+
+## API and authentication
+
+Issue #26 adds a shared API client under `src/api/`. It sends session cookies with every request, parses JSON responses, and turns HTTP or network failures into a consistent `ApiError`.
+
+`AuthProvider` checks customer and employee sessions independently when the application starts. Customer pages redirect anonymous users to `/login`; employee pages redirect them to `/employee/login`. A temporary backend failure displays the shared retryable error state instead of incorrectly treating the user as logged out.
