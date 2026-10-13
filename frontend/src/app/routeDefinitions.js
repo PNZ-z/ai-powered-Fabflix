@@ -2,12 +2,6 @@ const customerPublicRoutes = []
 
 const customerProtectedRoutes = [
   {
-    path: 'movies',
-    samplePath: '/movies',
-    title: 'Movie catalog',
-    description: 'Movie filtering, sorting, and pagination will be migrated in Issue #28.',
-  },
-  {
     path: 'movies/:movieId',
     samplePath: '/movies/tt0123456',
     title: 'Movie details',

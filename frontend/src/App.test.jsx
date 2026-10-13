@@ -32,12 +32,27 @@ function renderRoute(path, sessions = {}) {
   )
 }
 
+const movieSummaries = [{
+  movie_id: 'tt0123456',
+  movie_title: 'Example Movie',
+  movie_year: 2020,
+  movie_director: 'Example Director',
+  movie_genres: 'Drama',
+  movie_rating: 8.0,
+  movie_stars: [{ star_id: 'nm0000001', star_name: 'Example Star' }],
+}]
+
 describe('application routing', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
-      JSON.stringify([{ name: 'Drama' }]),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    )))
+    vi.stubGlobal('fetch', vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url
+      const isMovieList = url.includes('/movie-list') || url.includes('/full-text-search')
+      const body = isMovieList ? movieSummaries : [{ name: 'Drama' }]
+      return Promise.resolve(new Response(
+        JSON.stringify(body),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ))
+    }))
   })
 
   afterEach(() => {
