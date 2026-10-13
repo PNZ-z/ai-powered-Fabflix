@@ -1,19 +1,6 @@
-const customerPublicRoutes = [
-  {
-    path: 'login',
-    samplePath: '/login',
-    title: 'Customer login',
-    description: 'Customer authentication will be migrated in Issue #27.',
-  },
-]
+const customerPublicRoutes = []
 
 const customerProtectedRoutes = [
-  {
-    path: 'home',
-    samplePath: '/home',
-    title: 'Browse movies',
-    description: 'Genre browsing, title browsing, search, and autocomplete will be migrated in Issue #27.',
-  },
   {
     path: 'movies',
     samplePath: '/movies',

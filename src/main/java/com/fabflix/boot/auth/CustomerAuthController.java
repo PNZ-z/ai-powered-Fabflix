@@ -57,9 +57,15 @@ public class CustomerAuthController {
     }
 
     @GetMapping("/api/boot/logout")
-    public void logout(HttpSession session, HttpServletResponse response) throws IOException {
+    public void logout(HttpSession session, HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
         session.invalidate();
         logger.info("Customer session invalidated");
-        response.sendRedirect("/login.html");
+        String accept = request.getHeader("Accept");
+        if (accept != null && accept.contains("application/json")) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } else {
+            response.sendRedirect("/login.html");
+        }
     }
 }
