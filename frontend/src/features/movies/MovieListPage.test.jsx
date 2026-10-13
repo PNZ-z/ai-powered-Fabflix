@@ -41,6 +41,7 @@ function renderMovieList(path, fetchMock) {
 }
 
 afterEach(() => {
+  window.sessionStorage.clear()
   vi.unstubAllGlobals()
 })
 
@@ -199,6 +200,17 @@ describe('MovieListPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'No movies found' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+  })
+
+  it('remembers the list query for the detail pages', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
+    renderMovieList('/movies?genre=Drama&pageNumber=2&pageSize=25', fetchMock)
+
+    await screen.findByRole('link', { name: 'Neon Horizon' })
+
+    expect(window.sessionStorage.getItem('fabflix.lastMovieQuery')).toBe(
+      'genre=Drama&pageNumber=2&pageSize=25',
+    )
   })
 
   it('shows a retryable error state when the request fails', async () => {

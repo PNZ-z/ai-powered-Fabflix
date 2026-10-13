@@ -503,6 +503,58 @@ button:disabled {
   margin-top: 24px;
 }
 
+.detail-page {
+  width: min(640px, 100%);
+}
+
+.detail-meta {
+  display: grid;
+  gap: 0;
+  margin: 24px 0 0;
+  text-align: left;
+}
+
+.detail-meta__row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.detail-meta dt {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.detail-meta dd {
+  margin: 0;
+  color: var(--text-h);
+}
+
+.detail-section {
+  margin-top: 28px;
+  text-align: left;
+}
+
+.detail-links,
+.detail-links--empty {
+  margin: 8px 0 0;
+}
+
+.detail-links a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.detail-links a:hover {
+  text-decoration: underline;
+}
+
+.detail-page__back {
+  margin-top: 32px;
+}
+
 @media (max-width: 760px) {
   .site-header {
     align-items: flex-start;

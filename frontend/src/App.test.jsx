@@ -42,14 +42,37 @@ const movieSummaries = [{
   movie_stars: [{ star_id: 'nm0000001', star_name: 'Example Star' }],
 }]
 
+const movieDetail = {
+  movie_id: 'tt7654321',
+  movie_title: 'Example Detail Movie',
+  movie_year: 2019,
+  movie_director: 'Detail Director',
+  movie_genres: 'Action, Drama',
+  movie_rating: '7.5',
+  movie_stars: [{ star_id: 'nm0000001', star_name: 'Example Star' }],
+}
+
+const starDetail = {
+  star_id: 'nm0000001',
+  star_name: 'Example Star',
+  star_birth_year: 1970,
+  star_movies: [{ movie_id: 'tt7654321', movie_title: 'Example Detail Movie' }],
+}
+
+function responseBody(url) {
+  if (url.includes('/single-movie')) return movieDetail
+  if (url.includes('/single-star')) return starDetail
+  if (url.includes('/movie-list') || url.includes('/full-text-search')) return movieSummaries
+  return [{ name: 'Drama' }]
+}
+
 describe('application routing', () => {
   beforeEach(() => {
+    window.sessionStorage.clear()
     vi.stubGlobal('fetch', vi.fn((input) => {
       const url = typeof input === 'string' ? input : input.url
-      const isMovieList = url.includes('/movie-list') || url.includes('/full-text-search')
-      const body = isMovieList ? movieSummaries : [{ name: 'Drama' }]
       return Promise.resolve(new Response(
-        JSON.stringify(body),
+        JSON.stringify(responseBody(url)),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ))
     }))
@@ -81,10 +104,24 @@ describe('application routing', () => {
     expect(await screen.findByRole('heading', { name: 'Find your next Fabflix movie' })).toBeInTheDocument()
   })
 
-  it('renders the requested identifier on detail placeholders', () => {
+  it('renders the movie detail page for movie ids', async () => {
     renderRoute('/movies/tt7654321')
 
-    expect(screen.getByText('Requested ID: tt7654321')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Example Detail Movie' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Example Star' })).toHaveAttribute(
+      'href',
+      '/stars/nm0000001',
+    )
+  })
+
+  it('renders the star detail page for star ids', async () => {
+    renderRoute('/stars/nm0000001')
+
+    expect(await screen.findByRole('heading', { name: 'Example Star' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Example Detail Movie' })).toHaveAttribute(
+      'href',
+      '/movies/tt7654321',
+    )
   })
 
   it('redirects anonymous customers to customer login', async () => {
