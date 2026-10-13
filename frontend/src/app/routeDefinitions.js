@@ -1,10 +1,13 @@
-const customerRoutes = [
+const customerPublicRoutes = [
   {
     path: 'login',
     samplePath: '/login',
     title: 'Customer login',
     description: 'Customer authentication will be migrated in Issue #27.',
   },
+]
+
+const customerProtectedRoutes = [
   {
     path: 'home',
     samplePath: '/home',
@@ -49,13 +52,16 @@ const customerRoutes = [
   },
 ]
 
-const employeeRoutes = [
+const employeePublicRoutes = [
   {
     path: 'employee/login',
     samplePath: '/employee/login',
     title: 'Employee login',
     description: 'Employee authentication will be migrated in Issue #31.',
   },
+]
+
+const employeeProtectedRoutes = [
   {
     path: 'employee/dashboard',
     samplePath: '/employee/dashboard',
@@ -64,6 +70,16 @@ const employeeRoutes = [
   },
 ]
 
+const customerRoutes = [...customerPublicRoutes, ...customerProtectedRoutes]
+const employeeRoutes = [...employeePublicRoutes, ...employeeProtectedRoutes]
 const routeDefinitions = [...customerRoutes, ...employeeRoutes]
 
-export { customerRoutes, employeeRoutes, routeDefinitions }
+export {
+  customerProtectedRoutes,
+  customerPublicRoutes,
+  customerRoutes,
+  employeeProtectedRoutes,
+  employeePublicRoutes,
+  employeeRoutes,
+  routeDefinitions,
+}

@@ -26,6 +26,9 @@ Content-Type: application/x-www-form-urlencoded
 
 username={{customerEmail}}&password={{customerPassword}}
 
+### 查看当前客户 session（需要先运行客户登录请求）
+GET {{baseUrl}}/api/boot/session/customer
+
 ### 自动补全（最多返回 10 条，并保持 value/data.movie_id 格式）
 GET {{baseUrl}}/api/boot/autocomplete?query=Sho
 
@@ -49,6 +52,9 @@ POST {{baseUrl}}/api/boot/employee-login
 Content-Type: application/x-www-form-urlencoded
 
 username={{employeeEmail}}&password={{employeePassword}}
+
+### 查看当前员工 session（需要先运行员工登录请求）
+GET {{baseUrl}}/api/boot/dashboard/session
 
 ### 查看数据库 metadata（需要员工登录会话）
 GET {{baseUrl}}/api/boot/dashboard?action=metadata

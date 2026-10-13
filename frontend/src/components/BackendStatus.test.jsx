@@ -8,10 +8,10 @@ describe('BackendStatus', () => {
   })
 
   it('shows the status returned by the backend', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'UP' }),
-    }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ status: 'UP' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
 
     render(<BackendStatus />)
 
@@ -20,7 +20,7 @@ describe('BackendStatus', () => {
   })
 
   it('shows an unavailable state when the request fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
 
     render(<BackendStatus />)
 
