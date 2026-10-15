@@ -59,10 +59,32 @@ const starDetail = {
   star_movies: [{ movie_id: 'tt7654321', movie_title: 'Example Detail Movie' }],
 }
 
+const cartItems = [{
+  movie_id: 'tt0123456',
+  movie_title: 'Example Movie',
+  quantity: 2,
+  price: 7.5,
+}]
+
+const confirmationOrder = {
+  order_date: '2026-10-14',
+  total_amount: 15,
+  lines: [{
+    movie_id: 'tt0123456',
+    movie_title: 'Example Movie',
+    quantity: 2,
+    unit_price: 7.5,
+    line_total: 15,
+  }],
+}
+
 function responseBody(url) {
   if (url.includes('/single-movie')) return movieDetail
   if (url.includes('/single-star')) return starDetail
   if (url.includes('/movie-list') || url.includes('/full-text-search')) return movieSummaries
+  if (url.includes('/boot/checkout/token')) return { status: 'success', token: 'checkout-token' }
+  if (url.includes('/boot/confirmation')) return confirmationOrder
+  if (url.includes('/boot/cart')) return cartItems
   return [{ name: 'Drama' }]
 }
 
@@ -124,11 +146,37 @@ describe('application routing', () => {
     )
   })
 
-  it('redirects anonymous customers to customer login', async () => {
-    renderRoute('/cart', { customer: anonymousSession })
+  it('renders the real cart page for authenticated customers', async () => {
+    renderRoute('/cart')
 
-    expect(await screen.findByRole('heading', { name: 'Sign in to Fabflix' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Shopping cart' })).toBeInTheDocument()
+    expect(screen.getByText('Example Movie')).toBeInTheDocument()
+    expect(screen.getByText('Total: $15.00')).toBeInTheDocument()
   })
+
+  it('renders the checkout form for authenticated customers', async () => {
+    renderRoute('/checkout')
+
+    expect(await screen.findByRole('heading', { name: 'Checkout' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Credit card number')).toBeRequired()
+  })
+
+  it('renders the confirmation page for authenticated customers', async () => {
+    renderRoute('/confirmation')
+
+    expect(await screen.findByRole('heading', { name: 'Order confirmed' })).toBeInTheDocument()
+    expect(screen.getByText('Order date: 2026-10-14')).toBeInTheDocument()
+    expect(screen.getByText('Total: $15.00')).toBeInTheDocument()
+  })
+
+  it.each(['/cart', '/checkout', '/confirmation'])(
+    'redirects anonymous customers away from %s',
+    async (path) => {
+      renderRoute(path, { customer: anonymousSession })
+
+      expect(await screen.findByRole('heading', { name: 'Sign in to Fabflix' })).toBeInTheDocument()
+    },
+  )
 
   it('redirects anonymous employees to employee login', async () => {
     renderRoute('/employee/dashboard', { employee: anonymousSession })

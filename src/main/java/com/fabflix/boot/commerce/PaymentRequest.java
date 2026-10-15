@@ -5,6 +5,7 @@ public class PaymentRequest {
     private String lastName;
     private String creditCardNumber;
     private String expirationDate;
+    private String checkoutToken;
 
     public String getFirstName() {
         return firstName;
@@ -36,5 +37,13 @@ public class PaymentRequest {
 
     public void setExpirationDate(String expirationDate) {
         this.expirationDate = expirationDate;
+    }
+
+    public String getCheckoutToken() {
+        return checkoutToken;
+    }
+
+    public void setCheckoutToken(String checkoutToken) {
+        this.checkoutToken = checkoutToken;
     }
 }

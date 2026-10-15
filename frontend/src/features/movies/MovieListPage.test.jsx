@@ -226,4 +226,24 @@ describe('MovieListPage', () => {
     expect(await screen.findByRole('link', { name: 'Neon Horizon' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
+
+  it('adds a movie to the cart from the list', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url
+      if (url.includes('/boot/cart')) {
+        return Promise.resolve(jsonResponse({ status: 'success' }))
+      }
+      return Promise.resolve(jsonResponse([movieSummary()]))
+    })
+    renderMovieList('/movies', fetchMock)
+    const user = userEvent.setup()
+
+    await screen.findByRole('link', { name: 'Neon Horizon' })
+    await user.click(screen.getByRole('button', { name: 'Add to cart' }))
+
+    const cartCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/boot/cart'))
+    expect(String(cartCall[0])).toBe('/api/boot/cart')
+    expect(cartCall[1].method).toBe('POST')
+    expect(String(cartCall[1].body)).toBe('movieId=tt9000001&action=add')
+  })
 })

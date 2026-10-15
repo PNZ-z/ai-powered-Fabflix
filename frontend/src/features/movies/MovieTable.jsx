@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import AddToCartButton from '../cart/AddToCartButton.jsx'
 import { genreBrowseUrl } from './movieListApi.js'
 
 // The backend packs the top three genres into one comma-separated string.
@@ -46,7 +47,10 @@ function MovieRow({ movie, pageSize }) {
           </span>
         ))}
       </td>
-      <td>{movie.movie_rating ?? 'N/A'}</td>
+      <td className="movie-table__rating">{movie.movie_rating ?? 'N/A'}</td>
+      <td className="movie-table__actions">
+        <AddToCartButton movieId={movie.movie_id} movieTitle={movie.movie_title} />
+      </td>
     </tr>
   )
 }
@@ -63,6 +67,7 @@ function MovieTable({ movies, pageSize }) {
             <th>Genres</th>
             <th>Stars</th>
             <th>Rating</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>

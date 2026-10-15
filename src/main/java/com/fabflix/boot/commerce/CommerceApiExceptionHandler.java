@@ -9,7 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = {CartController.class, PaymentController.class})
+@RestControllerAdvice(assignableTypes = {
+        CartController.class,
+        PaymentController.class,
+        CheckoutController.class
+})
 public class CommerceApiExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(CommerceApiExceptionHandler.class);
 
