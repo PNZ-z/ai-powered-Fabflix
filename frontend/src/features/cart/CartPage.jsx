@@ -4,6 +4,7 @@ import EmptyState from '../../components/states/EmptyState.jsx'
 import ErrorState from '../../components/states/ErrorState.jsx'
 import LoadingState from '../../components/states/LoadingState.jsx'
 import { fetchCart, updateCartItem } from './cartApi.js'
+import { useCartStatus } from './cartStatusContext.js'
 import { formatCents, toCents } from './money.js'
 
 function CartPage() {
@@ -13,6 +14,7 @@ function CartPage() {
   const [actionError, setActionError] = useState(null)
   const [retryCount, setRetryCount] = useState(0)
   const [busyMovieId, setBusyMovieId] = useState(null)
+  const { requestCountRefresh } = useCartStatus()
 
   // The cart lives on the server; every mount re-reads it instead of caching,
   // so navigation and refresh always show the session cart.
@@ -43,6 +45,8 @@ function CartPage() {
       await updateCartItem(movieId, action)
       setItems(await fetchCart())
       setStatus('success')
+      // Keep the nav badge in step with the rows this page just re-read.
+      requestCountRefresh()
     } catch (requestError) {
       setActionError(requestError.message)
     } finally {

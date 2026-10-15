@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AuthContext } from '../../auth/authContext.js'
 import CartPage from '../cart/CartPage.jsx'
+import CartStatusProvider from '../cart/CartStatusProvider.jsx'
 import ConfirmationPage from './ConfirmationPage.jsx'
 import PaymentPage from './PaymentPage.jsx'
 
@@ -51,15 +53,21 @@ function flowFetch() {
 }
 
 function renderFlow() {
+  // The cart status provider is mounted here as an anonymous session, so it adds
+  // no /boot/cart request of its own to the request sequence asserted below.
   return render(
-    <MemoryRouter initialEntries={['/cart']}>
-      <Routes>
-        <Route path="cart" element={<CartPage />} />
-        <Route path="checkout" element={<PaymentPage />} />
-        <Route path="confirmation" element={<ConfirmationPage />} />
-        <Route path="movies" element={<p>Movies page</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthContext.Provider value={{ customer: { status: 'anonymous', user: null, error: null } }}>
+      <CartStatusProvider>
+        <MemoryRouter initialEntries={['/cart']}>
+          <Routes>
+            <Route path="cart" element={<CartPage />} />
+            <Route path="checkout" element={<PaymentPage />} />
+            <Route path="confirmation" element={<ConfirmationPage />} />
+            <Route path="movies" element={<p>Movies page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </CartStatusProvider>
+    </AuthContext.Provider>,
   )
 }
 

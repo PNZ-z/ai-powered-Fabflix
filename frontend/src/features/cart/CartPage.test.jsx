@@ -2,7 +2,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AuthContext } from '../../auth/authContext.js'
 import CartPage from './CartPage.jsx'
+import CartStatusProvider from './CartStatusProvider.jsx'
+
+// The cart page itself does not depend on a session, and an anonymous session
+// keeps the provider from adding its own /boot/cart request to the calls the
+// tests below index into.
+const anonymousSession = { status: 'anonymous', user: null, error: null }
 
 function jsonResponse(body, status = 200) {
   return new Response(
@@ -24,13 +31,17 @@ function cartItem(overrides = {}) {
 function renderCart(fetchMock) {
   vi.stubGlobal('fetch', fetchMock)
   return render(
-    <MemoryRouter initialEntries={['/cart']}>
-      <Routes>
-        <Route path="cart" element={<CartPage />} />
-        <Route path="movies" element={<p>Movies page</p>} />
-        <Route path="checkout" element={<p>Checkout page</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthContext.Provider value={{ customer: anonymousSession }}>
+      <CartStatusProvider>
+        <MemoryRouter initialEntries={['/cart']}>
+          <Routes>
+            <Route path="cart" element={<CartPage />} />
+            <Route path="movies" element={<p>Movies page</p>} />
+            <Route path="checkout" element={<p>Checkout page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </CartStatusProvider>
+    </AuthContext.Provider>,
   )
 }
 

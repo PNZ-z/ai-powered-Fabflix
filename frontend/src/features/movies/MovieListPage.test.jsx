@@ -3,6 +3,8 @@ import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AuthContext } from '../../auth/authContext.js'
+import CartStatusProvider from '../cart/CartStatusProvider.jsx'
 import MovieListPage from './MovieListPage.jsx'
 import { MOVIE_LIST_CACHE_TTL_MS, clearMovieListCache, loadMovieList, saveMovieListScroll } from './movieListCache.js'
 import { movieListRequestPath } from './movieListApi.js'
@@ -58,15 +60,24 @@ async function seedMovieListCache(query, movies, { ageMs = 0 } = {}) {
   }
 }
 
+// The add-to-cart controls use the shared cart status; an anonymous session
+// keeps the provider from requesting the cart count on mount, so the request
+// counts asserted below stay about the movie list itself.
+const anonymousSession = { status: 'anonymous', user: null, error: null }
+
 function renderMovieList(path, fetchMock, { strict = false } = {}) {
   vi.stubGlobal('fetch', fetchMock)
   const list = (
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="movies" element={<MovieListPage />} />
-        <Route path="home" element={<p>Home page</p>} />
-      </Routes>
-    </MemoryRouter>
+    <AuthContext.Provider value={{ customer: anonymousSession }}>
+      <CartStatusProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="movies" element={<MovieListPage />} />
+            <Route path="home" element={<p>Home page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </CartStatusProvider>
+    </AuthContext.Provider>
   )
 
   return render(strict ? <StrictMode>{list}</StrictMode> : list)
