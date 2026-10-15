@@ -10,7 +10,8 @@
 | 完成日期 | 2026-10-14 |
 | GitHub issue | #30 — https://github.com/PNZ-z/ai-powered-Fabflix/issues/30（远端 issue，未新建） |
 | 分支 | `codex/issue-30-cart-payment-confirmation` |
-| 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为分支当前 HEAD）。本地 `git rev-parse HEAD` = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作 |
+| 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为当时分支 HEAD）。本地 `git rev-parse HEAD` 当时 = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作。**后续变化**：PR #40 审查后新增修复提交 `6b637a4`，使本地 HEAD = `6b637a452a0b03229032af29ddb9b91999e9c24d`、分支相对 `origin` **ahead 1**（**尚未推送**）——见下方「审查后后续修复」行与 §3 |
+| 审查后后续修复 | **提交 `6b637a4`** — `feat: improve movie list layout, sorting controls, and caching`：PR #40 审查通过**之后**用户提出的 3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 推送**（`git status -sb` 显示 `[ahead 1]`）；**未推送、未合并**，推送后需回填。逐项说明与残余边界见 §3 |
 | PR | **#40 已创建** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；状态 **OPEN**、非 draft、mergeable；GitHub 已识别 `Closes #30`）。由 `github-operator` 创建（主 agent 回传，具体创建时间未由 docs-writer 直接核实）。**尚未合并**——合并前以 PR 的 CI 结果与 review 为准。docs-writer 无 GitHub 访问授权，未直接查询远端 |
 | 计划文档 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（§12/§12.1 裁定，§13.1 实现结果） |
 | Issue 跟踪文档 | `docs/issues/issue-30-migrate-cart-payment-confirmation-flows.md` |
@@ -30,6 +31,8 @@
 | 后端 surefire 报告汇总（`target/surefire-reports/*.txt`，39 个测试类） | docs-writer 按既有产物统计复核 | `total=120 failures=0 errors=0 skipped=0`（与 `verify` 结果一致） |
 
 > 说明：docs-writer **未**重跑后端全量 `mvn --batch-mode verify`（耗时长且不改源码）；上表后端数字引自主 agent 终验，并用仓库内同一次运行的产物（`jacoco.csv`、surefire 报告）独立核对一致。前端 `npm test`、`npm run lint` 由 docs-writer 实际复跑，结果与主 agent 报告一致。
+>
+> **追加（2026-10-14，PR #40 审查后的后续修复，提交 `6b637a4`）**：前端实测 **`npm test` → 25 files / 142 tests passed**（本次修复前为 24 files / 116 tests）、**`npm run lint` → exit 0**、**`npm run build` → 成功**；后端零改动（`6b637a4` 仅含前端文件），**未重跑** `mvn verify`。上表各项数字为 #30 实现终验时点的结果，**未改动**；新数字与逐条命令见 §3.4。
 
 ---
 
@@ -183,3 +186,106 @@
 - **为何值得学习**：显式理解“谁负责设置 Content-Type”，避免 JSON 序列化 body 打到表单绑定端点导致 400/参数为空。
 
 **本次没有新增知识点的情况：不适用——以上各条均为本次变更实际引入或显著涉及的内容。**
+
+---
+
+## 3. PR #40 审查后的后续修复（UI 与缓存）
+
+> **本节定位**：PR #40（OPEN）审查通过**之后**，用户又提出 3 组后续修复要求（表格宽度回归、排序控件重做、movie list 前端缓存），已并入同一分支 `codex/issue-30-cart-payment-confirmation`，落在提交 **`6b637a4`**（`feat: improve movie list layout, sorting controls, and caching`）。
+>
+> **状态（截至 2026-10-14）**：**已提交，尚未推送**（`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `6b637a452a0b03229032af29ddb9b91999e9c24d`）。**待主 agent 推送**（提交 `6b637a4`）并更新 PR #40；推送后本状态需回填。本提交**未推送、未合并**。
+>
+> **契约影响**：未改后端契约、未改 `frontend/src/api/apiClient.js`、未新增依赖。`6b637a4` 仅含前端文件：`App.test.jsx`、`features/movies/*`、`index.css`。
+>
+> 延续上文的两大类：**§3.1–§3.5 属「修改了哪些文件及潜在问题」**，**§3.6 属「新增知识点」**。
+
+### 3.1 表格宽度回归修复（`index.css`、`MovieTable.jsx`）
+
+**问题**：宽表格的 min-content 宽度会向上传播，把 AppShell 的 grid 布局撑破（页面出现非预期横向溢出，而表格自身未在自己的容器里滚动）。
+
+| 文件 | 变更与目的 |
+| --- | --- |
+| `frontend/src/index.css` | ① 新增 `.page-content > * { min-width: 0; max-width: 100% }`：grid 子项默认 `min-width: auto`，会被内部宽表格的 min-content 撑开，置 `0` 后由表格容器自己横向滚动；② 新增 `.movie-table-wrap { max-width: 100% }`（配合既有 `overflow-x: auto`）；③ Title / Director / Genres / Stars 四列改按显式类名 `white-space: normal; min-width: 8ch`（**Year / Rating / Actions 保持 nowrap**）；④ `.cart-table td:first-child`、`.confirmation-table td:first-child { white-space: normal }`（长片名不再把表格顶宽）；⑤ `.cart-page` / `.checkout-page` / `.confirmation-page { width: min(760px, 100%) }`（窄屏不溢出、宽屏不铺满）。 |
+| `frontend/src/features/movies/MovieTable.jsx` | 为上述四个 `<td>` 补 `className`（`movie-table__title` / `__director` / `__genres` / `__stars`），使 CSS 不再依赖位置选择器（`td:last-child` 是 #30 首轮已修过一次的误指向隐患）。 |
+
+### 3.2 排序控件重做（`MovieListPage.jsx`、`index.css`）
+
+用户对排序区先后两次反馈，最终版：
+
+- **字段选择改为始终可见的 radio pills（Title / Rating）**：`SortFieldPills` 渲染原生 `<input type="radio">`（视觉上 1px 透明隐藏）+ `<label>` 作为 pill，保留 radio group 语义与键盘/聚焦行为；选中态类 `movie-sort-pill--selected`，外框由 `:focus-within` 承担；容器带 `role="radiogroup"` + `aria-label`。
+- **两行结构**：`Sort by`（主）与 `then`（次）各占一行，行内顺序为「字段 pills → `Order` 标签 → Ascending/Descending `<select>`」；**全页仅出现一个 "then"**（原实现是 "then" + "Then by" 两处标签）。
+- **`Apply` 位于右侧上部**：`Apply` 与 `Results per page` 一起移入右列 `.movie-list-controls__side`（`flex-direction: column; align-items: flex-end`，Apply 在前）。
+- **视觉层级**：排序区字号 **15px**；`Results per page` 降为 **12px 弱化**小控件（`.movie-page-size` 及其 `select`）。
+- **容器居中**：`.movie-list-controls` 由 `justify-content: space-between`（左右贴边）改为 `width: fit-content; max-width: 100%; margin-inline: auto` **整体居中**；≤760px 媒体查询改为 `width: 100%`、单列堆叠、右列转横排换行，**不溢出**。
+- **行为不变**：URL 参数、字段互斥逻辑（`OTHER_SORT_FIELD`）、提交路径（`onSubmit={applySort}`）、分页/`parseNonNegativeInteger` 语义均未改；仅把承载表单的容器由内层 `<form>` 改为 `.movie-list-controls` 本身。
+
+### 3.3 movie list 前端缓存（方案 A：`movieListCache.js`）
+
+| 文件 | 变更与目的 |
+| --- | --- |
+| `frontend/src/features/movies/movieListCache.js`（新增，115 行） | 纯 JS、**不 import React 与 API 层**（调用方传 key 与 fetcher），便于单测。`MOVIE_LIST_CACHE_TTL_MS = 60_000`；以「后端请求路径」为键的模块级 `Map` 缓存。 |
+| `frontend/src/features/movies/movieListApi.js` | 抽出 `movieListRequestPath(searchParams)`（= `movieListEndpoint` + `buildMovieListParams` 的 query），`fetchMovieList` 改为复用它；缓存键因此只含**后端实际接收**的 endpoint 与参数。 |
+| `frontend/src/features/movies/MovieListPage.jsx` | `requestPath` 同时作为缓存键与 effect 依赖；`retry()` 先 `clearMovieListEntry(requestPath)`；仅 `status === 'success'` 时启用滚动恢复 effect。 |
+
+**缓存语义（逐条，均可在 `movieListCache.js` 与 `MovieListPage.jsx` 中核对）**
+
+- **键**：规范化后端请求路径（endpoint + 后端实际收到的 query）。UI 状态里后端看不到的参数不会分裂同一份列表；browse / full-text 两个 endpoint 即使没有参数也不会互相复用。
+- **新鲜命中**：`readMovieListEntry(key).isFresh`（`Date.now() - cachedAt < TTL`）时直接 `showResults(cachedEntry.data)` 并 `return`，**不发请求**。
+- **过期命中（SWR）**：仍先渲染旧数据，再后台 `loadMovieList(...)` revalidate；成功后用新数据覆盖渲染并刷新 `cachedAt`。
+- **revalidate 失败静默**：`.catch` 中 `if (!active || cachedEntry) return` → 保留旧数据，不进入 error 态、不清屏；只有在**没有缓存条目**时才显示既有错误态。
+- **in-flight 去重**：`loadMovieList(key, fetcher)` 对同 key 复用同一 Promise（顺带消除 React StrictMode 双挂载的第二次请求）；**失败不入缓存**并删除 in-flight 记录（下次调用重新发起）；被 `clearMovieListEntry` 清掉的在途请求，其响应**不会回填**缓存（以 `inFlightRequests.get(key) === request` 判定）。
+- **显式 retry 绕过缓存**：错误态 `Try again` → `retry()` 先清条目再自增 `retryCount`，确保真的打到服务器。
+- **滚动位置**：存 `sessionStorage`，键前缀 `fabflix.movieListScroll:`（与 `fabflix.lastMovieQuery` **显式区分**）；在**首次渲染时读一次**（`useState(() => readMovieListScroll(requestPath))`）、在**首次成功渲染后**用 `requestAnimationFrame` 恢复；离开时在 effect cleanup 写入 `window.scrollY`；偏移 ≤0 或非法时删除存储项（回到顶部不残留）；`sessionStorage` 不可用（隐私模式）时静默降级为「从顶部打开」。
+
+**测试**
+
+- `movieListCache.test.js`（新增，14 个用例）：TTL 内新鲜 / 超时过期、并发调用共享同一请求、settle 后再请求、失败不缓存且可重试、同步 throw 转为 rejection 且不缓存、不同 key 隔离、单键清理、在途响应被清理后不回填、全量清理、滚动偏移读写与「与 jump-back key 共存而不互相覆盖」。
+- `movieListApi.test.js`（改）：新增 `movieListRequestPath` 两面（只保留 endpoint 接收的参数、browse 与 full-text 无参数时仍是两个键）。
+- `MovieListPage.test.jsx`（改，新增 10 个用例）：无缓存时显示加载态、新鲜命中**不发请求**、过期先渲染再 revalidate 一次、revalidate 失败保留旧列表、错误后 retry 清缓存并真实请求、滚动偏移恢复、revalidate 落地后不再移动页面、**开发双挂载不重复请求/不重复恢复**、pills 互斥、两个字段在各槽位均可见。
+- `App.test.jsx`（改）：`beforeEach`/`afterEach` 调 `clearMovieListCache()`，避免模块级缓存跨测试泄漏（缓存的生命周期**超出组件**）。
+
+### 3.4 验证（PR #40 审查后，2026-10-14）
+
+| 命令 | 执行者 | 结果 |
+| --- | --- | --- |
+| `npm test`（`frontend/`，即 `vitest run`） | 主 agent 亲自运行；docs-writer 事后独立复跑 | **passed** — `Test Files 25 passed (25)` / `Tests 142 passed (142)`（本次修复前 24 files / 116 tests） |
+| `npm run lint`（`frontend/`，即 `oxlint src`） | 主 agent 亲自运行；docs-writer 事后独立复跑 | **passed** — exit 0，无输出/warning |
+| `npm run build`（`frontend/`） | 主 agent 亲自运行 | **passed** — 构建成功 |
+| `mvn --batch-mode --no-transfer-progress verify` | **未重跑**（后端零改动：`6b637a4` 仅含前端文件） | **not-run** —— 上文 §「验证命令与实际结果」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，未被本提交影响 |
+| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 分支相对 `origin` **ahead 1**；HEAD = `6b637a4` → 该提交**尚未推送** |
+
+### 3.5 残余风险与边界（缓存与布局）
+
+1. **缓存是进程内内存缓存**（`movieListCache.js` 的模块级 `Map`）：浏览器刷新即失效、不跨标签页共享；**不替代服务端权威数据**，只减少重复的列表读请求。
+2. **管理员新增/修改影片最多 60 秒（TTL）内不可见**：新鲜期内直接命中缓存。要立即看到需触发错误态 `retry`（会清除条目）或刷新页面。
+3. **SWR 的 revalidate 失败是静默的**：保留旧数据、不提示用户 → 已删除/已变更的影片可能在本会话内短暂停留在列表中（TTL 到期前的固有取舍）。
+4. **滚动恢复依赖 `sessionStorage`**：隐私模式等 storage 不可用场景降级为「从顶部打开」（无报错）；恢复发生在**首次成功渲染之后**，数据未到时不会先滚动。
+5. **表格宽度修复是 CSS 层面**（grid `min-width: 0` + 容器 `overflow-x: auto` + 列换行）：**无真实浏览器/视觉回归覆盖**，沿用本 issue 既有的 e2e 缺口（§1.5）。
+6. **未改变**原契约、范围与安全边界：后端 API 与 URL 参数不变、`apiClient.js` 未改、无新依赖、无 schema/legacy 改动、AC-1..AC-5 状态不变。
+
+### 3.6 新增知识点（本次后续修复）
+
+- **前端缓存模式：TTL + stale-while-revalidate + in-flight 去重**
+  - **含义**：命中新鲜条目时**完全跳过网络**；条目过期时**先渲染旧数据**、再后台 revalidate，失败则保留旧数据（不进入错误态）；同 key 的并发调用共享同一个 Promise，从而在“渲染”和“取数”之间解耦，并把“同一时刻的重复请求”合并为一个。
+  - **对应位置**：`frontend/src/features/movies/movieListCache.js`（`readMovieListEntry` / `loadMovieList`）、`MovieListPage.jsx` 的取数 effect（缓存命中分支与 `.catch` 中的 `cachedEntry` 分支）。
+  - **为何值得学习**：这是“读多写少”的列表页最常见的一类优化，且单纯加 TTL 很容易写出“过期就闪 loading / 失败就白屏”的体验问题；本实现给出了可直接复用的三条规则（新鲜命中不发请求、过期渲染旧值、失败不清屏），以及一个易错点——**显式 retry 必须先清条目**，否则“重试”会重放缓存内的旧结果。
+- **模块级缓存的生命周期与测试隔离**
+  - **含义**：模块级 `Map` 的生命周期**超出组件与单个测试**；若测试不清空它，前一个用例写入的数据会让后一个用例（伪）通过或依赖执行顺序。
+  - **对应位置**：`App.test.jsx` 在 `beforeEach`/`afterEach` 调 `clearMovieListCache()`；`movieListCache.test.js` 自身也需显式清理。
+  - **为何值得学习**：与 React 组件内状态不同，模块级状态是“全局”的；凡是把它引入生产代码，就必须同时提供清空入口，并在测试里主动调用，否则 flaky/伪绿会非常难查。
+- **内存缓存 vs `sessionStorage`：持久化边界的选择**
+  - **含义**：需要**跨浏览器 Back/Forward 触发的页面重建**存活的数据（滚动位置）放 `sessionStorage`；**故意不活过刷新**的数据（影片列表数据）留在内存 `Map`；同一 storage 内的其它用途用**前缀隔离**（`fabflix.movieListScroll:` vs `fabflix.lastMovieQuery`），并对读取做 `try/catch` 降级。
+  - **对应位置**：`movieListCache.js` 的 `readMovieListScroll` / `saveMovieListScroll` 与 `SCROLL_STORAGE_PREFIX`；区分测试 `stores offsets next to the jump-back query without touching it`。
+  - **为何值得学习**：这是“该持久化什么”的典型判断——把数据与 UI 位置元数据分开处理，避免“为了恢复滚动条而把整份列表写入 storage”这类常见过度缓存。
+- **CSS Grid/Flex 的 `min-width: auto` 陷阱**
+  - **含义**：grid/flex 子项的默认最小尺寸是内容的 `min-content` 宽度，内部有宽表格时会向上撑破整个布局；正确修法是给子项 `min-width: 0`（+ `max-width: 100%`）并让表格容器自己有 `overflow-x: auto`。
+  - **对应位置**：`frontend/src/index.css` 的 `.page-content > *`、`.movie-table-wrap`。
+  - **为何值得学习**：这是响应式布局最常见、也最容易被误当成“表格样式问题”的根因；同时本例示范了“用显式类名而不是 `:nth-child`/`td:last-child` 位置选择器驱动列样式”（列语义随组件结构变化时更稳）。
+- **无障碍的“隐藏原生控件 + 样式化 label”选择控件**
+  - **含义**：radio 的视觉形态用 `<label>` pill 承担，但保留真正的 `<input type="radio">`（绝对定位、1px、`opacity: 0`）以保留 radiogroup 语义、键盘方向键行为与 `:focus-within` 焦点可见性。
+  - **对应位置**：`MovieListPage.jsx` 的 `SortFieldPills`；`index.css` 的 `.movie-sort__fields` / `.movie-sort-pill` / `.movie-sort-pill__input` / `:focus-within` 规则。
+  - **为何值得学习**：这是用 `<div>` + `onClick` 拼选择控件（会丢失键盘与语义）与原生控件的正确折中；项目后续的自定义选择控件应沿用同一模式。
+- **`useState(() => readScroll())` 的时序：为什么“读取一次”必须在首次渲染**
+  - **含义**：滚动偏移必须在**首次渲染**时读入（惰性初始化），而不是在 effect 里读——因为同一个 effect 的 cleanup 会**覆写**存储，且 React StrictMode 的双执行顺序是「挂载 → cleanup → 再挂载」，在 effect 中读会先被自己覆写或读到空页面的位置；同理恢复要放到“首次成功渲染”而非“挂载”。
+  - **对应位置**：`MovieListPage.jsx` 的 `const [previousScrollY] = useState(() => readMovieListScroll(requestPath))` 与紧随的滚动 effect（含其注释）。
+  - **为何值得学习**：这是“用 cleanup 保存状态”与“StrictMode 双执行”叠加后的顺序问题（与 §2.7 的幂等 effect 主题同一来源）；把读取放在渲染期、把写入放在 cleanup，是这类“进入/离开都要处理”的 UI 状态的通用解法。

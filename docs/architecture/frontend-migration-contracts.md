@@ -7,7 +7,7 @@
 > - **【既有模式】**：仓库内一致遵循的写法，无自动化强制，新代码应沿用以免风格分裂。
 >
 > 本文档**不包含**任何未经批准的方案决策。Issue #30 的计划/实施结果见
-> `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（状态：**实施完成，已通过主 agent 终验（2026-10-14）；未提交/未发布**，差异与实测见其 §13.1）。
+> `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（状态：**实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送（`d6b3e07`/`eeb935f`），PR #40 为 OPEN、未合并；PR #40 审查后的 UI/缓存修复提交 `6b637a4` 已提交、待主 agent 推送**，差异与实测见其 §13.1）。
 > 若与本文档冲突，以代码和测试为准，并更新本文档。
 
 ## 1. 迁移进度与分工基线
@@ -51,6 +51,7 @@
 | 金额展示 | **一律经共享模块 `features/cart/money.js` 的 `toCents`/`formatCents` 以整数分求和/格式化**；不在页面内做浮点累加，不复算服务端权威金额 | `money.js`；`CartPage.jsx`、`PaymentPage.jsx`、`ConfirmationPage.jsx` |
 
 - **金额一律走整数分工具【既有模式】（#30 提取）**：服务端下发的是 JSON number（`BigDecimal` 序列化，如 `7.50` → `7.5`），前端先把每个金额转成整数分（`toCents = Math.round(Number(amount) * 100)`）再求和，最后 `formatCents` 格式化为 `$0.00`；**服务端是金额的唯一权威来源**，前端只做展示口径换算，不把换算结果回传。影响范围：任何展示/合计金额的新页面。反例（**不要复制**）：legacy `src/main/webapp/shoppingCart.js` 的浮点累加。
+- **列表类 GET 的进程内缓存（TTL + stale-while-revalidate + in-flight 去重）【既有模式】（#30 PR #40 审查后修复提取）**：`frontend/src/features/movies/movieListCache.js` 是仓库内第一个列表页缓存实现，后续列表页若需要同类行为应沿用同一套约定：① **键 = 规范化后端请求路径**（`movieListApi.js` 的 `movieListRequestPath`：endpoint + 后端实际收到的 query，即 `buildMovieListParams` 的输出），使“改变请求的 URL 状态”不会复用同一份数据、“后端看不到的 URL 状态”也不会分裂缓存；② **TTL**（`MOVIE_LIST_CACHE_TTL_MS = 60_000`）内命中则**直接渲染且不发请求**；③ 过期走 **SWR**：先渲染旧数据、后台 revalidate，**失败保留旧数据**（不进入 error 态）；④ 同 key 的并发请求共享同一 Promise（in-flight 去重，顺带消除 React StrictMode 双挂载引发的第二次请求）；⑤ 错误态的 `retry` 必须**先清条目**再重试，否则“重试”会在 TTL 内重放旧结果；⑥ 需要跨浏览器 Back/Forward 触发的页面重建存活的状态（滚动偏移）放 `sessionStorage` 并用独立前缀（`fabflix.movieListScroll:`，与 `fabflix.lastMovieQuery` 区分），而**列表数据本身故意不持久化**；读取要 `try/catch` 降级（隐私模式下 layout 不可用时从顶部打开）。**边界**：进程内内存缓存，刷新即失效、不跨标签页；**不替代服务端权威数据**（管理员新增/修改最多 TTL 内不可见）。实现位置：`movieListCache.js`（导出 `readMovieListEntry` / `loadMovieList` / `clearMovieListEntry` / `clearMovieListCache` / `readMovieListScroll` / `saveMovieListScroll`）、`MovieListPage.jsx`（缓存命中、SWR、retry 清条目、首次成功渲染后恢复滚动）。**测试陷阱**：模块级缓存的生命周期超出组件与单个测试，使用它的测试必须在 `beforeEach`/`afterEach` 调用 `clearMovieListCache()`（参照 `App.test.jsx`），否则出现顺序依赖/伪绿。
 - **React StrictMode 下 effect 双执行【既有模式】（#30 提取）**：入口 `frontend/src/main.jsx` 用 `<StrictMode>` 包裹 `App`，开发模式下 effect 会挂载→清理→再挂载，**每次都会重新发请求**。对于**一次性副作用**（如 `GET /boot/checkout/token` 会轮换服务端 token），双执行会让服务端与页面持有的 token 可能不一致（旧 token 在 `checkoutState==completed` 下会触发旧订单重放，或在 `pending` 下被拒为 expired），因此这类页面必须**幂等或提供显式恢复入口**。影响范围：所有取 token/一次性凭据、发写请求或做增量的 mount 副作用。参考实现：`PaymentPage.jsx`（`active` 标志防卸载后置状态；先 GET cart、非空才取 token；失败/过期时用 “Start checkout again” → `retry()` 重取 cart+token；token 未取得前提交按钮 `disabled`）。
 
 ## 5. API 客户端契约【既有模式】
