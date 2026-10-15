@@ -24,12 +24,12 @@ function MovieRow({ movie, pageSize }) {
 
   return (
     <tr>
-      <td>
+      <td className="movie-table__title">
         <Link to={`/movies/${movie.movie_id}`}>{movie.movie_title}</Link>
       </td>
       <td>{movie.movie_year}</td>
-      <td>{movie.movie_director}</td>
-      <td>
+      <td className="movie-table__director">{movie.movie_director}</td>
+      <td className="movie-table__genres">
         {genres.length === 0 && 'N/A'}
         {genres.map((genre, index) => (
           <span key={genre}>
@@ -38,7 +38,7 @@ function MovieRow({ movie, pageSize }) {
           </span>
         ))}
       </td>
-      <td>
+      <td className="movie-table__stars">
         {stars.length === 0 && 'N/A'}
         {stars.map((star, index) => (
           <span key={star.star_id}>

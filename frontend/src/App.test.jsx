@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppRoutes from './app/AppRoutes.jsx'
 import { AuthContext } from './auth/authContext.js'
 import { routeDefinitions } from './app/routeDefinitions.js'
+import { clearMovieListCache } from './features/movies/movieListCache.js'
 
 const authenticatedSession = { status: 'authenticated', user: {}, error: null }
 const anonymousSession = { status: 'anonymous', user: null, error: null }
@@ -90,6 +91,9 @@ function responseBody(url) {
 
 describe('application routing', () => {
   beforeEach(() => {
+    // The movie list cache outlives a component, so every test starts from a
+    // cold list instead of the one a previous test rendered.
+    clearMovieListCache()
     window.sessionStorage.clear()
     vi.stubGlobal('fetch', vi.fn((input) => {
       const url = typeof input === 'string' ? input : input.url
@@ -101,6 +105,7 @@ describe('application routing', () => {
   })
 
   afterEach(() => {
+    clearMovieListCache()
     vi.unstubAllGlobals()
   })
 
