@@ -723,20 +723,35 @@ issue 正文的 "Dependency" 行与上述一致（authentication、shared API ha
 | 7 | 未创建 §5.3 标注为“可选”的 `cartApi.test.js` | 参数构造经 `CartPage.test.jsx` / `checkoutFlow.test.jsx` 覆盖。 |
 | 8 | 抽取失败消息常量（`INVALID_PAYMENT_MESSAGE` / `CUSTOMER_NOT_FOUND_MESSAGE`） | 与既有 `ORDER_PLACED_MESSAGE` 风格统一（reviewer 接受项）。 |
 
-**审查后后续修复（PR #40 审查通过之后 → 提交 `6b637a4`，2026-10-14）**
+**审查后后续修复（PR #40 审查通过之后 → 第一批 `6b637a4`、第二批 `048debf`，2026-10-14）**
 
-PR #40（OPEN）审查通过**之后**，用户又提出 3 组后续修复要求，已并入同一分支并落在提交 **`6b637a4`**（`feat: improve movie list layout, sorting controls, and caching`）。**状态：已提交、待主 agent 推送**（`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/… [ahead 1]`；HEAD = `6b637a452a0b03229032af29ddb9b91999e9c24d`）；推送与 PR #40 更新完成后回填，**未推送、未合并**。
+PR #40（OPEN）审查通过**之后**，用户又提出两批后续修复，均已并入同一分支 `codex/issue-30-cart-payment-confirmation`：
+
+- **第一批**落在提交 **`6b637a4`**（`feat: improve movie list layout, sorting controls, and caching`）——3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。**状态：已提交、待主 agent 推送**。
+- **第二批**落在提交 **`048debf`**（`feat: add cart badge and add-to-cart toast`）——用户随后**直接提出**的 3 组 UI 修复（加购成功 toast、导航栏 Cart 件数徽标、结算页间距）。**状态：已提交、待主 agent 随文档一起推送**。
+
+`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`（第二批提交；第一批 `6b637a4` = `6b637a452a0b03229032af29ddb9b91999e9c24d` 为其父提交）。推送与 PR #40 更新完成后回填，**两批均未推送、未合并**。
 
 | # | 修复组 | 关键变更 | 涉及文件 |
 | --- | --- | --- | --- |
 | F-1 | 表格宽度回归修复 | `.page-content > * { min-width: 0; max-width: 100% }` 阻止 grid 子项被表格 min-content 撑破；`.movie-table-wrap { max-width: 100% }`；Title / Director / Genres / Stars 改 `white-space: normal`（**Year / Rating / Actions 保持 nowrap**）；`.cart-table` / `.confirmation-table` 首列可换行；cart / checkout / confirmation 页 `width: min(760px, 100%)` | `index.css`；`MovieTable.jsx`（补显式列类名，不再用位置选择器） |
 | F-2 | 排序控件重做 | 字段选择由下拉框改为**始终可见 radio pills（Title / Rating）**；两行 `Sort by` / `then`（全页仅一个 "then"）；方向仍为 Ascending/Descending `select`；`Apply` 在右侧上部；`Results per page` 降为 **12px 弱化**小控件（排序区 15px）；`.movie-list-controls` 改 `width: fit-content; margin-inline: auto` 整体居中（不再左右贴边）；≤760px 单列不溢出 | `MovieListPage.jsx`；`index.css` |
 | F-3 | movie list 前端缓存（方案 A） | 新增进程内 SWR 缓存：键 = 规范化后端请求路径（`movieListRequestPath`）、TTL `60_000`；新鲜命中直接渲染**不发请求**；过期先渲染旧数据并后台静默 revalidate（**失败保留旧数据**）；同 key in-flight 去重（顺带消除 StrictMode 双请求）；错误态 `Try again` 清条目并绕过缓存；滚动位置存 `sessionStorage`（前缀 `fabflix.movieListScroll:`，与 `fabflix.lastMovieQuery` 区分）并在首次成功渲染后恢复；无新依赖、未改 `apiClient.js`、未改后端契约 | `movieListCache.js`（新增）；`movieListApi.js`；`MovieListPage.jsx`；`MovieListPage.test.jsx`；`movieListCache.test.js`（新增）；`movieListApi.test.js`；`App.test.jsx` |
+| F-4 | 加购成功 toast + 导航栏 Cart 件数徽标（**第二批，提交 `048debf`**） | ① 加购成功后由**右下角固定小弹窗**（`Added "<title>" to your cart.`）替代原来的按钮内联成功文案：**2 秒自动消失**、可手动关闭（`aria-label="Close notification"`）、底部 `Don't show again` 复选框（勾选立即关闭并持久化 `localStorage['fabflix.hideAddToCartToast']='true'`，此后不再弹但加购与计数照常）；同一时刻只保留一个 toast（重复加购更新文案并重置计时）；失败/401 仍为内联 `role="alert"`、**不弹 toast**。② `AppShell` 拆出 `AppShellLayout` 并由 `CartStatusProvider` 包住（header + `<Outlet/>`），Cart 链接右上角渲染红底圆形徽标：数字 = `GET /boot/cart` 各行 **quantity 之和**，`0` 不渲染、`1–9` 显示数字、**`≥10` 显示 `...`**（真实件数放在链接 `aria-label`，如 `Cart, 11 items in your cart`）；加购成功与 `CartPage` 的 `+`/`−`/`Delete` 后刷新，登出/401 清零，其它刷新失败保留上次值；计数与 `sessionKey` 绑定以免跨会话陈旧值。未新增端点、未改 `cartApi.js` / `apiClient.js` / 后端契约 | `CartStatusProvider.jsx`（新增）；`cartStatusContext.js`（新增）；`CartBadge.jsx`（新增）；`AppShell.jsx`；`AppShell.test.jsx`（新增）；`AddToCartButton.jsx`；`AddToCartButton.test.jsx`；`CartPage.jsx`；`CartPage.test.jsx`；`checkoutFlow.test.jsx`；`MovieListPage.test.jsx`；`MovieDetailPage.test.jsx`；`index.css` |
+| F-5 | 结算页间距修复（**第二批，提交 `048debf`**） | `.cart-page__checkout { margin-top: 16px }`（`Total: $X` 与 `Proceed to payment` 之间，**主要修复**）；一致性补齐 `.checkout-page__status { margin-top: 12px }`、`.checkout-page__back, .confirmation-page__back { margin-top: 24px }`（对齐既有 `.movie-list-page__back`）。仅 CSS，未改字号/布局/JSX/测试 | `index.css` |
 
-- **实测（主 agent 亲自运行，2026-10-14；docs-writer 事后独立复跑前端）**：`npm test` → **25 files / 142 tests passed**（本次前端改动前为 24 files / 116 tests）；`npm run lint` → **exit 0**；`npm run build` → **成功**。后端**未重跑** `mvn --batch-mode verify`（`6b637a4` 仅含前端文件，后端零改动）——上文「测试与覆盖率实测」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，**未改动**。
+- **第一批实测（主 agent 亲自运行，2026-10-14；docs-writer 事后独立复跑前端）**：`npm test` → **25 files / 142 tests passed**（本次前端改动前为 24 files / 116 tests）；`npm run lint` → **exit 0**；`npm run build` → **成功**。后端**未重跑** `mvn --batch-mode verify`（`6b637a4` 仅含前端文件，后端零改动）——上文「测试与覆盖率实测」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，**未改动**。
 - **未改变**原契约、范围与安全边界：URL 参数与后端 API 契约不变、`apiClient.js` 未改、无新依赖、无 schema/legacy 改动；**AC-1..AC-5 状态不变**（仍为「已完成」，证据同 §2 映射与 §13.1 上文）。
 - **残余/边界**：缓存为**进程内内存**（刷新即失效）；管理员新增影片需等 TTL（60s）或显式 `retry`；revalidate 失败静默；滚动恢复依赖 `sessionStorage`。逐条见工作流日志 `docs/logs/2026-10-14-issue-30-migrate-cart-payment-confirmation-flows.md` §3.5。
 - **推送状态**：**待主 agent 推送**（提交 `6b637a4`，分支 `codex/issue-30-cart-payment-confirmation`，本地 ahead 1）。
+
+**第二批后续修复（提交 `048debf`，2026-10-14）——实测与边界**
+
+- **实测（主 agent 亲自运行，2026-10-14）**：`npm test` → **26 files / 155 tests passed**（本批改动前为 25 files / 142 tests）；`npm run lint` → **exit 0**；`npm run build` → **成功**。后端**未重跑** `mvn --batch-mode verify`（`048debf` 仅含前端文件，后端零改动）——「测试与覆盖率实测」表中 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，**未改动**。
+- **新增测试**：`AppShell.test.jsx`（新增，9 条，含最小有状态 `/boot/cart` 假服务）与 `AddToCartButton.test.jsx`（3 → 7 条）；既有断言**未删除或弱化**，仅页面测试的 render helper 增加 `AuthContext.Provider`(anonymous) + `CartStatusProvider` 包裹（anonymous 下 provider 不发取数请求，既有请求次数/序列断言不变）。
+- **未改变**原契约、范围与安全边界：未新增端点/字段、`cartApi.js` 与 `apiClient.js` 未改、无新依赖、无 schema/legacy 改动；**AC-1..AC-5 状态不变**（仍为「已完成」，证据同 §2 映射）。
+- **残余/边界**：徽标计的是**件数之和**（`Σ quantity`，非行数）；`≥10` 视觉上只显示 `...`，精确值仅在 `aria-label`；`Don't show again` 是**单向开关**（当前无「重新开启提示」入口）；每次成功加购与每次 `CartPage` 变更会**多一次 `GET /boot/cart`**（徽标刷新，未本地推算）；徽标为内存态、不跨标签页同步；**jsdom 无布局**，toast 位置/2 秒消失观感与窄屏通栏需人工在浏览器确认。逐条见工作流日志 `docs/logs/2026-10-14-issue-30-migrate-cart-payment-confirmation-flows.md` §3.7–§3.10。
+- **推送状态**：**待主 agent 随文档一起推送**（提交 `048debf`，分支 `codex/issue-30-cart-payment-confirmation`，本地 ahead 1 = 该提交）。
 
 **测试与覆盖率实测（主 agent 亲自运行，2026-10-14）**
 
@@ -748,6 +763,6 @@ PR #40（OPEN）审查通过**之后**，用户又提出 3 组后续修复要求
 | `npm test`（`frontend/`） | **24 files / 116 tests passed** |
 | `npm run lint`（`oxlint src`） | **exit 0，无 warning** |
 
-> 上表为 #30 实现终验（`d6b3e07` / `eeb935f`）时点的后端结果；**PR #40 审查后修复提交 `6b637a4` 的前端实测（25 files / 142 tests）见上方 F-1..F-3 小节**。
+> 上表为 #30 实现终验（`d6b3e07` / `eeb935f`）时点的后端结果；**PR #40 审查后修复提交 `6b637a4`（第一批）的前端实测（25 files / 142 tests）见上方 F-1..F-3 小节，提交 `048debf`（第二批）的前端实测（26 files / 155 tests）见上方 F-4/F-5 小节**。
 
 **残余风险（如实记录，未解决）**：无真实浏览器 / 真实 MySQL e2e（U-8/§7.4）；单 JVM / 同 session 幂等假设（AD-2、R-5）；CSRF 保持现状（D-4、R-9）；`CartService.getCart` 丢弃 movies 表中不存在的 movie id（R-15）；`order_date`（JVM `LocalDate.now()`）与 `sales.sale_date`（`CURDATE()`）在午夜/时区边界可能差一天（R-6）；`PaymentController` 的 `switch default: throw` 属既有模式，1 行未覆盖。逐条说明与后续事项见工作流日志 `docs/logs/2026-10-14-issue-30-migrate-cart-payment-confirmation-flows.md`。

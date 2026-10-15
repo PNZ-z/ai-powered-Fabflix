@@ -11,7 +11,8 @@
 | GitHub issue | #30 — https://github.com/PNZ-z/ai-powered-Fabflix/issues/30（远端 issue，未新建） |
 | 分支 | `codex/issue-30-cart-payment-confirmation` |
 | 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为当时分支 HEAD）。本地 `git rev-parse HEAD` 当时 = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作。**后续变化**：PR #40 审查后新增修复提交 `6b637a4`，使本地 HEAD = `6b637a452a0b03229032af29ddb9b91999e9c24d`、分支相对 `origin` **ahead 1**（**尚未推送**）——见下方「审查后后续修复」行与 §3 |
-| 审查后后续修复 | **提交 `6b637a4`** — `feat: improve movie list layout, sorting controls, and caching`：PR #40 审查通过**之后**用户提出的 3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 推送**（`git status -sb` 显示 `[ahead 1]`）；**未推送、未合并**，推送后需回填。逐项说明与残余边界见 §3 |
+| 审查后后续修复（第一批） | **提交 `6b637a4`** — `feat: improve movie list layout, sorting controls, and caching`：PR #40 审查通过**之后**用户提出的 3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 推送**（`git status -sb` 显示 `[ahead 1]`）；**未推送、未合并**，推送后需回填。逐项说明与残余边界见 §3 |
+| 审查后后续修复（第二批） | **提交 `048debf`** — `feat: add cart badge and add-to-cart toast`：同一审查后阶段用户**直接提出**的 3 组 UI 修复（加购成功 toast、导航栏 Cart 件数徽标、结算页间距），13 个前端文件。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 随本文档一起推送**（`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`，即本地 ahead 1 = 该提交；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`）。**未推送、未合并**，推送与 PR #40 更新后需回填。逐项说明与残余边界见 §3.7–§3.10 |
 | PR | **#40 已创建** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；状态 **OPEN**、非 draft、mergeable；GitHub 已识别 `Closes #30`）。由 `github-operator` 创建（主 agent 回传，具体创建时间未由 docs-writer 直接核实）。**尚未合并**——合并前以 PR 的 CI 结果与 review 为准。docs-writer 无 GitHub 访问授权，未直接查询远端 |
 | 计划文档 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（§12/§12.1 裁定，§13.1 实现结果） |
 | Issue 跟踪文档 | `docs/issues/issue-30-migrate-cart-payment-confirmation-flows.md` |
@@ -32,7 +33,9 @@
 
 > 说明：docs-writer **未**重跑后端全量 `mvn --batch-mode verify`（耗时长且不改源码）；上表后端数字引自主 agent 终验，并用仓库内同一次运行的产物（`jacoco.csv`、surefire 报告）独立核对一致。前端 `npm test`、`npm run lint` 由 docs-writer 实际复跑，结果与主 agent 报告一致。
 >
-> **追加（2026-10-14，PR #40 审查后的后续修复，提交 `6b637a4`）**：前端实测 **`npm test` → 25 files / 142 tests passed**（本次修复前为 24 files / 116 tests）、**`npm run lint` → exit 0**、**`npm run build` → 成功**；后端零改动（`6b637a4` 仅含前端文件），**未重跑** `mvn verify`。上表各项数字为 #30 实现终验时点的结果，**未改动**；新数字与逐条命令见 §3.4。
+> **追加（2026-10-14，PR #40 审查后的后续修复，第一批，提交 `6b637a4`）**：前端实测 **`npm test` → 25 files / 142 tests passed**（本次修复前为 24 files / 116 tests）、**`npm run lint` → exit 0**、**`npm run build` → 成功**；后端零改动（`6b637a4` 仅含前端文件），**未重跑** `mvn verify`。上表各项数字为 #30 实现终验时点的结果，**未改动**；新数字与逐条命令见 §3.4。
+>
+> **追加（2026-10-14，PR #40 审查后的后续修复，第二批，提交 `048debf`）**：前端实测 **`npm test` → 26 files / 155 tests passed**（本批修复前为 25 files / 142 tests）、**`npm run lint` → exit 0**、**`npm run build` → 成功**；后端零改动（`048debf` 仅含前端文件），**未重跑** `mvn verify`。上表各项数字与 §3.4 的第一批数字均为各自时点的结果，**未改动**；第二批数字与逐条命令见 §3.8。
 
 ---
 
@@ -191,13 +194,16 @@
 
 ## 3. PR #40 审查后的后续修复（UI 与缓存）
 
-> **本节定位**：PR #40（OPEN）审查通过**之后**，用户又提出 3 组后续修复要求（表格宽度回归、排序控件重做、movie list 前端缓存），已并入同一分支 `codex/issue-30-cart-payment-confirmation`，落在提交 **`6b637a4`**（`feat: improve movie list layout, sorting controls, and caching`）。
+> **本节定位**：PR #40（OPEN）审查通过**之后**，用户又提出两批后续修复，均已并入同一分支 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。
 >
-> **状态（截至 2026-10-14）**：**已提交，尚未推送**（`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `6b637a452a0b03229032af29ddb9b91999e9c24d`）。**待主 agent 推送**（提交 `6b637a4`）并更新 PR #40；推送后本状态需回填。本提交**未推送、未合并**。
+> - **第一批（提交 `6b637a4`，`feat: improve movie list layout, sorting controls, and caching`）**：3 组修复——表格宽度回归、排序控件重做、movie list 前端缓存。见 §3.1–§3.6。
+> - **第二批（提交 `048debf`，`feat: add cart badge and add-to-cart toast`）**：用户随后**直接提出**的 3 组 UI 修复——加购成功 toast、导航栏 Cart 件数徽标、结算页间距。见 §3.7–§3.10。
 >
-> **契约影响**：未改后端契约、未改 `frontend/src/api/apiClient.js`、未新增依赖。`6b637a4` 仅含前端文件：`App.test.jsx`、`features/movies/*`、`index.css`。
+> **状态（截至 2026-10-14）**：**两批均已提交，尚未推送**。`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`（即第二批提交 `048debf`；第一批 `6b637a4` = `6b637a452a0b03229032af29ddb9b91999e9c24d` 为其父提交）。**待主 agent 随本文档一起推送**（`048debf`）并更新 PR #40；推送后本状态需回填。两批提交均**未推送、未合并**。
 >
-> 延续上文的两大类：**§3.1–§3.5 属「修改了哪些文件及潜在问题」**，**§3.6 属「新增知识点」**。
+> **契约影响**：两批均未改后端契约、未改 `frontend/src/api/apiClient.js`、未新增依赖。`6b637a4` 仅含前端文件：`App.test.jsx`、`features/movies/*`、`index.css`；`048debf` 仅含 13 个前端文件（`frontend/src/components/layout/{AppShell.jsx, AppShell.test.jsx}`、`frontend/src/features/cart/{AddToCartButton.jsx, AddToCartButton.test.jsx, CartBadge.jsx, CartPage.jsx, CartPage.test.jsx, CartStatusProvider.jsx, cartStatusContext.js`、`frontend/src/features/checkout/checkoutFlow.test.jsx`、`frontend/src/features/movies/{MovieDetailPage.test.jsx, MovieListPage.test.jsx}`、`frontend/src/index.css`）。
+>
+> 延续上文的两大类：**§3.1–§3.5 与 §3.7–§3.9 属「修改了哪些文件及潜在问题」**，**§3.6 与 §3.10 属「新增知识点」**。
 
 ### 3.1 表格宽度回归修复（`index.css`、`MovieTable.jsx`）
 
@@ -289,3 +295,117 @@
   - **含义**：滚动偏移必须在**首次渲染**时读入（惰性初始化），而不是在 effect 里读——因为同一个 effect 的 cleanup 会**覆写**存储，且 React StrictMode 的双执行顺序是「挂载 → cleanup → 再挂载」，在 effect 中读会先被自己覆写或读到空页面的位置；同理恢复要放到“首次成功渲染”而非“挂载”。
   - **对应位置**：`MovieListPage.jsx` 的 `const [previousScrollY] = useState(() => readMovieListScroll(requestPath))` 与紧随的滚动 effect（含其注释）。
   - **为何值得学习**：这是“用 cleanup 保存状态”与“StrictMode 双执行”叠加后的顺序问题（与 §2.7 的幂等 effect 主题同一来源）；把读取放在渲染期、把写入放在 cleanup，是这类“进入/离开都要处理”的 UI 状态的通用解法。
+
+---
+
+## 3.7 第二批后续修复：加购 toast、导航栏 Cart 徽标、结算页间距（提交 `048debf`）
+
+> **来源**：用户在 PR #40 审查后**直接提出**的 3 组 UI 需求（非 oracle / reviewer 提出）。落在提交 **`048debf`**（`feat: add cart badge and add-to-cart toast`），分支 `codex/issue-30-cart-payment-confirmation`（本地 HEAD；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`）。
+> **状态**：**已提交、待主 agent 随本文档一起推送**；**未推送、未合并**（`git status -sb` → 相对 `origin` **ahead 1**，该 1 个提交即 `048debf`）。
+> **范围**：仅 13 个前端文件；**未改后端**、未改 `frontend/src/api/apiClient.js`、未新增依赖、无 schema/legacy 改动。
+
+### 3.7.1 加购成功 toast
+
+**问题/需求**：加购成功原本在按钮右侧显示内联成功文案（`role="status"`），用户要求改成右下角固定小弹窗提示。
+
+| 文件 | 变更与目的 |
+| --- | --- |
+| `frontend/src/features/cart/AddToCartButton.jsx` | **不再渲染内联成功文案**（删除 `status === 'added'` 分支与旧 `message`）：成功后 `setStatus('idle')` + 调用共享 `notifyAdded(movieTitle)`（`useCartStatus()`）。状态变量由 `message` 改名 `errorMessage`，**仅失败**保留内联 `role="alert"` 文案（文案未改：「Please sign in to add movies to your cart.」/「Unable to add this movie to your cart. Please try again.」）。 |
+| `frontend/src/features/cart/CartStatusProvider.jsx`（新增） | 新增 toast 组件 `AddedToCartToast` 与状态：`ADDED_TOAST_DURATION_MS = 2000`（2 秒自动消失）、`notifyAdded(movieTitle)` 生成文案 `Added "<title>" to your cart.`。 |
+
+**行为（逐条，均可在 `CartStatusProvider.jsx` 复核）**
+
+- **位置与结构**：`.cart-toast` 为 `position: fixed; right/bottom: 24px; z-index: 10`；消息节点带 `role="status"`（live region 只覆盖文案，关闭按钮与复选框不进 live region）；关闭按钮 `aria-label="Close notification"`；底部 `Don't show again` 复选框（`<label>` 包裹整体，可访问名即文案）。
+- **自动消失 2 秒 + 手动关闭**：effect 依赖 `addedToast` 对象，`window.setTimeout(..., 2000)` 到点置 `null`，cleanup `clearTimeout`；手动关闭按钮同样置 `null`。
+- **同一时刻只保留一个 toast**：状态只存一个对象 `addedToast`；每次通知都**新建对象**（`{ message }`），依赖变化使 effect 重跑 → 重复加购时是**更新文案并重置 2 秒计时**，而不是叠出第二个 toast（自动化断言：1 个 toast + 文案更新 + 计时重置）。
+- **`Don't show again` 立即关闭并持久化**：勾选 → `persistToastsHidden()` 写 `localStorage['fabflix.hideAddToCartToast'] = 'true'` + `setToastsHidden(true)` + `setAddedToast(null)`；此后的加购**不再弹 toast**，但 **POST 与徽标计数照常**（`notifyAdded` 先 `requestCountRefresh()`，再判断 `toastsHidden` 提前返回）。初始偏好用 `useState(readToastsHidden)` 惰性读取；读/写均 `try/catch`（隐私模式等 storage 不可用时**读失败按「未隐藏」处理**，写失败仅本页生效）。
+- **失败/401 不弹 toast**：仍走组件内联 `role="alert"`（自动化断言 500 与 401 两种失败下无 toast）。
+- **窄屏**：`@media (max-width: 760px)` 下 toast 左右/底部贴 0、取消圆角，避免遮挡主要内容。
+
+### 3.7.2 导航栏 Cart 件数徽标
+
+| 文件 | 变更与目的 |
+| --- | --- |
+| `frontend/src/features/cart/CartStatusProvider.jsx`（新增） | 全局购物车状态：`cartCount`、`requestCountRefresh()`、`notifyAdded(title)`；取数走既有 `fetchCart()`（`GET /boot/cart`）。`countCartItems = items.reduce((sum, item) => sum + (Number(item.quantity) \|\| 0), 0)`。 |
+| `frontend/src/features/cart/cartStatusContext.js`（新增） | `CartStatusContext` + `useCartStatus()`（缺 provider 时抛错）——与既有 `frontend/src/auth/authContext.js` **同形**。 |
+| `frontend/src/features/cart/CartBadge.jsx`（新增） | 纯展示：`count <= 0` → **返回 `null`（不渲染）**；`1..9` 显示数字；`count > 9`（`CART_BADGE_MAX_DIGITS = 9`）显示 `...`；根节点 `aria-hidden="true"`（真实件数不放这里）。 |
+| `frontend/src/components/layout/AppShell.jsx` | 拆出 `AppShellLayout` 并由 `AppShell` 用 `<CartStatusProvider>` 包住（provider 在 header 与 `<Outlet/>` 路由页**之上**，故导航徽标与页面内加购控件**共享同一份状态**）；Cart 链接渲染 `<CartBadge count={cartCount} />`，并给**仅 Cart 链接**加 `aria-label={cartLinkName(cartCount)}`。 |
+| `frontend/src/features/cart/CartPage.jsx` | 在 `updateCartItem(...)` + `fetchCart()` 成功后调用 `requestCountRefresh()`，使徽标与页面刚读到的行数同步（仅成功分支，失败不刷新）。 |
+| `frontend/src/index.css` | `.nav-link { position: relative }`（徽标定位基点）+ `.cart-badge`（红底 `#d92d20`、白色 `11px/700`、`border-radius: 999px`、`top/right: -6px`、`aria-hidden` 视觉层）。 |
+
+**计数与可访问名语义（明确写出，便于后续调整）**
+
+- **`count` = `GET /api/boot/cart` 各行 `quantity` 之和，即「件数（pieces）」，不是行数（distinct movie 数）**。证据：`CartStatusProvider.jsx` 的 `countCartItems`；测试 `AppShell.test.jsx`（2 行 × quantity 2 + 1 → 显示 `3`；9 + 2 = 11 → 显示 `...`）。
+- **徽标只放得下一位数字，`≥10` 显示 `...`；真实件数放在 Cart 链接的可访问名**：`cartLinkName(count)` → `count <= 0` 为 `'Cart'`、`=== 1` 为 `'Cart, 1 item in your cart'`、其余为 `Cart, ${count} items in your cart`（如 11 件 → `Cart, 11 items in your cart`）。
+- **刷新时机**：① 登录顾客下挂载时取一次（`customer.status === 'authenticated'`）；② 加购成功后（`notifyAdded` → `requestCountRefresh`）；③ `CartPage` 的 `+`/`−`/`Delete` 成功并重读 cart 之后。
+- **清零/保留**：`/boot/cart` **401 → 计数清零**（会话过期）；**其它失败保留上次值**（catch 中不写状态，避免闪烁到 0）。
+- **会话隔离**：计数与 `sessionKey`（`customer:<email>` / `anonymous`）绑定存储，派生 `cartCount` 仅在 `counted.sessionKey === sessionKey` 时取值，否则 `0` —— 登出/换顾客后旧值立即不再显示（无需额外 effect）。effect cleanup 用 `active` 标志丢弃被新请求或卸载超过的旧响应。
+
+### 3.7.3 结算页间距修复（`index.css` 单文件）
+
+**问题**：`Total: $X` 与 `Proceed to payment` 之间无任何 CSS 规则（两个类名此前只在 JSX 使用，选中器各自仅出现一次 → 无规则冲突）。
+
+| 新增选择器 | 规则 | 目的 |
+| --- | --- | --- |
+| `.cart-page__checkout` | `margin-top: 16px` | **主要修复**：Total 与 "Proceed to payment" 之间留空，与既有 `.cart-page__total` 的 16px 风格一致 |
+| `.checkout-page__status` | `margin-top: 12px` | 一致性：加载提示 "Preparing secure checkout..." 与 Total 之间留空 |
+| `.checkout-page__back, .confirmation-page__back` | `margin-top: 24px` | 一致性：对齐既有 `.movie-list-page__back { margin-top: 24px }` |
+
+**未改动**字号、布局、JSX 或测试；`.checkout-form`（20px）等既有间距不变。
+
+### 3.7.4 测试包装的改动（非行为变更）
+
+`CartPage.test.jsx`、`MovieListPage.test.jsx`、`MovieDetailPage.test.jsx`、`checkoutFlow.test.jsx` 的 render helper 增加 `AuthContext.Provider`（**anonymous**）+ `CartStatusProvider` 包裹：anonymous 下 provider 的取数 effect 直接返回（不发 `/boot/cart`），因此既有请求序列/次数断言（如 `['cart','cart','token','payment']`）**全部保留不变**。`App.test.jsx` 未改动（它渲染 `AppRoutes` → 已含 `AppShell` → provider；`responseBody(url)` 已有 `/boot/cart` 分派）。新增 `frontend/src/components/layout/AppShell.test.jsx`（9 条）含一个最小的有状态 `/boot/cart` 假服务（`POST` 改 cart，`GET` 返回 cart），使「页面变更 → 徽标同步」可在同一 session 下断言。
+
+## 3.8 验证（第二批后续修复，2026-10-14）
+
+| 命令 | 执行者 | 结果 |
+| --- | --- | --- |
+| `npm test`（`frontend/`，即 `vitest run`） | 主 agent 亲自运行 | **passed** — `Test Files 26 passed (26)` / `Tests 155 passed (155)`（本批改动前为 25 files / 142 tests；#30 终验时为 24 files / 116 tests） |
+| `npm run lint`（`frontend/`，即 `oxlint src`） | 主 agent 亲自运行 | **passed** — exit 0，无 warning |
+| `npm run build`（`frontend/`） | 主 agent 亲自运行 | **passed** — `vite build` 成功 |
+| `mvn --batch-mode --no-transfer-progress verify` | **未重跑**（后端零改动：`048debf` 仅含前端文件） | **not-run** —— 上文「验证命令与实际结果」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，未被本提交影响 |
+| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 分支相对 `origin` **ahead 1**；HEAD = `048debf9c1e08919c4b566d266bf0ade530dbc16` → 该提交**尚未推送** |
+
+**新增测试（均记录在 worker 报告中，本次日志未逐条独立复跑）**：`AppShell.test.jsx` 新增 9 条（quantity 之和与可访问名、`≥10` 显示 `...`、空 cart 不渲染徽标、加购后 +1、CartPage `+`/`Delete` 后同步、勾选不再显示后仍计数、401 清零、刷新失败保留上次值、登出清零）；`AddToCartButton.test.jsx` 由 3 条增至 7 条（成功改为 toast 且不再内联、2 秒后消失、单实例且重置计时、手动关闭、勾选 `Don't show again` 立即关闭并持久化且后续加购仍计数、失败/401 无 toast）。既有断言未被删除或弱化。
+
+## 3.9 残余风险与边界（第二批）
+
+1. **徽标计数是「件数之和」而非「行数」**（`Σ quantity`）：若后续要改成行数，需替换 `countCartItems` 为 `items.length` 并同步 `AppShell.test.jsx` 的 fixture（§3.7.2 已写明）。
+2. **`≥10` 只显示 `...`**：视觉上无法读出精确件数，精确值仅存在于 Cart 链接的可访问名（读屏可获取）。需求即如此，不是缺陷，但需在产品上确认可接受。
+3. **`Don't show again` 是单向开关**：当前**没有「重新开启提示」的入口**（需求未要求）；写入 `localStorage['fabflix.hideAddToCartToast']` 后只能由用户手动清除浏览器 storage 才能恢复。
+4. **每次成功加购与每次 CartPage 变更会多一次 `GET /boot/cart`**：`notifyAdded` 与 `CartPage` 的成功分支都会 `requestCountRefresh()`；`CartPage` 因此在「POST 改 cart → 重新 GET 渲染行」之外**再触发一次 provider 的 `GET /boot/cart`**（徽标刷新）。这是「服务端为唯一权威、徽标不本地推算」的取舍（未新增端点、未改契约）。
+5. **徽标状态是内存态**：刷新页面即由新的一次 `GET /boot/cart` 重新取数；不跨标签页同步（另一标签页加购不会实时更新本页徽标）。
+6. **jsdom 无布局**：toast 的右下角固定定位、2 秒自动消失的**观感**、窄屏通栏、徽标红底圆形的 `top/right: -6px` 偏移、以及「页面变更后徽标的视觉刷新时序」**均需人工在浏览器确认**；自动化只覆盖 DOM 结构、可访问名与可见性。沿用本 issue 既有的 e2e 缺口（§1.5）。
+7. **未改变**原契约、范围与安全边界：后端 API/URL 参数不变、`apiClient.js` 未改、无新依赖、无 schema/legacy 改动、**AC-1..AC-5 状态不变**。1–5 条均为主 agent 已核验的事实边界，非新增未决问题。
+
+## 3.10 新增知识点（第二批）
+
+- **用「状态对象身份」重置计时器：单实例 toast 的实现方式**
+  - **含义**：toast 的状态只存一个对象；每次通知都 `setAddedToast({ message })` **新建对象**（而非复用同一对象、也不追加进数组），于是 effect 的依赖（对象身份）变化 → cleanup 清掉旧 `setTimeout` → 重新计时。单实例特性因此不是靠「先关闭再打开」的额外逻辑，而是数据结构（只存一个）的自然结果；重复加购表现为「更新文案 + 重置 2 秒」。
+  - **对应位置**：`frontend/src/features/cart/CartStatusProvider.jsx`（`notifyAdded` 与紧随其后的 2 秒定时 effect）。
+  - **为何值得学习**：这是 React 中「同一时刻只允许一个瞬时 UI」的简洁解法，也解释了为什么不该用 `message` 字符串做依赖（相同文案的第二次加购不会重置计时器，而对象身份会）。
+- **把「属于某个键的状态」与当前键一起存，避免陈旧值闪现**
+  - **含义**：徽标计数存成 `{ sessionKey, count }`，派生值写作 `counted.sessionKey === sessionKey ? counted.count : 0`。登出/换顾客时**无需额外 effect 去清零**，旧会话的计数天然不再被读取；同时 `sessionKey = customer:<email>` / `anonymous` 使「计数属于产生它的会话」成为显式约定。
+  - **对应位置**：`CartStatusProvider.jsx` 的 `sessionKey` / `counted` / `const cartCount = ...`。
+  - **为何值得学习**：这是「异步取数 + 身份切换」这类竞态的通用模式（等同于 React 官方文档的 “key 变化时重置 state” 思路），比「在 effect 里手动 setState(0)」更少一次渲染、也不依赖 effect 顺序。
+- **`useState(惰性初始化) + try/catch` 处理可选 storage 偏好**
+  - **含义**：偏好读取写成 `useState(readToastsHidden)`（传函数 → 只在首次渲染执行一次），读取内部 `try/catch`：storage 不可用（隐私模式）时**按未隐藏处理**，写失败时仅本页生效而不抛错。
+  - **对应位置**：`CartStatusProvider.jsx` 的 `readToastsHidden` / `persistToastsHidden` / `useState(readToastsHidden)`。
+  - **为何值得学习**：与 §3.6 的「该持久化什么」互补——这里给出的是「存储**可能不存在**」的处理姿势：读用惰性初始化而不是 effect、写不当作关键路径、失败静默降级而非崩溃。
+- **`active` 标志丢弃被超越的异步响应（同一 effect 内的请求竞态）**
+  - **含义**：取数 effect 里用 `let active = true`，回调中 `if (active) setState(...)`，cleanup 置 `false`。由于 effect 依赖变化（会话变化或 `countRefresh` 自增）会重跑，**旧请求的响应不会覆盖新请求的结果**，卸载后也不会置状态。
+  - **对应位置**：`CartStatusProvider.jsx` 的取数 effect（与 `MovieDetailPage`/`MovieListPage` 既有写法一致）。
+  - **为何值得学习**：这是本项目既有的异步 effect 约定（架构文档 §4）；本批的差异点是「由计数器 `countRefresh` 触发的重复取数」——同一 key 可能连续请求多次，缺了这个标志就会出现「先到的旧响应覆盖新响应」这类难复现的错乱。
+- **可访问名承载「被视觉截断的信息」**
+  - **含义**：徽标是纯视觉计数（`aria-hidden="true"`，`≥10` 显示 `...`），真实件数通过**所在链接**的 `aria-label` 暴露（`Cart, 11 items in your cart`）。读屏用户拿到的是准确数字，视觉用户看到的是紧凑徽标。
+  - **对应位置**：`CartBadge.jsx`（`aria-hidden`）、`AppShell.jsx`（`cartLinkName` + `aria-label`）。
+  - **为何值得学习**：这是「视觉上不得不压缩/截断」时保留完整信息的标准做法（同理：状态点、图标按钮必须有可访问名）；也说明为什么徽标的单测要断言 `aria-label` 而不只是文本。
+- **Context 拆成两个文件：`xxxContext.js`（对象 + hook）与 `XxxProvider.jsx`（组件）**
+  - **含义**：`cartStatusContext.js` 只导出 `CartStatusContext` 与 `useCartStatus()`，`CartStatusProvider.jsx` 只导出 Provider 组件；与既有 `authContext.js` 同形。每个文件导出单一「种类」的东西，便于 Fast Refresh 与单测（测试可只包 provider 而替换 context 值）。
+  - **对应位置**：`frontend/src/features/cart/cartStatusContext.js`、`CartStatusProvider.jsx`；参照 `frontend/src/auth/authContext.js`。
+  - **为何值得学习**：这是本项目新增跨页面共享状态时应当沿用的文件组织约定（后续若有新的全局 provider，按同一拆分方式放置）。
+- **测试技巧：`vi.useFakeTimers({ shouldAdvanceTime: true })` 配合 `userEvent.setup({ advanceTimers })`**
+  - **含义**：要用 `userEvent` 点击又要断言定时器行为时，用 `shouldAdvanceTime: true` 让真实时间继续推进（避免 `findBy*` 等待被冻结），并给 `userEvent` 传入 `advanceTimers`，然后显式 `vi.advanceTimersByTime(2000)` 触发「2 秒后消失」断言；`afterEach` 恢复 `vi.useRealTimers()`。
+  - **对应位置**：`frontend/src/features/cart/AddToCartButton.test.jsx`（`hides the toast after two seconds`、`keeps one toast and restarts its countdown on the next add`）。
+  - **为何值得学习**：这是「假定时器 + `userEvent` + Testing Library 异步查询」三者混用时的标准配置——只用 `vi.useFakeTimers()` 常导致 `findBy*` 超时假失败，而只用真实定时器又会让测试慢/不稳定。
