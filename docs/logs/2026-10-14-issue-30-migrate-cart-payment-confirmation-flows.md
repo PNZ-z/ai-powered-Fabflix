@@ -10,13 +10,13 @@
 | 完成日期 | 2026-10-14 |
 | GitHub issue | #30 — https://github.com/PNZ-z/ai-powered-Fabflix/issues/30（远端 issue，未新建） |
 | 分支 | `codex/issue-30-cart-payment-confirmation` |
-| 提交 / 推送 | **未提交、未推送**（`git status --short` 全部改动仍为未提交状态；`git diff --cached --name-only` 为空） |
-| PR | **未创建（待主 agent 授权）**；链接由主 agent 回传后补入本日志与 issue 文档 |
+| 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为分支当前 HEAD）。本地 `git rev-parse HEAD` = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作 |
+| PR | **#40 已创建** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；状态 **OPEN**、非 draft、mergeable；GitHub 已识别 `Closes #30`）。由 `github-operator` 创建（主 agent 回传，具体创建时间未由 docs-writer 直接核实）。**尚未合并**——合并前以 PR 的 CI 结果与 review 为准。docs-writer 无 GitHub 访问授权，未直接查询远端 |
 | 计划文档 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（§12/§12.1 裁定，§13.1 实现结果） |
 | Issue 跟踪文档 | `docs/issues/issue-30-migrate-cart-payment-confirmation-flows.md` |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` |
 | 关联内部产物 | worker 初版报告 `.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.md`；worker 修复报告 `.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.625f54b7.md`；oracle 审查报告 `.pi/artifacts/oracle-issue-30-plan-review.md`、`.pi/artifacts/oracle-issue-30-plan-review-round2.md` |
-| 文档维护者 | docs-writer（未改源码/测试/配置；未提交、未推送、未创建 GitHub issue/PR） |
+| 文档维护者 | docs-writer（未改源码/测试/配置；**未提交、未推送、未创建 GitHub issue/PR** —— 提交/推送由主 agent 执行、PR 由 `github-operator` 创建，见上两行） |
 
 ### 验证命令与实际结果
 
@@ -105,7 +105,7 @@
 
 **后续事项**
 
-- 提交、推送与 PR 创建：**待主 agent 授权**；PR 链接与远端 issue 勾选状态由主 agent 回传后更新 issue 文档与本日志元数据。
+- 提交、推送与 PR 创建：**已完成（2026-10-14）**——实现提交 `d6b3e07` 与文档提交 `eeb935f` 已推送至 `codex/issue-30-cart-payment-confirmation`，PR **#40** 已由 `github-operator` 创建（见元数据表）。**仍未合并**：合并前以 PR 的 CI 结果与 review 为准；PR 链接与远端 issue 勾选状态由主 agent 回传后更新 issue 文档与本日志元数据。
 - 如未来要求“展示行 = 实际插入 sales 行”，需另立 issue 修改 `CartService.getCart` 的丢弃语义（R-15）。
 - 如需严格日期一致性，可在插入后读回 `CURDATE()`（R-6）。
 - legacy 清理（`shoppingCart.js`/`payment.js`/`confirmation.html` 等）必须与 `FrontendApiMigrationTest` 一并修改，且需单独批准。

@@ -1,6 +1,6 @@
 # Issue #30 方案 / 计划 — Migrate cart, payment, and confirmation flows
 
-> **文档状态：已批准（主 agent，2026-10-14）→ 实施完成，已通过主 agent 终验（2026-10-14）；未提交 / 未推送 / 未创建 PR（IMPLEMENTED & VERIFIED, NOT COMMITTED）**
+> **文档状态：已批准（主 agent，2026-10-14）→ 实施完成，已通过主 agent 终验（2026-10-14）→ 已提交并推送（`d6b3e07`、`eeb935f`）、PR [#40](https://github.com/PNZ-z/ai-powered-Fabflix/pull/40) 已创建（OPEN，尚未合并）（IMPLEMENTED, VERIFIED, PUSHED — PR OPEN, NOT MERGED）**
 >
 > 本文档已完成 oracle 第一轮只读审查（报告：`.pi/artifacts/oracle-issue-30-plan-review.md`，含 B1–B6 / N1–N14 / U-1..U-9）与
 > **第二轮只读复审**（报告：`.pi/artifacts/oracle-issue-30-plan-review-round2.md`，含 R2-B1 / R2-B2 / R2-N1..N5 / O-1..O-5）；
@@ -27,8 +27,8 @@
 | 第二轮 oracle 复审 | `.pi/artifacts/oracle-issue-30-plan-review-round2.md`（R2-B1 / R2-B2 / R2-N1..N5 / O-1..O-5）——**已完成**，裁定见 §12.1；**第一轮 + 第二轮全部闭合** |
 | 批准 | **已批准（主 agent，2026-10-14）— 可交 worker 实现**；条件 = §12.1 的 12 条裁定已全部写入本文档。**该批准已于 2026-10-14 落实为实施完成并终验通过（§13.1）** |
 | 修订日期 | 2026-10-14（先按第一轮裁定修订，再按第二轮裁定完成终稿；实现完成后补记 §12.1 结果小结与 §13.1） |
-| 实施与终验 | 分支 `codex/issue-30-cart-payment-confirmation`（**未提交 / 未推送 / 未创建 PR**）；终验命令与实测数字见 §13.1 |
-| 文档状态 | **已批准 → 实施完成，已通过主 agent 终验（2026-10-14）；未提交 / 未发布**（实现结果与差异见 §13.1） |
+| 实施与终验 | 分支 `codex/issue-30-cart-payment-confirmation`（**已提交 `d6b3e07`/`eeb935f` 并推送；PR #40 已创建、尚未合并**）；终验命令与实测数字见 §13.1 |
+| 文档状态 | **已批准 → 实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送、PR #40 已创建（OPEN，尚未合并）**（实现结果与差异见 §13.1） |
 
 ## 1. 目标与背景
 
@@ -681,11 +681,11 @@ issue 正文的 "Dependency" 行与上述一致（authentication、shared API ha
 
 ## 13. 状态
 
-- 当前状态：**实施完成，已通过主 agent 终验（2026-10-14）——未提交 / 未推送 / 未创建 PR**。分支 `codex/issue-30-cart-payment-confirmation`；工作区改动尚未 commit（无 staged 文件）。
+- 当前状态：**实施完成，已通过主 agent 终验（2026-10-14）——已提交（`d6b3e07` 实现提交、`eeb935f` 文档提交）并推送；已创建 PR [#40](https://github.com/PNZ-z/ai-powered-Fabflix/pull/40)（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；OPEN、非 draft、mergeable；GitHub 已识别 `Closes #30`）——**尚未合并**。本次变更已全部提交并位于分支 `codex/issue-30-cart-payment-confirmation`（`git status --short` 仅剩进入本任务前的既有 `frontend/package-lock.json` 修改与未跟踪的 `.idea/`、`.pi/`、`AGENTS.md`，无 staged 文件）。
 - 流程回顾：§12（第一轮裁定）+ §12.1（第二轮裁定）全部闭合 → 主 agent 批准 → worker 实现 → 三路 reviewer → worker 修复 → 主 agent 终验（结果小结见 §12.1，逐项落点与实测数字见 §13.1）。
 - **§11.1 的 O-1..O-5 已全部关闭**，其中 O-3 的实测结果已回填（§11.1）。
 - **与批准范围的偏离**：仅 §13.1 列出的 8 项（含 3 个主 agent 批准的新增文件与 1 处死代码删除），**未改变已批准契约、范围或安全边界**；无未批准的偏离。
-- **未完成项**：提交、推送、PR 创建均未执行（等待主 agent 授权）；PR 链接由主 agent 回传后补入本文档与 issue 跟踪文档。
+- **未完成项**：提交、推送、PR 创建**均已完成（2026-10-14）**；**仍未合并**——PR #40 处于 OPEN 状态，合并前以 PR 的 CI 结果与 review 为准。PR 链接已回填至本文档与 issue 跟踪文档（远端 issue 的勾选状态仍由主 agent 回传）。
 - **文档口径**：§1–§12 保持批准时的计划表述；**实现结果与实测证据集中在 §13.1**；逐文件变更、遗留风险与知识点见工作流日志 `docs/logs/2026-10-14-issue-30-migrate-cart-payment-confirmation-flows.md` 与 issue 跟踪文档 `docs/issues/issue-30-migrate-cart-payment-confirmation-flows.md`。
 
 ### 13.1 实现结果与计划差异

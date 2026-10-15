@@ -3,7 +3,7 @@
 > **状态：已在 GitHub 存在，无需新建。** 本文档记录远端 issue 的编号/URL/原文与本地批准范围；本文档不是"待发布草稿"，
 > `github-operator` **不需**为本 issue 创建新 issue。docs-writer 不修改远端 issue 内容。
 >
-> **本地实现状态（2026-10-14）**：分支 `codex/issue-30-cart-payment-confirmation` 上实现已完成并通过**主 agent 终验**（`mvn --batch-mode --no-transfer-progress verify` → 120 tests / JaCoCo BUNDLE 行覆盖 947/1057 = 0.8959；`npm test` 24 files / 116 tests；`npm run lint` exit 0）；**未提交、未推送、未创建 PR**。AC-1..AC-5 状态见 §6，实测证据见 §7 与计划 §13.1。
+> **本地实现状态（2026-10-14）**：分支 `codex/issue-30-cart-payment-confirmation` 上实现已完成并通过**主 agent 终验**（`mvn --batch-mode --no-transfer-progress verify` → 120 tests / JaCoCo BUNDLE 行覆盖 947/1057 = 0.8959；`npm test` 24 files / 116 tests；`npm run lint` exit 0）；**已提交（`d6b3e07` 实现提交、`eeb935f` 文档提交）并推送，已创建 PR [#40](https://github.com/PNZ-z/ai-powered-Fabflix/pull/40)（OPEN，尚未合并）**。AC-1..AC-5 状态见 §6，实测证据见 §7 与计划 §13.1。
 
 ## 1. 远端元数据
 
@@ -103,13 +103,13 @@ Depends on authentication, shared API handling, and movie detail/list flows.
 
 | 类型 | 位置 | 说明 |
 | --- | --- | --- |
-| 计划 / 方案 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md` | **状态：实施完成，已通过主 agent 终验（2026-10-14）；未提交/未发布**；§13.1 为实际文件清单、与计划的差异、实测数字与残余风险；§12.1 末尾为审查与修复结果小结 |
+| 计划 / 方案 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md` | **状态：实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送（`d6b3e07`、`eeb935f`），PR #40 已创建（OPEN，尚未合并）**；§13.1 为实际文件清单、与计划的差异、实测数字与残余风险；§12.1 末尾为审查与修复结果小结 |
 | Oracle 第一轮审查报告 | `.pi/artifacts/oracle-issue-30-plan-review.md` | B1–B6 / N1–N14 / U-1..U-9；主 agent 裁定与写入位置见计划 §12/§11 |
 | Oracle 第二轮复审报告 | `.pi/artifacts/oracle-issue-30-plan-review-round2.md` | R2-B1 / R2-B2 / R2-N1..N5 / O-1..O-5；主 agent 全部接受，裁定与写入位置见计划 **§12.1**；**第一轮+第二轮全部闭合**（O-3 实测结果已于 2026-10-14 回填） |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` | 跨 issue 的前端迁移约定与钉死约束；已补 CI 覆盖率闸门、`payment.js` 例外、`responseBody` 分派规则、AD-1/AD-2 决策（§7/§10）、session 存储对象需 `Serializable`（§9）、`@WebMvcTest` 跨请求 session 陷阱（§7），以及本次从 #30 实现提取的金额整数分工具与 React StrictMode effect 约定（§4） |
 | 工作流日志 | `docs/logs/2026-10-14-issue-30-migrate-cart-payment-confirmation-flows.md` | 已创建：实际变更逐项说明、遗留风险、终验命令与覆盖率数字、新增知识点 |
 | 实现报告（内部证据） | `.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.md`、`.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.625f54b7.md` | worker 初版与修复报告（**内部产物，未纳入版本控制的交付内容**；本日志引用其测试命令与结果） |
-| PR | 无（**未创建，待主 agent 授权**） | 分支 `codex/issue-30-cart-payment-confirmation` 尚未提交/推送；PR 链接由主 agent 回传后补入本行 |
+| PR | **#40** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40 | **已创建**（由 `github-operator` 创建，主 agent 回传）。标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；状态 **OPEN、非 draft、mergeable**；GitHub 已识别 `Closes #30`。**尚未合并**——合并前以 PR 的 CI 结果与 review 为准。docs-writer 无 GitHub 访问授权，本行来自主 agent 回传，未由 docs-writer 直接查询远端 |
 
 ## 8. 备注
 
@@ -118,5 +118,5 @@ Depends on authentication, shared API handling, and movie detail/list flows.
 - **2026-10-14**：计划已按主 agent 对 oracle 第一轮审查（B1–B6/N1–N14/U-1..U-9）的裁定修订完毕，**当时仍未批准**（需 oracle 第二轮复审与主 agent 明确批准后才能进入实现）。**测试状态：本 issue 尚未开始实现，未运行任何测试。**
 - **2026-10-14（第二轮）**：oracle 第二轮复审（R2-B1/R2-B2 两项 Blocker + R2-N1..N5 + O-1..O-5）已由主 agent **全部接受**并写入计划终稿；计划文档 §13 状态为 **已批准（主 agent，2026-10-14）— 可交 worker 实现**，§12.1 记录逐条裁定与写入位置。**本 issue 的 AC 状态因此更新为“计划已批准，待实现”。测试状态：仍未开始实现，未运行任何测试**（计划中的覆盖率数字 873/984 来自仓库内既有 `verify` 产物，不是本轮新跑）。**（本条为当时的记录；后续已实现并通过终验，见下条与 §6/§7。）**
 - docs-writer 无 GitHub 访问授权，未直接读取远端 issue；§1 元数据来自主 agent 用 `gh` 获取的原文（已由主 agent 核实）。
-- **2026-10-14（实现完成）**：实现已完成并通过主 agent 终验，**未提交 / 未推送 / 未创建 PR**。AC-1..AC-5 更新为“已完成”并附验证证据（§6）；实际命令与结果：`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS、`Tests run: 120, Failures: 0, Errors: 0, Skipped: 0`、JaCoCo BUNDLE 行覆盖 947/110/1057 = 0.8959、`All coverage checks have been met`；`npm test` → 24 files / 116 tests passed；`npm run lint` → exit 0，无 warning；`PaymentControllerConcurrencyTest` 单独重跑 3/3 稳定。**实测数字由主 agent 亲自运行并回传**；docs-writer 未重跑后端全量 `verify`（本地 `target/site/jacoco/jacoco.csv` 与 surefire 报告产物与上述数字一致，前端 `npm test`/`npm run lint` 由 docs-writer 独立复跑确认一致）。
-- **待办**：提交 / 推送 / PR 创建（未授权）；PR 链接与远端 issue 的勾选状态由主 agent 回传后更新本文档。
+- **2026-10-14（实现完成）**：实现已完成并通过主 agent 终验，**提交（`d6b3e07` 实现提交、`eeb935f` 文档提交）并推送至 `codex/issue-30-cart-payment-confirmation`，并已创建 PR #40（OPEN，尚未合并）**。AC-1..AC-5 更新为“已完成”并附验证证据（§6）；实际命令与结果：`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS、`Tests run: 120, Failures: 0, Errors: 0, Skipped: 0`、JaCoCo BUNDLE 行覆盖 947/110/1057 = 0.8959、`All coverage checks have been met`；`npm test` → 24 files / 116 tests passed；`npm run lint` → exit 0，无 warning；`PaymentControllerConcurrencyTest` 单独重跑 3/3 稳定。**实测数字由主 agent 亲自运行并回传**；docs-writer 未重跑后端全量 `verify`（本地 `target/site/jacoco/jacoco.csv` 与 surefire 报告产物与上述数字一致，前端 `npm test`/`npm run lint` 由 docs-writer 独立复跑确认一致）。
+- **提交 / 推送 / PR 创建：已完成（2026-10-14，主 agent 与 `github-operator` 执行）**——实现提交 `d6b3e07`、文档提交 `eeb935f` 已推送；PR **#40** 已创建（见 §7）。**仍未合并**：合并前以 PR 的 CI 结果与 review 为准。远端 issue 的勾选状态由主 agent 回传后更新本文档（docs-writer 不修改远端 issue）。
