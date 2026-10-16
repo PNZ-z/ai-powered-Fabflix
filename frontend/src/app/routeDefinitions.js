@@ -1,25 +1,8 @@
 const customerPublicRoutes = []
 
-const customerProtectedRoutes = [
-  {
-    path: 'cart',
-    samplePath: '/cart',
-    title: 'Shopping cart',
-    description: 'Cart management will be migrated in Issue #30.',
-  },
-  {
-    path: 'checkout',
-    samplePath: '/checkout',
-    title: 'Checkout',
-    description: 'Payment will be migrated in Issue #30.',
-  },
-  {
-    path: 'confirmation',
-    samplePath: '/confirmation',
-    title: 'Order confirmation',
-    description: 'The confirmation flow will be migrated in Issue #30.',
-  },
-]
+// Cart, checkout, and confirmation now render real pages wired explicitly in
+// AppRoutes.jsx, so they are no longer placeholder route definitions.
+const customerProtectedRoutes = []
 
 const employeePublicRoutes = [
   {

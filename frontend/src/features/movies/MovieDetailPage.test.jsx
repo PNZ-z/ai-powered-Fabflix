@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AuthContext } from '../../auth/authContext.js'
+import CartStatusProvider from '../cart/CartStatusProvider.jsx'
 import MovieDetailPage from './MovieDetailPage.jsx'
+
+// The add-to-cart control uses the shared cart status; an anonymous session
+// keeps the provider from requesting the cart count on mount.
+const anonymousSession = { status: 'anonymous', user: null, error: null }
 
 function movieDetail(overrides = {}) {
   return {
@@ -30,13 +36,17 @@ function jsonResponse(body, status = 200) {
 function renderMovieDetail(path, fetchMock) {
   vi.stubGlobal('fetch', fetchMock)
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="movies/:movieId" element={<MovieDetailPage />} />
-        <Route path="movies" element={<p>Movie list</p>} />
-        <Route path="stars/:starId" element={<p>Star detail</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthContext.Provider value={{ customer: anonymousSession }}>
+      <CartStatusProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="movies/:movieId" element={<MovieDetailPage />} />
+            <Route path="movies" element={<p>Movie list</p>} />
+            <Route path="stars/:starId" element={<p>Star detail</p>} />
+          </Routes>
+        </MemoryRouter>
+      </CartStatusProvider>
+    </AuthContext.Provider>,
   )
 }
 
@@ -151,5 +161,24 @@ describe('MovieDetailPage', () => {
       'href',
       '/movies',
     )
+  })
+
+  it('adds the movie to the cart from the detail page', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url
+      if (url.includes('/boot/cart')) {
+        return Promise.resolve(jsonResponse({ status: 'success' }))
+      }
+      return Promise.resolve(jsonResponse(movieDetail()))
+    })
+    renderMovieDetail('/movies/tt9000001', fetchMock)
+    const user = userEvent.setup()
+
+    await screen.findByRole('heading', { name: 'Neon Horizon' })
+    await user.click(screen.getByRole('button', { name: 'Add to cart' }))
+
+    const cartCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/boot/cart'))
+    expect(String(cartCall[0])).toBe('/api/boot/cart')
+    expect(String(cartCall[1].body)).toBe('movieId=tt9000001&action=add')
   })
 })

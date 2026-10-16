@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildMovieListParams, fetchMovieList, genreBrowseUrl, movieListEndpoint } from './movieListApi.js'
+import { buildMovieListParams, fetchMovieList, genreBrowseUrl, movieListEndpoint, movieListRequestPath } from './movieListApi.js'
 
 function paramsFrom(query) {
   return new URLSearchParams(query)
@@ -56,6 +56,18 @@ describe('buildMovieListParams', () => {
 
   it('builds an empty query when the URL has no state', () => {
     expect(buildParams('').toString()).toBe('')
+  })
+})
+
+describe('movieListRequestPath', () => {
+  it('keeps only the parameters the endpoint receives', () => {
+    expect(movieListRequestPath(paramsFrom('genre=Drama&language=fr&sort1=rating')))
+      .toBe('/boot/movie-list?genre=Drama&sort1=rating')
+  })
+
+  it('keeps browse and full-text requests apart even without parameters', () => {
+    expect(movieListRequestPath(paramsFrom(''))).toBe('/boot/movie-list')
+    expect(movieListRequestPath(paramsFrom('mode=fulltext'))).toBe('/boot/full-text-search')
   })
 })
 

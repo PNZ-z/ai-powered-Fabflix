@@ -65,10 +65,19 @@ function movieListEndpoint(searchParams) {
   return isFullTextSearch(searchParams) ? fullTextEndpoint : browseEndpoint
 }
 
-async function fetchMovieList(searchParams) {
+// The normalized request path identifies a list exactly: it carries the
+// endpoint (browse vs full-text) plus the parameters the backend receives.
+// The movie list cache uses it as its key, so URL state that changes the
+// request never reuses another list and URL state the endpoint ignores never
+// splits one.
+function movieListRequestPath(searchParams) {
   const params = buildMovieListParams(searchParams)
   const suffix = params.toString() ? `?${params}` : ''
-  const results = await apiRequest(`${movieListEndpoint(searchParams)}${suffix}`)
+  return `${movieListEndpoint(searchParams)}${suffix}`
+}
+
+async function fetchMovieList(searchParams) {
+  const results = await apiRequest(movieListRequestPath(searchParams))
   return Array.isArray(results) ? results : []
 }
 
@@ -83,4 +92,10 @@ function genreBrowseUrl(genre, pageSize) {
   return `/movies?${params}`
 }
 
-export { buildMovieListParams, fetchMovieList, genreBrowseUrl, movieListEndpoint }
+export {
+  buildMovieListParams,
+  fetchMovieList,
+  genreBrowseUrl,
+  movieListEndpoint,
+  movieListRequestPath,
+}

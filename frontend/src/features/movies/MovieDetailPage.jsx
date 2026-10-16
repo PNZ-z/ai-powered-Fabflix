@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import AddToCartButton from '../cart/AddToCartButton.jsx'
 import DetailLinks from '../../components/detail/DetailLinks.jsx'
 import DetailMeta from '../../components/detail/DetailMeta.jsx'
 import ErrorState from '../../components/states/ErrorState.jsx'
@@ -104,6 +105,10 @@ function MovieDetailPage() {
           { label: 'Rating', value: movie.movie_rating },
         ]}
       />
+
+      <p className="detail-page__cart">
+        <AddToCartButton movieId={movie.movie_id} movieTitle={movie.movie_title} />
+      </p>
 
       <div className="detail-section">
         <h2>Genres</h2>

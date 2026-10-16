@@ -24,13 +24,39 @@ function loadCartTotal() {
     });
 }
 
+// The checkout token doubles as the idempotency key. It is fetched once when
+// the page loads and reused for every submission, so a repeated submission
+// cannot place a second order.
+let checkoutToken = null;
+
+function loadCheckoutToken() {
+    jQuery.ajax({
+        type: "GET",
+        url: "api/boot/checkout/token",
+        success: function (tokenData) {
+            checkoutToken = tokenData["token"];
+        },
+        error: function () {
+            checkoutToken = null;
+        }
+    });
+}
+
 function submitPaymentForm(formSubmitEvent) {
     formSubmitEvent.preventDefault();
+
+    if (!checkoutToken) {
+        jQuery("#payment_error_message").text("Unable to start checkout. Please try again.");
+        return;
+    }
+
+    let paymentData = jQuery("#payment_form").serialize()
+        + "&checkoutToken=" + encodeURIComponent(checkoutToken);
 
     jQuery.ajax({
         type: "POST",
         url: "api/boot/payment",
-        data: jQuery("#payment_form").serialize(),
+        data: paymentData,
         success: function (resultData) {
             if (resultData["status"] === "success") {
                 window.location.href = "confirmation.html";
@@ -47,3 +73,4 @@ function submitPaymentForm(formSubmitEvent) {
 jQuery("#payment_form").submit(submitPaymentForm);
 
 loadCartTotal();
+loadCheckoutToken();

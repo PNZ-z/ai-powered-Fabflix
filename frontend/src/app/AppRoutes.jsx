@@ -3,6 +3,9 @@ import ProtectedRoute from '../auth/ProtectedRoute.jsx'
 import AppShell from '../components/layout/AppShell.jsx'
 import NotFoundPage from '../components/states/NotFoundPage.jsx'
 import LoginPage from '../features/auth/LoginPage.jsx'
+import CartPage from '../features/cart/CartPage.jsx'
+import ConfirmationPage from '../features/checkout/ConfirmationPage.jsx'
+import PaymentPage from '../features/checkout/PaymentPage.jsx'
 import HomePage from '../features/home/HomePage.jsx'
 import MovieDetailPage from '../features/movies/MovieDetailPage.jsx'
 import MovieListPage from '../features/movies/MovieListPage.jsx'
@@ -38,6 +41,9 @@ function AppRoutes() {
           <Route path="movies" element={<MovieListPage />} />
           <Route path="movies/:movieId" element={<MovieDetailPage />} />
           <Route path="stars/:starId" element={<StarDetailPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<PaymentPage />} />
+          <Route path="confirmation" element={<ConfirmationPage />} />
           {customerProtectedRoutes.map(placeholderRoute)}
         </Route>
         {employeePublicRoutes.map(placeholderRoute)}

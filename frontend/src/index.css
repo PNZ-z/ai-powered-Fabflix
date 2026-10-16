@@ -176,6 +176,7 @@ button:disabled {
 }
 
 .nav-link {
+  position: relative;
   border-radius: 8px;
   padding: 7px 10px;
   text-decoration: none;
@@ -187,11 +188,37 @@ button:disabled {
   color: var(--text-h);
 }
 
+/* Cart piece counter, anchored to the top-right corner of the Cart link. */
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #d92d20;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .page-content {
   display: grid;
   flex: 1;
   place-items: center;
   padding: 48px 24px;
+}
+
+/* Grid items default to min-width: auto, so wide tables would stretch the
+   page instead of scrolling inside their own container. */
+.page-content > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .site-footer {
@@ -414,25 +441,95 @@ button:disabled {
   margin-bottom: 20px;
 }
 
+/* The card shrinks to its content and centres as a single unit, so the sorting
+   block and the Apply/page-size block are not pinned to opposite edges. */
 .movie-list-controls {
   display: flex;
-  flex-wrap: wrap;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 20px 32px;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 20px;
 }
 
+/* Two compact rows — `Sort by` above `then` — that each hold a pill group and
+   an order select. Rows wrap instead of overflowing when space runs out. */
 .movie-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.movie-sort__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.movie-sort__then {
+/* The fixed minimum keeps the pill groups of both rows on the same column. */
+.movie-sort__lead {
+  min-width: 62px;
+  font-size: 15px;
+  text-align: left;
+  color: var(--text);
+}
+
+/* The primary label reads at full strength; `then` stays quieter. */
+.movie-sort__lead--primary {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.movie-sort__fields {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* Title and Rating stay visible as a segmented choice, so the active sort
+   field can be read without opening a dropdown. */
+.movie-sort-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* The native radio keeps the group semantics and keyboard behaviour while the
+   pill carries the visual state. */
+.movie-sort-pill__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.movie-sort-pill--selected {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.movie-sort-pill:focus-within {
+  outline: 2px solid var(--accent-border);
+  outline-offset: 2px;
+}
+
+.movie-sort__order-label {
   font-size: 15px;
 }
 
@@ -442,17 +539,38 @@ button:disabled {
   border-radius: 8px;
   background: var(--bg);
   color: var(--text-h);
-  padding: 8px 10px;
 }
 
+.movie-sort select {
+  font-size: 15px;
+  padding: 4px 8px;
+}
+
+.movie-list-controls__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Secondary control: deliberately a size below the sorting block. */
 .movie-page-size {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.movie-page-size select {
+  font-size: 12px;
+  padding: 2px 4px;
+  color: var(--text);
 }
 
 .movie-table-wrap {
   overflow-x: auto;
+  max-width: 100%;
   margin-top: 20px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -472,8 +590,20 @@ button:disabled {
   white-space: nowrap;
 }
 
-.movie-table td:last-child {
+.movie-table td.movie-table__rating {
   white-space: normal;
+}
+
+.movie-table td.movie-table__title,
+.movie-table td.movie-table__director,
+.movie-table td.movie-table__genres,
+.movie-table td.movie-table__stars {
+  white-space: normal;
+  min-width: 8ch;
+}
+
+.movie-table td.movie-table__actions {
+  white-space: nowrap;
 }
 
 .movie-table th {
@@ -579,12 +709,140 @@ button:disabled {
   }
 
   .movie-list-controls {
-    align-items: flex-start;
+    width: 100%;
     flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .movie-list-controls__side {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
   .movie-table {
     text-align: left;
   }
+}
+
+.cart-table td:first-child,
+.confirmation-table td:first-child {
+  white-space: normal;
+}
+
+.cart-table__actions {
+  white-space: nowrap;
+}
+
+.cart-table__actions-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.cart-page,
+.checkout-page,
+.confirmation-page {
+  width: min(760px, 100%);
+}
+
+.cart-page__total,
+.checkout-page__total,
+.confirmation-page__total {
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.cart-page__checkout {
+  margin-top: 16px;
+}
+
+.checkout-page__status {
+  margin-top: 12px;
+}
+
+.checkout-page__back,
+.confirmation-page__back {
+  margin-top: 24px;
+}
+
+.cart-page__error,
+.checkout-page__error {
+  color: #b00020;
+  margin: 12px 0;
+}
+
+.add-to-cart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-to-cart__status {
+  font-size: 0.85rem;
+}
+
+/* Single add-to-cart toast, pinned to the bottom-right corner. */
+.cart-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: min(360px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.cart-toast__message {
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.cart-toast__close {
+  padding: 2px 8px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.cart-toast__opt-out {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 760px) {
+  .cart-toast {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-width: none;
+    border-radius: 0;
+  }
+}
+
+.checkout-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  max-width: 420px;
+  text-align: left;
+}
+
+.checkout-form label {
+  font-weight: 600;
 }

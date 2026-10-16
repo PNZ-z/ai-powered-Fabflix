@@ -14,6 +14,8 @@ import org.springframework.mock.web.MockHttpSession;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,25 @@ class CartServiceTest {
         assertEquals(1, items.get(0).getQuantity());
         assertEquals(service.priceFor("tt0001"), items.get(0).getPrice());
         assertEquals(2, items.get(1).getQuantity());
+    }
+
+    @Test
+    void persistsCartChangesAcrossRequestsOnTheSameSession() {
+        CartRepository repository = mock(CartRepository.class);
+        CartService service = new CartService(repository);
+        MockHttpSession session = new MockHttpSession();
+        when(repository.findMoviesByIds(any())).thenReturn(Map.of(
+                "tt0001", new MovieCartSummary("tt0001", "First")));
+
+        service.updateCart(session, "tt0001", "increase");
+        service.updateCart(session, "tt0001", "increase");
+
+        List<CartItem> items = service.getCart(session);
+        assertEquals(1, items.size());
+        assertEquals(2, items.get(0).getQuantity());
+
+        service.updateCart(session, "tt0001", "delete");
+        assertTrue(service.getCart(session).isEmpty());
     }
 
     @Test
