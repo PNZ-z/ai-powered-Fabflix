@@ -23,5 +23,24 @@ services:
       retries: 20
       start_period: 20s
 
+  app:
+    build: .
+    container_name: fabflix-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      # Inside the Compose network MySQL is reachable as `mysql:3306`.
+      FABFLIX_DB_URL: "jdbc:mysql://mysql:3306/moviedb?useUnicode=true&characterEncoding=UTF-8"
+      FABFLIX_DB_USER: ${FABFLIX_DB_USER}
+      FABFLIX_DB_PASSWORD: ${FABFLIX_DB_PASSWORD}
+      FABFLIX_BOOT_PORT: 8081
+      # Local/demo only: activates LocalRecaptchaVerifier so customer login works
+      # without a Google key. Production must configure RECAPTCHA_SECRET_KEY.
+      SPRING_PROFILES_ACTIVE: local
+
 volumes:
   fabflix-mysql-data:

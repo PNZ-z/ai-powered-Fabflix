@@ -44,6 +44,8 @@ public class SearchController {
         Object stored = session.getAttribute("lastMovieQuery");
         String query = stored instanceof String ? ((String) stored).trim() : "";
         if (query.isEmpty()) query = "title=&pageSize=10&pageNumber=0";
-        return ResponseEntity.status(302).location(URI.create("/movieList.html?" + query)).build();
+        // mode=fulltext is required: the React list page only stores/restores the
+        // last query for full-text searches, so the browse mode would drop it.
+        return ResponseEntity.status(302).location(URI.create("/movies?mode=fulltext&" + query)).build();
     }
 }

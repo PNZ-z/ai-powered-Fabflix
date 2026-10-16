@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext } from '../../auth/authContext.js'
 import CartStatusProvider from '../cart/CartStatusProvider.jsx'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import MovieListPage from './MovieListPage.jsx'
 import { MOVIE_LIST_CACHE_TTL_MS, clearMovieListCache, loadMovieList, saveMovieListScroll } from './movieListCache.js'
 import { movieListRequestPath } from './movieListApi.js'
@@ -481,5 +482,13 @@ describe('MovieListPage caching', () => {
     await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 250))
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(scrollTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
+    renderMovieList('/movies?genre=Drama', fetchMock)
+
+    await screen.findByRole('link', { name: 'Neon Horizon' })
+    await expectNoA11yViolations()
   })
 })

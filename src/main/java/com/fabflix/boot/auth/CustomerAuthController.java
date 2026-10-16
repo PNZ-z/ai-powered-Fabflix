@@ -65,7 +65,7 @@ public class CustomerAuthController {
         if (accept != null && accept.contains("application/json")) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         } else {
-            response.sendRedirect("/login.html");
+            response.sendRedirect("/login");
         }
     }
 }

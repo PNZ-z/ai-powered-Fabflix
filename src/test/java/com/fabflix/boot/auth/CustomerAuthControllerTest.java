@@ -94,7 +94,7 @@ class CustomerAuthControllerTest {
         mockMvc.perform(get("/api/boot/logout")
                         .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login.html"))
+                .andExpect(redirectedUrl("/login"))
                 .andExpect(request -> assertNull(request.getRequest().getSession(false)));
     }
 

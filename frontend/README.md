@@ -1,10 +1,10 @@
 # Fabflix React frontend
 
-This directory contains the React + Vite frontend introduced in Phase 2. It provides the client-side routing and shared application shell used while pages are migrated incrementally. The Issue #24 learning page remains available at `/playground`, and the legacy HTML/JavaScript frontend remains available until feature parity is complete.
+This directory contains the React + Vite frontend introduced in Phase 2. It provides the client-side routing and shared application shell for the whole application; the legacy HTML/JavaScript frontend has been retired. The Issue #24 learning page remains available at `/playground`.
 
 ## Requirements
 
-- Node.js supported by the current Vite version
+- Node.js 22.12 or newer (`engines` in `package.json`)
 - Spring Boot running on port `8081` for the health check
 
 ## Configuration
@@ -44,8 +44,20 @@ Run the quality checks:
 ```shell
 npm run lint
 npm test
+npm run test:coverage
 npm run build
 ```
+
+`npm run test:coverage` runs the unit/component tests through `@vitest/coverage-v8` and fails when line coverage drops below the threshold in `vitest.config.js`.
+
+Run the browser smoke tests (Playwright, chromium only, API mocked):
+
+```shell
+npx playwright install chromium
+npm run test:e2e
+```
+
+`npm run test:e2e` builds the app, serves it with `vite preview` on `http://127.0.0.1:4173`, and runs `e2e/*.spec.js` at 360px and 1440px. The specs mock every `/api` call with `page.route`, so no backend or MySQL is required.
 
 Preview the production build:
 
@@ -53,7 +65,14 @@ Preview the production build:
 npm run preview
 ```
 
-The production assets are written to `dist/`. Spring Boot integration and removal of the legacy frontend are intentionally deferred until the final Phase 2 issue.
+The production assets are written to `dist/` and are not committed. Spring Boot serves them when the executable jar is packaged with the Maven `frontend` profile:
+
+```shell
+cd frontend && npm ci && npm run build
+cd .. && mvn -Pfrontend clean package   # fails if frontend/dist/index.html is missing
+```
+
+The default `mvn package`/`mvn verify` build does not need Node or `dist/`; the `frontend` profile copies `dist/` into `target/classes/static` and adds the dist-missing guard.
 
 ## Source layout
 

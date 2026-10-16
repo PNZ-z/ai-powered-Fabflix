@@ -6,6 +6,7 @@ import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,5 +32,15 @@ public class EmployeeController {
         session.setAttribute("employee", employee.get());
         logger.info("Employee login completed successfully");
         return ResponseEntity.ok(AdminResponse.success("Employee login successful."));
+    }
+
+    // Employee sign-out only drops the employee identity: the same session may
+    // also hold a customer ("user") identity that must stay signed in, so the
+    // session is not invalidated.
+    @GetMapping("/api/boot/dashboard/logout")
+    public ResponseEntity<Void> logout(HttpSession session) {
+        session.removeAttribute("employee");
+        logger.info("Employee logout completed successfully");
+        return ResponseEntity.noContent().build();
     }
 }

@@ -29,9 +29,12 @@ function persistToastsHidden() {
 }
 
 function AddedToCartToast({ message, onClose, onHideForever }) {
+  // role="status" sits on the container so the whole toast (message and its
+  // controls) is one live region; axe treats role=status as a region, so the
+  // toast never trips the page-landmark rule even though it sits outside main.
   return (
-    <div className="cart-toast">
-      <p className="cart-toast__message" role="status">{message}</p>
+    <div className="cart-toast" role="status">
+      <p className="cart-toast__message">{message}</p>
       <button
         type="button"
         className="cart-toast__close"
