@@ -10,15 +10,15 @@
 | 完成日期 | 2026-10-14 |
 | GitHub issue | #30 — https://github.com/PNZ-z/ai-powered-Fabflix/issues/30（远端 issue，未新建） |
 | 分支 | `codex/issue-30-cart-payment-confirmation` |
-| 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为当时分支 HEAD）。本地 `git rev-parse HEAD` 当时 = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作。**后续变化**：PR #40 审查后新增修复提交 `6b637a4`，使本地 HEAD = `6b637a452a0b03229032af29ddb9b91999e9c24d`、分支相对 `origin` **ahead 1**（**尚未推送**）——见下方「审查后后续修复」行与 §3 |
-| 审查后后续修复（第一批） | **提交 `6b637a4`** — `feat: improve movie list layout, sorting controls, and caching`：PR #40 审查通过**之后**用户提出的 3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 推送**（`git status -sb` 显示 `[ahead 1]`）；**未推送、未合并**，推送后需回填。逐项说明与残余边界见 §3 |
-| 审查后后续修复（第二批） | **提交 `048debf`** — `feat: add cart badge and add-to-cart toast`：同一审查后阶段用户**直接提出**的 3 组 UI 修复（加购成功 toast、导航栏 Cart 件数徽标、结算页间距），13 个前端文件。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交，待主 agent 随本文档一起推送**（`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`，即本地 ahead 1 = 该提交；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`）。**未推送、未合并**，推送与 PR #40 更新后需回填。逐项说明与残余边界见 §3.7–§3.10 |
-| PR | **#40 已创建** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；状态 **OPEN**、非 draft、mergeable；GitHub 已识别 `Closes #30`）。由 `github-operator` 创建（主 agent 回传，具体创建时间未由 docs-writer 直接核实）。**尚未合并**——合并前以 PR 的 CI 结果与 review 为准。docs-writer 无 GitHub 访问授权，未直接查询远端 |
+| 提交 / 推送 | **已提交并推送**：实现提交 `d6b3e07`（`feat: migrate cart, payment, and confirmation flows to React`）、文档提交 `eeb935f`（`docs: add issue #30 plan, review record, and workflow log`，为当时分支 HEAD）。本地 `git rev-parse HEAD` 当时 = `eeb935f800fa2e2a194aa96d55f012575975e719`；本地 `codex/issue-30-cart-payment-confirmation` 已跟踪 `origin/codex/issue-30-cart-payment-confirmation`，两处同 SHA（远端同 SHA 由主 agent 回传）。**提交与推送由主 agent 执行**，docs-writer 未执行任何 git 写操作。**后续变化**：PR #40 审查后新增修复提交 `6b637a4`，使本地 HEAD = `6b637a452a0b03229032af29ddb9b91999e9c24d`、分支相对 `origin` **ahead 1**（当时**尚未推送**）；其后又新增第二批修复提交 `048debf` 与文档提交 `47baa09`。**这些提交均已推送，并随 PR #40 于 2026-10-16 合并入 `main`（merge commit `9154749`）**——见下方「审查后后续修复」两行、§3 与 §4 |
+| 审查后后续修复（第一批） | **提交 `6b637a4`** — `feat: improve movie list layout, sorting controls, and caching`：PR #40 审查通过**之后**用户提出的 3 组修复（表格宽度回归、排序控件重做、movie list 前端缓存）。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交、已推送并随 PR #40 合并（当时为「已提交，待主 agent 推送」）**（推送前 `git status -sb` 显示 `[ahead 1]`）——**已于 2026-10-16 随 PR #40 合并（merge commit `9154749`，见 §4）**。逐项说明与残余边界见 §3 |
+| 审查后后续修复（第二批） | **提交 `048debf`** — `feat: add cart badge and add-to-cart toast`：同一审查后阶段用户**直接提出**的 3 组 UI 修复（加购成功 toast、导航栏 Cart 件数徽标、结算页间距），13 个前端文件。分支同 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。**状态：已提交、已推送并随 PR #40 合并（当时为「已提交，待主 agent 随本文档一起推送」）**（推送前 `git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`，即本地 ahead 1 = 该提交；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`）——**已于 2026-10-16 随 PR #40 合并（merge commit `9154749`，见 §4）**。逐项说明与残余边界见 §3.7–§3.10 |
+| PR | **#40 已创建并已合并** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`；GitHub 已识别 `Closes #30`）。由 `github-operator` 创建（主 agent 回传）。**状态：`MERGED`**——主 agent 于 **2026-10-16** 合并（`mergedAt=2026-10-16T01:32:59Z`，merge commit `91547499d09e5a16419871843cb86936261cf594` / 短 SHA `9154749`）；由此触发 **Issue #30 自动关闭（`CLOSED`）**、远端分支 `codex/issue-30-cart-payment-confirmation` 已删除；`main` 上该 merge commit 的 CI（`Build and test (Java 11)`）**SUCCESS**（见 §4）。提交前该 PR 曾为 OPEN、非 draft、mergeable。docs-writer 无 GitHub 访问授权，未直接查询远端，以上由主 agent 核验并回传 |
 | 计划文档 | `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（§12/§12.1 裁定，§13.1 实现结果） |
 | Issue 跟踪文档 | `docs/issues/issue-30-migrate-cart-payment-confirmation-flows.md` |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` |
 | 关联内部产物 | worker 初版报告 `.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.md`；worker 修复报告 `.pi/artifacts/worker-issue-30-implementation-report.1b62ef0e.625f54b7.md`；oracle 审查报告 `.pi/artifacts/oracle-issue-30-plan-review.md`、`.pi/artifacts/oracle-issue-30-plan-review-round2.md` |
-| 文档维护者 | docs-writer（未改源码/测试/配置；**未提交、未推送、未创建 GitHub issue/PR** —— 提交/推送由主 agent 执行、PR 由 `github-operator` 创建，见上两行） |
+| 文档维护者 | docs-writer（未改源码/测试/配置；**未提交、未推送、未创建 GitHub issue/PR** —— 提交/推送由主 agent 执行、PR 由 `github-operator` 创建，见上两行）。本次发布状态更新的 `docs/` 改动尚未提交；同分支的 `.gitignore` 改动由 worker 完成，见 §4.2 |
 
 ### 验证命令与实际结果
 
@@ -111,12 +111,12 @@
 
 **后续事项**
 
-- 提交、推送与 PR 创建：**已完成（2026-10-14）**——实现提交 `d6b3e07` 与文档提交 `eeb935f` 已推送至 `codex/issue-30-cart-payment-confirmation`，PR **#40** 已由 `github-operator` 创建（见元数据表）。**仍未合并**：合并前以 PR 的 CI 结果与 review 为准；PR 链接与远端 issue 勾选状态由主 agent 回传后更新 issue 文档与本日志元数据。
+- 提交、推送与 PR 创建：**已完成（2026-10-14）**——实现提交 `d6b3e07` 与文档提交 `eeb935f` 已推送至 `codex/issue-30-cart-payment-confirmation`，PR **#40** 已由 `github-operator` 创建（见元数据表）。**已于 2026-10-16 回填**：PR #40 `MERGED`（merge commit `9154749`）、Issue #30 自动关闭（`CLOSED`）、远端分支已删除、`main` CI SUCCESS（见 §4）。PR 链接已回填入本文档、issue 文档与计划文档。
 - 如未来要求“展示行 = 实际插入 sales 行”，需另立 issue 修改 `CartService.getCart` 的丢弃语义（R-15）。
 - 如需严格日期一致性，可在插入后读回 `CURDATE()`（R-6）。
 - legacy 清理（`shoppingCart.js`/`payment.js`/`confirmation.html` 等）必须与 `FrontendApiMigrationTest` 一并修改，且需单独批准。
 
-**没有发现其他已知遗留问题。** 具体地：`src/main/webapp` 仅 `payment.js` 被改且相关钉死测试仍绿；`pom.xml` / SQL / `package.json` / `apiClient.js` / `features/auth/**` 未被改动；工作区的 `frontend/package-lock.json` 既有修改与未跟踪的 `.idea/`、`.pi/`、`AGENTS.md` 属进入本任务前已存在，**不属本次变更**；未发现源码与批准计划之间未获批准的偏离（全部 8 项差异见计划 §13.1，均由主 agent 批准）。
+**没有发现其他已知遗留问题。** 具体地：`src/main/webapp` 仅 `payment.js` 被改且相关钉死测试仍绿；`pom.xml` / SQL / `package.json` / `apiClient.js` / `features/auth/**` 未被改动；工作区的 `frontend/package-lock.json` 既有修改与未跟踪的 `.idea/`、`.pi/`、`AGENTS.md` 属进入本任务前已存在，**不属本次变更**（该句描述的是 2026-10-14 的状态；其中 `.pi/`、`AGENTS.md` 已于 2026-10-16 由本状态更新分支的 `.gitignore` 规则忽略，见 §4.2）；未发现源码与批准计划之间未获批准的偏离（全部 8 项差异见计划 §13.1，均由主 agent 批准）。
 
 ---
 
@@ -194,12 +194,12 @@
 
 ## 3. PR #40 审查后的后续修复（UI 与缓存）
 
-> **本节定位**：PR #40（OPEN）审查通过**之后**，用户又提出两批后续修复，均已并入同一分支 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围。
+> **本节定位**：PR #40 审查通过**之后**，用户又提出两批后续修复，均已并入同一分支 `codex/issue-30-cart-payment-confirmation`，属 PR #40 范围（该 PR 已于 **2026-10-16 合并**，merge commit `9154749`，见 §4）。
 >
 > - **第一批（提交 `6b637a4`，`feat: improve movie list layout, sorting controls, and caching`）**：3 组修复——表格宽度回归、排序控件重做、movie list 前端缓存。见 §3.1–§3.6。
 > - **第二批（提交 `048debf`，`feat: add cart badge and add-to-cart toast`）**：用户随后**直接提出**的 3 组 UI 修复——加购成功 toast、导航栏 Cart 件数徽标、结算页间距。见 §3.7–§3.10。
 >
-> **状态（截至 2026-10-14）**：**两批均已提交，尚未推送**。`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`（即第二批提交 `048debf`；第一批 `6b637a4` = `6b637a452a0b03229032af29ddb9b91999e9c24d` 为其父提交）。**待主 agent 随本文档一起推送**（`048debf`）并更新 PR #40；推送后本状态需回填。两批提交均**未推送、未合并**。
+> **历史状态（截至 2026-10-14，已回填）**：当时**两批均已提交、尚未推送**。`git status -sb` → `codex/issue-30-cart-payment-confirmation...origin/codex/issue-30-cart-payment-confirmation [ahead 1]`；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`（即第二批提交 `048debf`；第一批 `6b637a4` = `6b637a452a0b03229032af29ddb9b91999e9c24d` 为其父提交）。**2026-10-16 回填：两批提交均已推送（其后又推送了文档提交 `47baa09`）并随 PR #40 合并入 `main`（merge commit `9154749`，见 §4）**。
 >
 > **契约影响**：两批均未改后端契约、未改 `frontend/src/api/apiClient.js`、未新增依赖。`6b637a4` 仅含前端文件：`App.test.jsx`、`features/movies/*`、`index.css`；`048debf` 仅含 13 个前端文件（`frontend/src/components/layout/{AppShell.jsx, AppShell.test.jsx}`、`frontend/src/features/cart/{AddToCartButton.jsx, AddToCartButton.test.jsx, CartBadge.jsx, CartPage.jsx, CartPage.test.jsx, CartStatusProvider.jsx, cartStatusContext.js`、`frontend/src/features/checkout/checkoutFlow.test.jsx`、`frontend/src/features/movies/{MovieDetailPage.test.jsx, MovieListPage.test.jsx}`、`frontend/src/index.css`）。
 >
@@ -258,7 +258,7 @@
 | `npm run lint`（`frontend/`，即 `oxlint src`） | 主 agent 亲自运行；docs-writer 事后独立复跑 | **passed** — exit 0，无输出/warning |
 | `npm run build`（`frontend/`） | 主 agent 亲自运行 | **passed** — 构建成功 |
 | `mvn --batch-mode --no-transfer-progress verify` | **未重跑**（后端零改动：`6b637a4` 仅含前端文件） | **not-run** —— 上文 §「验证命令与实际结果」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，未被本提交影响 |
-| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 分支相对 `origin` **ahead 1**；HEAD = `6b637a4` → 该提交**尚未推送** |
+| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 该行记录 2026-10-14 的历史快照：分支相对 `origin` **ahead 1**；HEAD = `6b637a4` → 当时**尚未推送**。**2026-10-16 已推送并随 PR #40 合并（`9154749`）**，见 §4 |
 
 ### 3.5 残余风险与边界（缓存与布局）
 
@@ -301,7 +301,7 @@
 ## 3.7 第二批后续修复：加购 toast、导航栏 Cart 徽标、结算页间距（提交 `048debf`）
 
 > **来源**：用户在 PR #40 审查后**直接提出**的 3 组 UI 需求（非 oracle / reviewer 提出）。落在提交 **`048debf`**（`feat: add cart badge and add-to-cart toast`），分支 `codex/issue-30-cart-payment-confirmation`（本地 HEAD；`git rev-parse HEAD` = `048debf9c1e08919c4b566d266bf0ade530dbc16`）。
-> **状态**：**已提交、待主 agent 随本文档一起推送**；**未推送、未合并**（`git status -sb` → 相对 `origin` **ahead 1**，该 1 个提交即 `048debf`）。
+> **历史状态（提交 `048debf` 时点）**：当时为「已提交、待主 agent 随本文档一起推送」；**未推送、未合并**（`git status -sb` → 相对 `origin` **ahead 1**，该 1 个提交即 `048debf`）。**2026-10-16 回填：已推送并随 PR #40 合并入 `main`（merge commit `9154749`，见 §4）**。
 > **范围**：仅 13 个前端文件；**未改后端**、未改 `frontend/src/api/apiClient.js`、未新增依赖、无 schema/legacy 改动。
 
 ### 3.7.1 加购成功 toast
@@ -365,7 +365,7 @@
 | `npm run lint`（`frontend/`，即 `oxlint src`） | 主 agent 亲自运行 | **passed** — exit 0，无 warning |
 | `npm run build`（`frontend/`） | 主 agent 亲自运行 | **passed** — `vite build` 成功 |
 | `mvn --batch-mode --no-transfer-progress verify` | **未重跑**（后端零改动：`048debf` 仅含前端文件） | **not-run** —— 上文「验证命令与实际结果」的 120 tests / 947 of 1057 = 0.8959 仍为最近一次后端全量验证结果，未被本提交影响 |
-| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 分支相对 `origin` **ahead 1**；HEAD = `048debf9c1e08919c4b566d266bf0ade530dbc16` → 该提交**尚未推送** |
+| `git status -sb` / `git rev-parse HEAD` | docs-writer（只读） | 该行记录 2026-10-14 的历史快照：分支相对 `origin` **ahead 1**；HEAD = `048debf9c1e08919c4b566d266bf0ade530dbc16` → 当时**尚未推送**。**2026-10-16 已推送并随 PR #40 合并（`9154749`）**，见 §4 |
 
 **新增测试（均记录在 worker 报告中，本次日志未逐条独立复跑）**：`AppShell.test.jsx` 新增 9 条（quantity 之和与可访问名、`≥10` 显示 `...`、空 cart 不渲染徽标、加购后 +1、CartPage `+`/`Delete` 后同步、勾选不再显示后仍计数、401 清零、刷新失败保留上次值、登出清零）；`AddToCartButton.test.jsx` 由 3 条增至 7 条（成功改为 toast 且不再内联、2 秒后消失、单实例且重置计时、手动关闭、勾选 `Don't show again` 立即关闭并持久化且后续加购仍计数、失败/401 无 toast）。既有断言未被删除或弱化。
 
@@ -409,3 +409,43 @@
   - **含义**：要用 `userEvent` 点击又要断言定时器行为时，用 `shouldAdvanceTime: true` 让真实时间继续推进（避免 `findBy*` 等待被冻结），并给 `userEvent` 传入 `advanceTimers`，然后显式 `vi.advanceTimersByTime(2000)` 触发「2 秒后消失」断言；`afterEach` 恢复 `vi.useRealTimers()`。
   - **对应位置**：`frontend/src/features/cart/AddToCartButton.test.jsx`（`hides the toast after two seconds`、`keeps one toast and restarts its countdown on the next add`）。
   - **为何值得学习**：这是「假定时器 + `userEvent` + Testing Library 异步查询」三者混用时的标准配置——只用 `vi.useFakeTimers()` 常导致 `findBy*` 超时假失败，而只用真实定时器又会让测试慢/不稳定。
+
+---
+
+## 4. 合并与关闭（2026-10-16 回填）
+
+> **本节只记录发布状态**，不改动 §1–§3 的任何实测数字、残余风险、AC 证据或既有结论。
+
+### 4.1 PR #40 合并、Issue #30 关闭与 `main` CI
+
+**事实（由主 agent 用 `gh` 核验并回传；docs-writer 无 GitHub 访问授权，未直接查询远端）**：
+
+| 项目 | 值 |
+| --- | --- |
+| PR | #40 — https://github.com/PNZ-z/ai-powered-Fabflix/pull/40（标题 “Migrate cart, payment, and confirmation flows to React”；base `main` ← head `codex/issue-30-cart-payment-confirmation`） |
+| PR 状态 | **`MERGED`**（合并前为 OPEN、非 draft、mergeable） |
+| 合并时间 | `mergedAt = 2026-10-16T01:32:59Z`（本地记录日期 2026-10-16） |
+| Merge commit | `91547499d09e5a16419871843cb86936261cf594`（短 SHA `9154749`） |
+| 合并方式 | 主 agent 执行（GitHub 侧合并；由 PR 正文的 `Closes #30` 触发自动关闭） |
+| Issue #30 | **`CLOSED`**（自动关闭，非人工勾选；docs-writer 未修改远端 issue） |
+| 远端分支 | `codex/issue-30-cart-payment-confirmation` **已删除**；origin 现仅剩 `main` |
+| `main` CI | merge commit `9154749` 上的 **“Build and test (Java 11)”** → **SUCCESS** |
+| 本地 | 本地 `main` 已与该 merge commit 同步（`git log` 显示 `9154749 Merge pull request #40 …`） |
+
+**纳入本次合并的提交**：`d6b3e07`（#30 实现）、`eeb935f`（#30 文档）、`6b637a4`（审查后第一批修复）、`048debf`（审查后第二批修复）、`47baa09`（记录徽标/toast/间距后续修复的文档提交）；合并结果即 `9154749`。
+
+**未变**：§1 的逐文件变更与遗留风险、§2 的知识点、§3 的两批后续修复说明及其实测数字（后端 120 tests / 947 of 1057 = 0.8959；前端 26 files / 155 tests）、AC-1..AC-5 状态与证据（仍为「已完成」），均**未因合并而改动**。PR #40 合并**不代表**任何新增验证：合并前最后一次记录在案的验证仍是 §3.8（前端）与「验证命令与实际结果」表（后端终验），**合并本身未重跑测试**（`main` CI 的 SUCCESS 是 CI 对 merge commit 的独立运行结果）。
+
+### 4.2 本状态更新分支的附带改动：`.gitignore` 忽略 agent 工作流文件
+
+| 项目 | 值 |
+| --- | --- |
+| 分支 | `codex/docs-issue-30-merged-status`（即本次发布状态更新的工作分支） |
+| 改动文件 | `.gitignore`（**仅此一个非 `docs/` 文件**；由 worker 完成，**未提交**） |
+| 新增内容 | 末尾追加注释 `# Local agent workflow configuration (not tracked at this stage)` 与两行规则：`/.pi/`、`/AGENTS.md` |
+| 原因 | 用户决定**现阶段不跟踪** agent 工作流文件（`.pi/` 与根 `AGENTS.md`） |
+| 未包含 | **未忽略 `.idea/`**；**未改动 `frontend/package-lock.json`**（其既有修改与本次无关） |
+| 文件状态 | 两个文件仍在工作区（**仅被忽略，未删除**）；`git check-ignore -v .pi AGENTS.md` 命中新增的两行规则，`git status --short` 中二者不再作为未跟踪项出现 |
+| 归属 | 属**本次发布状态更新分支**的改动，与 #30 的代码内容无关；#30 的代码已随 PR #40 合并（见 §4.1） |
+
+**边界说明**：`.gitignore` 的该项改动**未改变** `docs/` 之外的任何项目行为、未新增依赖、未影响测试与构建；docs-writer 未自行修改该文件，本节仅为如实记录（由主 agent 提供事实与验证命令结果）。
