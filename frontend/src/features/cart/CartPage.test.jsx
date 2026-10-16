@@ -3,8 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext } from '../../auth/authContext.js'
-import CartPage from './CartPage.jsx'
 import CartStatusProvider from './CartStatusProvider.jsx'
+import { expectNoA11yViolations } from '../../test/axe.js'
+import CartPage from './CartPage.jsx'
 
 // The cart page itself does not depend on a session, and an anonymous session
 // keeps the provider from adding its own /boot/cart request to the calls the
@@ -140,5 +141,13 @@ describe('CartPage', () => {
     await screen.findByRole('heading', { name: 'Shopping cart' })
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse([cartItem()])))
+    renderCart(fetchMock)
+
+    await screen.findByRole('heading', { name: 'Shopping cart' })
+    await expectNoA11yViolations()
   })
 })

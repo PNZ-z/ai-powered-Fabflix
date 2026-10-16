@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext } from '../../auth/authContext.js'
 import CartStatusProvider from '../cart/CartStatusProvider.jsx'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import MovieDetailPage from './MovieDetailPage.jsx'
 
 // The add-to-cart control uses the shared cart status; an anonymous session
@@ -180,5 +181,13 @@ describe('MovieDetailPage', () => {
     const cartCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/boot/cart'))
     expect(String(cartCall[0])).toBe('/api/boot/cart')
     expect(String(cartCall[1].body)).toBe('movieId=tt9000001&action=add')
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(movieDetail()))
+    renderMovieDetail('/movies/tt9000001', fetchMock)
+
+    await screen.findByRole('heading', { name: 'Neon Horizon' })
+    await expectNoA11yViolations()
   })
 })

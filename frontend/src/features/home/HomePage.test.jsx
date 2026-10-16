@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import HomePage from './HomePage.jsx'
 
 function LocationProbe() {
@@ -64,5 +65,15 @@ describe('HomePage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to reach the Fabflix server.')
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  })
+
+  it('has no detectable accessibility violations once genres load', async () => {
+    renderHome(vi.fn().mockResolvedValue(new Response(
+      JSON.stringify([{ name: 'Drama' }, { name: 'Comedy' }]),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+
+    await screen.findByRole('link', { name: 'Drama' })
+    await expectNoA11yViolations()
   })
 })

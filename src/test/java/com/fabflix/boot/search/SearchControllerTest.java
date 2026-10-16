@@ -52,12 +52,13 @@ class SearchControllerTest {
         stored.setAttribute("lastMovieQuery", "query=Alien&pageSize=10");
         mockMvc.perform(get("/api/boot/jump-back").session(stored))
                 .andExpect(status().isFound())
-                .andExpect(header().string("Location", "/movieList.html?query=Alien&pageSize=10"));
+                .andExpect(header().string("Location",
+                        "/movies?mode=fulltext&query=Alien&pageSize=10"));
 
         mockMvc.perform(get("/api/boot/jump-back").session(authenticatedSession()))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location",
-                        "/movieList.html?title=&pageSize=10&pageNumber=0"));
+                        "/movies?mode=fulltext&title=&pageSize=10&pageNumber=0"));
     }
 
     @Test void returnsSafeDatabaseError() throws Exception {

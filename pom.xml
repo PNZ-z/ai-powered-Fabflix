@@ -167,4 +167,74 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          Packages the production React build into the executable jar. Requires
+          `frontend/dist` to exist (run `cd frontend && npm ci && npm run build`
+          first); the requireFilesExist rule fails the build early when it is
+          missing so a UI-less jar can never be produced silently.
+        -->
+        <profile>
+            <id>frontend</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>require-frontend-dist</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireFilesExist>
+                                            <files>
+                                                <file>${project.basedir}/frontend/dist/index.html</file>
+                                            </files>
+                                            <message>frontend/dist/index.html is missing. Run `cd frontend &amp;&amp; npm ci &amp;&amp; npm run build` before `mvn -Pfrontend package`.</message>
+                                        </requireFilesExist>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <!--
+                          This project has no <parent> POM, so no pluginManagement
+                          supplies a version. An explicit version keeps the build
+                          free of the "plugin.version is missing" warning and pins
+                          copy-resources behaviour across Maven versions.
+                        -->
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-frontend-dist</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/frontend/dist</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

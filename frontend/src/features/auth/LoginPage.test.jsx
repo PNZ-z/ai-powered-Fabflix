@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext } from '../../auth/authContext.js'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import LoginPage from './LoginPage.jsx'
 
 const anonymousCustomer = { status: 'anonymous', user: null, error: null }
@@ -76,5 +77,13 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to reach the Fabflix server.')
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    renderLogin()
+
+    await screen.findByRole('heading', { name: 'Sign in to Fabflix' })
+    await expectNoA11yViolations()
   })
 })

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import PaymentPage from './PaymentPage.jsx'
 
 function jsonResponse(body, status = 200) {
@@ -275,5 +276,13 @@ describe('PaymentPage', () => {
     expect(await screen.findByText('Confirmation order total 15')).toBeInTheDocument()
     expect(paymentAttempts).toBe(2)
     expect(String(paymentCalls(fetchMock)[1][1].body)).toContain('checkoutToken=tok-2')
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    renderCheckout(fetchRouter())
+
+    await screen.findByRole('heading', { name: 'Checkout' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Place order' })).toBeEnabled())
+    await expectNoA11yViolations()
   })
 })

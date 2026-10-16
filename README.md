@@ -1,6 +1,6 @@
 # AI-powered Fabflix
 
-Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application uses Spring Boot, JDBC, and MySQL. A React + Vite frontend now lives alongside the existing browser-based JavaScript frontend so pages can be migrated incrementally. Legacy servlet endpoints have been retired; offline import and maintenance programs remain available as standalone utilities.
+Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application uses Spring Boot, JDBC, and MySQL and serves a React + Vite single-page frontend that Maven packages into the executable jar. The legacy browser-based HTML/JavaScript frontend has been retired — React is the only supported frontend. Offline import and maintenance programs remain available as standalone utilities.
 
 ## Modernization roadmap
 
@@ -12,7 +12,7 @@ Fabflix is a Java movie-commerce application being modernized into a Spring Boot
 ## Current architecture
 
 ```text
-Browser (React + Vite during migration, legacy HTML + JavaScript retained)
+Browser (React + Vite single-page app)
           |
 Spring MVC controllers and authentication filters
           |
@@ -53,7 +53,23 @@ Spring Boot creates the application datasource from these variables. The default
 
 ## Run the application
 
-Start MySQL, wait for it to become healthy, and run the application with the local profile:
+### Full stack with Docker Compose
+
+`docker compose up -d` builds the React app and the Spring Boot jar inside the `app` image, starts MySQL, and serves the SPA on port `8081`:
+
+```shell
+cp .env.example .env   # then replace every placeholder password
+docker compose up -d
+docker compose ps
+```
+
+Open `http://localhost:8081/`. The Compose `app` service activates the Spring `local` profile (which bypasses external reCAPTCHA) so the demo stack runs without a Google key. **Production deployments must set `RECAPTCHA_SECRET_KEY`** and, at frontend build time, `VITE_RECAPTCHA_SITE_KEY`: Vite inlines that value during `npm run build`, so setting it at runtime has no effect.
+
+For a quick health check run `GET http://localhost:8081/api/boot/health`.
+
+### Local development
+
+Run MySQL with Compose, then the backend with the `local` profile:
 
 ```shell
 docker compose up -d mysql
@@ -61,23 +77,23 @@ docker compose ps
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The local profile bypasses external reCAPTCHA verification and must never be used in production. The application listens on `FABFLIX_BOOT_PORT` or `8081` by default. Open:
+The local profile bypasses external reCAPTCHA verification and must never be used in production. The application listens on `FABFLIX_BOOT_PORT` or `8081` by default. Browse the React app with the Vite dev server described under [React frontend development](#react-frontend-development), or run the packaged app on `http://localhost:8081/`.
 
-```text
-http://localhost:8081/login.html
+### Production build
+
+The React assets are not committed. Build them first, then package the executable jar with the `frontend` profile — the build fails if `frontend/dist/index.html` is missing:
+
+```shell
+cd frontend && npm ci && npm run build && cd ..
+mvn -Pfrontend clean package
+java -jar target/fablix.jar --spring.profiles.active=local
 ```
 
-For a quick health check:
-
-```text
-GET http://localhost:8081/api/boot/health
-```
-
-The executable application is built at `target/fablix.jar` by `mvn package` or `mvn verify` and can be run with `java -jar target/fablix.jar --spring.profiles.active=local`.
+`mvn package`/`mvn verify` without the `frontend` profile still build the executable jar but leave the static assets out, so the default CI build does not need Node.
 
 ## React frontend development
 
-The Phase 2 React application is isolated under `frontend/`. It runs independently from Spring Boot during development and forwards `/api` requests to the backend.
+The Phase 2 React application is isolated under `frontend/`. It runs independently from Spring Boot during development and forwards `/api` requests to the backend. It requires Node.js 22.12 or newer.
 
 ```shell
 cd frontend
@@ -93,10 +109,12 @@ Run all current frontend checks with:
 cd frontend
 npm run lint
 npm test
+npm run test:coverage
 npm run build
+npm run test:e2e   # after `npx playwright install chromium`
 ```
 
-The existing HTML/JavaScript frontend remains the supported application while React routes are migrated. See [`frontend/README.md`](frontend/README.md) for the frontend structure and commands.
+React is the only supported frontend and its production build is served by Spring Boot (see [Production build](#production-build)). See [`frontend/README.md`](frontend/README.md) for the frontend structure and commands.
 
 ## API verification
 

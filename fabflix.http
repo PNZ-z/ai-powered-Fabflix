@@ -41,7 +41,7 @@ GET {{baseUrl}}/api/boot/full-text-search?query=Shooting&pageNumber=0&pageSize=1
 ### 全文搜索空查询（应返回空数组）
 GET {{baseUrl}}/api/boot/full-text-search?query=&pageNumber=0&pageSize=10
 
-### 返回最近一次全文搜索结果页（应返回 302）
+### 返回最近一次全文搜索结果页（应返回 302，Location 指向 /movies?mode=fulltext&...）
 GET {{baseUrl}}/api/boot/jump-back
 
 ### 查看空购物车

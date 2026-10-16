@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { expectNoA11yViolations } from '../../test/axe.js'
 import ConfirmationPage from './ConfirmationPage.jsx'
 
 function jsonResponse(body, status = 200) {
@@ -94,5 +95,13 @@ describe('ConfirmationPage', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(await screen.findByRole('heading', { name: 'Order confirmed' })).toBeInTheDocument()
+  })
+
+  it('has no detectable accessibility violations', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(order))
+    renderConfirmation(fetchMock, { state: { order } })
+
+    await screen.findByRole('heading', { name: 'Order confirmed' })
+    await expectNoA11yViolations()
   })
 })

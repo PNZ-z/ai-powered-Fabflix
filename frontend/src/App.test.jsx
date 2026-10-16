@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppRoutes from './app/AppRoutes.jsx'
 import { AuthContext } from './auth/authContext.js'
-import { routeDefinitions } from './app/routeDefinitions.js'
 import { clearMovieListCache } from './features/movies/movieListCache.js'
+import { expectNoShellA11yViolations } from './test/axe.js'
 
 const authenticatedSession = { status: 'authenticated', user: {}, error: null }
 const anonymousSession = { status: 'anonymous', user: null, error: null }
@@ -79,6 +79,24 @@ const confirmationOrder = {
   }],
 }
 
+const employeeSession = {
+  authenticated: true,
+  role: 'employee',
+  username: 'admin@example.com',
+  displayName: 'Admin User',
+}
+
+const databaseMetadata = {
+  status: 'success',
+  tables: [{
+    table_name: 'movies',
+    columns: [
+      { column_name: 'id', column_type: 'varchar(10)' },
+      { column_name: 'title', column_type: 'varchar(100)' },
+    ],
+  }],
+}
+
 function responseBody(url) {
   if (url.includes('/single-movie')) return movieDetail
   if (url.includes('/single-star')) return starDetail
@@ -86,6 +104,12 @@ function responseBody(url) {
   if (url.includes('/boot/checkout/token')) return { status: 'success', token: 'checkout-token' }
   if (url.includes('/boot/confirmation')) return confirmationOrder
   if (url.includes('/boot/cart')) return cartItems
+  if (url.includes('/boot/employee-login')) return { status: 'success', message: 'Employee login successful.' }
+  // The dashboard routes must be matched before the generic movie fallback and
+  // in most-specific-first order (logout, session, then the metadata action).
+  if (url.includes('/boot/dashboard/logout')) return null
+  if (url.includes('/boot/dashboard/session')) return employeeSession
+  if (url.includes('/boot/dashboard')) return databaseMetadata
   return [{ name: 'Drama' }]
 }
 
@@ -109,10 +133,36 @@ describe('application routing', () => {
     vi.unstubAllGlobals()
   })
 
-  it.each(routeDefinitions)('renders the $title placeholder at $samplePath', (route) => {
-    renderRoute(route.samplePath)
+  it('renders the real employee login page for anonymous employees', async () => {
+    renderRoute('/employee/login', { employee: anonymousSession })
 
-    expect(screen.getByRole('heading', { name: route.title })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Employee login' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toBeRequired()
+    expect(screen.getByLabelText('Password')).toBeRequired()
+  })
+
+  it('renders the real employee dashboard for authenticated employees', async () => {
+    renderRoute('/employee/dashboard')
+
+    expect(await screen.findByRole('heading', { name: 'Employee dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'movies' })).toBeInTheDocument()
+    expect(screen.getByText('varchar(100)')).toBeInTheDocument()
+  })
+
+  // These render the full AppShell, so axe checks the page content together
+  // with the header/nav/main/footer landmarks (the `region` rule included).
+  it('has no shell accessibility violations on the home page', async () => {
+    renderRoute('/home')
+
+    expect(await screen.findByRole('heading', { name: 'Find your next Fabflix movie' })).toBeInTheDocument()
+    await expectNoShellA11yViolations()
+  })
+
+  it('has no shell accessibility violations on the employee dashboard', async () => {
+    renderRoute('/employee/dashboard')
+
+    expect(await screen.findByRole('heading', { name: 'movies' })).toBeInTheDocument()
+    await expectNoShellA11yViolations()
   })
 
   it('uses client-side navigation from the shared shell', async () => {
@@ -183,10 +233,12 @@ describe('application routing', () => {
     },
   )
 
-  it('redirects anonymous employees to employee login', async () => {
+  it('redirects anonymous employees to the real employee login page', async () => {
     renderRoute('/employee/dashboard', { employee: anonymousSession })
 
     expect(await screen.findByRole('heading', { name: 'Employee login' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toBeRequired()
+    expect(screen.getByLabelText('Password')).toBeRequired()
   })
 
   it('shows a user-facing error when session validation fails', () => {
