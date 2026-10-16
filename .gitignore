@@ -178,3 +178,7 @@ buildNumber.properties
 /actors63.xml
 /casts124.xml
 
+# Local agent workflow configuration (not tracked at this stage)
+/.pi/
+/AGENTS.md
+
