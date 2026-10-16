@@ -1,7 +1,7 @@
 # Issue #33 方案 / 计划 — Integrate production React build and retire the legacy frontend
 
-> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、PR #42 已创建（OPEN，未合并）。**
-> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）；legacy 删除已随实现提交 `092147a` 进入 git（`git ls-files src/main/webapp` = **0**，§7 的 M2-DOC-2 已为真）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（见 §7.1 M2-BE-6 与 §13.4）。
+> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、**PR #42 已于 2026-10-16 合并**（merge commit **`d618b64`**），**issue #33 已关闭**（GitHub 依 PR 正文的 `Closes #33` 自动关闭）。**
+> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）；legacy 删除已随实现提交 `092147a` 进入 git（`git ls-files src/main/webapp` = **0**，§7 的 M2-DOC-2 已为真）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**；**合并后远端分支已删除、`main`（`d618b64`）上 CI 双 job（Java 11 + Frontend）亦 SUCCESS**（见 §7.1 M2-BE-6 与 §13.4）；里程碑 **Phase 2 — React Frontend Migration（#2）已关闭**（10/10）。
 > 本文档 §1–§11（及 §12 的批准时记录）保留为**批准时的计划文本**（事实性内容未追改）；实现结果、与计划的逐项差异、**M2 checklist（§7）的逐条证据回填**与残余风险见 **§7** 与 **§13**。
 >
 > **文档状态（批准时）：已批准（主 agent，2026-10-15）— 已交 worker 实现。**
@@ -278,7 +278,7 @@
 
 ## 7. M2 Regression Checklist（已定稿，D-33-4；**证据列已由主 agent 终验回填，2026-10-15**）
 
-> 定位：M2 收尾的可执行清单。**§7 各“结果”列已由主 agent 终验（2026-10-15）逐条回填，并已随 PR #42（head `fb65eda`）的 CI 首跑回填 M2-BE-6**；未执行/部分验证的条目已明确标注（不得当作已通过）。
+> 定位：M2 收尾的可执行清单。**§7 各“结果”列已由主 agent 终验（2026-10-15）逐条回填，并已随 PR #42（head `fb65eda`）的 CI 首跑回填 M2-BE-6（该 PR 已于 2026-10-16 合并，`d618b64`）**；未执行/部分验证的条目已明确标注（不得当作已通过）。
 > 记录方式：每条填「命令/操作 + 实际输出摘要（如 `Tests run: N`、HTTP 状态、文件存在性）+ 执行日期」；标注来源为「主 agent 实测」或「docs-writer 只读复核」。
 > **Docker 镜像可拉取性已由主 agent 在本机用 `docker manifest inspect` 验证通过**（`node:22-alpine`/`maven:3.9-eclipse-temurin-11`/`eclipse-temurin:11-jre`）→ **7.3 的生产 smoke 已实际执行并回填**。
 
@@ -292,7 +292,7 @@
 | M2-BE-3 | 删除 legacy 后重跑 `mvn --batch-mode verify` | 全绿（含重写后的守卫测试） | ✅ **通过**：21 个 legacy 文件已删除（已随提交 `092147a` 进入 git），`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，**127 tests** 全绿（含重写后的 `FrontendApiMigrationTest` 退役守卫与 `SpaFallbackTest`）（主 agent 实测） |
 | M2-BE-4 | `grep -rn "webapp\|\.html" src/main/java src/main/resources pom.xml compose.yaml Dockerfile` | 无 legacy 文件引用（仅留已批准的 D-33-7 新落点） | ✅ **通过**（docs-writer 只读 grep）：`src/main/java`、`src/main/resources`、`pom.xml`、`compose.yaml`、`Dockerfile`、`fabflix.http`、`.github/workflows/ci.yml` 均无 `login.html`/`movieList.html`/`webapp`；两处重定向已用新落点（`/login`、`/movies?mode=fulltext&`）。**备注**：命中项只出现在文档（如本计划的历史段落与架构文档的历史说明）中 |
 | M2-BE-5（**N-33-7 新增**） | **干净 checkout 的可复现性**：`npm ci` + `mvn -Pfrontend clean package` | 从干净树可重现成功构建（无隐式前置步骤） | ⚠️ **部分验证**：Node 22 容器（依赖安装 → `npm run build`）与 `mvn -Pfrontend -DskipTests clean package`（含 dist 存在/缺失两态）分别跑通；但**未单独执行**「干净 checkout 单次端到端 `npm ci` + `mvn -Pfrontend clean package`」的专门复现 → 记为**未完全验证**，PR CI 从干净 checkout 跑 `npm ci` 与构建后可作为间接补强（M2-BE-6） |
-| M2-BE-6（**N-33-7 新增**） | **PR 上 CI 全绿**（后端 + #32 的独立 `frontend` job） | 两个 job 均 SUCCESS | ✅ **通过（已回填，2026-10-15）**：PR **#42**（head `fb65eda`）上 `Build and test (Java 11)` → **SUCCESS**；`Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（新 `frontend` job 的首次运行）。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer 未直接访问 GitHub）。**PR 仍为 OPEN、未合并**（见 §13.4） |
+| M2-BE-6（**N-33-7 新增**） | **PR 上 CI 全绿**（后端 + #32 的独立 `frontend` job） | 两个 job 均 SUCCESS | ✅ **通过（已回填，2026-10-15；合并结果 2026-10-16）**：PR **#42**（head `fb65eda`）上 `Build and test (Java 11)` → **SUCCESS**；`Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（新 `frontend` job 的首次运行）；**PR 已于 2026-10-16 合并（`d618b64`），合并后 `main` 上双 job 仍 SUCCESS**。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer 未直接访问 GitHub）。详见 §13.4 |
 | M2-BE-7（**N-33-7 新增**） | `git ls-files frontend/dist` | **为空**（dist 未提交，C-33-1） | ✅ **通过**：`git ls-files frontend/dist` → 0 行（`frontend/.gitignore` 忽略 `dist`）（docs-writer 只读执行） |
 
 ### 7.2 前端（命令由 #32 引入）
@@ -414,8 +414,8 @@
 
 ## 13. 实现结果与计划差异（主 agent 终验后回填，2026-10-15）
 
-> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 已创建（OPEN，未合并）；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS（§13.4）。**
-> 证据来源：主 agent 亲跑的终验命令与输出（本地 Node 24 + Node 22 容器 + Docker 生产 smoke）＋本轮 docs-writer 的**只读**复核（`git status`/`git diff`、`unzip -l target/fablix.jar`、`target/surefire-reports/*`、`target/site/jacoco/jacoco.csv`、`git ls-files`、`grep`）。M2 checklist 的逐条结果见 **§7**。
+> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、**PR #42 已于 2026-10-16 合并（merge commit `d618b64`）**、**issue #33 已关闭**；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS，合并后 `main`（`d618b64`）双 job 亦 SUCCESS；里程碑 Phase 2 已关闭（§13.4）。**
+> 证据来源：主 agent 亲跑的终验命令与输出（本地 Node 24 + Node 22 容器 + Docker 生产 smoke）＋主 agent 核验的 PR #42 合并结果与 CI 运行结果＋本轮 docs-writer 的**只读**复核（`git status`/`git diff`、`unzip -l target/fablix.jar`、`target/surefire-reports/*`、`target/site/jacoco/jacoco.csv`、`git ls-files`、`grep`）。M2 checklist 的逐条结果见 **§7**。
 
 ### 13.1 实际改动文件（相对 §5 计划清单）
 
@@ -465,14 +465,14 @@
 | AC-33-2 | `docker compose build app` + `up -d --no-deps app` + health | ✅ 构建成功；health **200**；smoke 后 `docker compose rm -sf app`（mysql 与卷未动） |
 | AC-33-3 | `SpaFallbackTest` 真值表/注册层 + 生产 smoke 深链 | ✅ 单测全绿（含到后端 127 内）；**10 条深链全部 200 `text/html`**；`/assets/missing.js` 404 |
 | AC-33-4 | 退役守卫测试 + grep 无遗留引用 + 两处重定向新落点 + `fabflix.http` | ✅ `FrontendApiMigrationTest` 重写后全绿；`src/main/java`/`pom.xml`/`compose.yaml`/`Dockerfile`/`.http` 无 legacy 路径；两处重定向已改并同步测试 |
-| AC-33-5 | `mvn --batch-mode verify` + #32 前端命令 | ✅ **已完成**：本地全部通过（后端 127 / 前端 195 / e2e 12 / lint 干净 / build 成功）；**PR #42（head `fb65eda`）上 CI 两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ 该 AC 的「CI 全绿」直接证据**已回填**（§13.4）；**PR 仍为 OPEN、未合并** |
+| AC-33-5 | `mvn --batch-mode verify` + #32 前端命令 | ✅ **已完成**：本地全部通过（后端 127 / 前端 195 / e2e 12 / lint 干净 / build 成功）；**PR #42（head `fb65eda`）上 CI 两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ 该 AC 的「CI 全绿」直接证据**已回填**（§13.4）；**PR 已于 2026-10-16 合并（`d618b64`），合并后 `main` 上双 job 亦 SUCCESS** |
 | AC-33-6 | §7 的 M2 checklist | ✅ **已逐条回填**；原「非完全通过」的 3 条已有两条随 PR/提交闭合：**M2-BE-6 → ✅ SUCCESS（PR #42 两 job）**、**M2-DOC-2 → ✅ `git ls-files src/main/webapp` = 0**（提交 `092147a`）；**仅 M2-BE-5 仍为部分验证**（干净 checkout 端到端未单独复现，CI 的 `npm ci` + build 作为间接补强）；M2-DOC-3 已更新为「提交后仅剩未跟踪 `.idea/*`」 |
 
-### 13.4 PR、CI 首跑与提交后状态（原「待 PR 后回填 / 未验证项」，**已回填 2026-10-15**）
+### 13.4 PR、CI 首跑、合并结果与提交后状态（原「待 PR 后回填 / 未验证项」，**已回填 2026-10-15；合并结果 2026-10-16**）
 
 | # | 项 | 状态 |
 | --- | --- | --- |
-| 1 | **PR 链接与 CI 首跑（含 #32 新增的 `frontend` job）** | ✅ **已回填**：提交 `092147a`（实现）+ `fb65eda`（文档）已推送；PR **#42**（HEAD `fb65eda`）；**CI 首跑两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ M2-BE-6 与 AC-33-5 的 CI 直接证据已闭合（来源：主 agent 核验的 GitHub CI 结果）。**PR 仍为 OPEN、未合并** |
+| 1 | **PR 链接、CI 首跑与合并（含 #32 新增的 `frontend` job）** | ✅ **已回填**：提交 `092147a`（实现）+ `fb65eda`（文档）已推送；PR **#42**（HEAD `fb65eda`）；**CI 首跑两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ M2-BE-6 与 AC-33-5 的 CI 直接证据已闭合（来源：主 agent 核验的 GitHub CI 结果）。**PR 已于 2026-10-16 合并**（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）；**合并后远端分支已删除（origin 仅剩 `main`）、本地 `main` 已同步到 `d618b64`、`main` 上双 job 亦 SUCCESS**；**issue #33 已关闭**（GitHub 依 `Closes #33` 自动关闭）；**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭**（`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z） |
 | 2 | M2-BE-5「干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package` 单次端到端复现」 | **仍未单独执行**（各步骤已分别验证）→ 记为未完全验证；PR CI 的 `npm ci` + `npm run build`（干净 checkout）作为间接补强（M2-BE-6） |
 | 3 | M2-DOC-2「`git ls-files src/main/webapp` 为空」 | ✅ **已成立**：docs-writer 本轮只读复核 `git ls-files src/main/webapp` → 0 行（21 文件随 `092147a` 移除） |
 | 4 | `.idea/*`（6 个未跟踪本机文件） | **仍未处理**：提交后 `git status --short --untracked-files=all` 仅剩这 6 项，非本次变更，待主 agent 决定是否排除（M2-DOC-3） |

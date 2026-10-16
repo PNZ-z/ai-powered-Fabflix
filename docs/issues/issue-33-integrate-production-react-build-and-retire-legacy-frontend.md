@@ -4,7 +4,7 @@
 > 它**不是**发布草稿，`github-operator` **不需**为本 issue 创建新 issue。docs-writer 不修改远端 issue 内容。
 >
 > **本地计划状态（2026-10-15）：`docs/plans/issue-33-integrate-production-react-build-and-retire-legacy-frontend.md` = 已批准（主 agent，2026-10-15，依据 oracle 报告）→ 实现完成，已通过主 agent 终验（2026-10-15）。**
-> **实现状态：已完成（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、PR #42 已创建（OPEN，未合并））。** 破坏性动作已实际执行并已进入 git（见 §3.5）。
+> **实现状态：已完成并已合并（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`）；**issue #33 已关闭**（GitHub 依 PR 正文的 `Closes #33` 自动关闭）；合并后远端分支已删除，`main`（`d618b64`）CI 双 job SUCCESS）。** 破坏性动作已实际执行并已进入 git（见 §3.5）。
 > **验证状态：`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS / 127 tests / JaCoCo LINE 968/110/1078 = 0.8980；`mvn -Pfrontend -DskipTests clean package` 产物含 `static/index.html`；dist 缺失 → BUILD FAILURE（enforcer）；`docker compose build app` + `up -d --no-deps app` → health 200、**10 条深链全部 200 text/html**、未认证 `/api/boot/cart` 401 JSON、`/API/boot/cart` 404 JSON、`/assets/missing.js` 404；顾客/员工登录链路走通；M2 checklist 逐条结果见计划 §7。** AC 逐条状态与证据见 §6。
 >
 > ⛔ **本 issue 含用户/主 agent 已批准的破坏性动作**：删除整个 `src/main/webapp/**`（21 个跟踪文件，见 §3.2）；**并包含两处已批准的行为变更**：顾客非 JSON 登出重定向 `/login.html`→`/login`、jump-back `/movieList.html?<query>`→`/movies?mode=fulltext&<query>`（见 §3.3/§3.4）。
@@ -19,7 +19,7 @@
 | 标题（远端原文） | Integrate production React build and retire the legacy frontend |
 | Milestone | Phase 2 — React Frontend Migration（与 #31/#32 共用；由主 agent 提供） |
 | 获取方式 | 主 agent 用 `gh` 获取的远端原文，并在任务说明中逐字提供（docs-writer 无 GitHub 访问授权，**未**直接查询远端） |
-| 远端状态核对 | **未确认**（docs-writer 未查询远端；以远端为准） |
+| 远端状态核对 | **已关闭（`CLOSED`）**——2026-10-16 由 GitHub 依 PR #42 正文的 `Closes #33` 自动关闭（主 agent 核验）；docs-writer 未直接查询远端，仍以远端为准 |
 | 本地记录文档 | 本文件 |
 | 关联计划 | `docs/plans/issue-33-integrate-production-react-build-and-retire-legacy-frontend.md`（**已批准（主 agent，2026-10-15）→ 实施完成，已通过主 agent 终验（2026-10-15）**；M2 checklist 已逐条回填，实现结果/差异见其 **§7** 与 **§13**） |
 | 关联全局约束 | `docs/architecture/frontend-migration-contracts.md`（§2 legacy 保留策略、§8 架构守卫） |
@@ -149,11 +149,11 @@ Final M2 issue; depends on all feature migration and quality issues.
 | AC-33-2 | Docker Compose builds and starts the complete stack | 多阶段 `Dockerfile` + `.dockerignore` + `app` 服务（D-33-1） | ✅ **已完成**：`docker compose build app` 成功；`up -d --no-deps app` 后 health **200**；随后 `docker compose rm -sf app`（**mysql 与数据卷未动**） |
 | AC-33-3 | Direct navigation works for every React route | SPA fallback（D-33-2）+ 深链验证（含 `/api/**` 不被拦截） | ✅ **已完成**：`SpaFallbackTest` 5 个用例（真值表含大小写变体、真实资源/入口文档、缺失资源与 `api` 路径 → null、入口缺失 → null、注册层断言）；**生产 smoke：10 条深链全部 200 text/html**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → **404** |
 | AC-33-4 | No active route references legacy frontend files | 删除 webapp（D-33-3）+ **两处重定向按 D-33-7 改指向** + 文档行级清单清理 | ✅ **已完成**：21 个 legacy 文件已删除并随提交 `092147a` 进入 git（`git ls-files src/main/webapp` = 0）；两处重定向已改并同步测试与 `fabflix.http`；源码/配置/构建文件无 legacy 路径（只读 grep）；README/frontend README 已改写 |
-| AC-33-5 | Full backend and frontend CI passes after legacy removal | `FrontendApiMigrationTest` 重写 + `SpringBootOnlyArchitectureTest` 保持通过 + CI 前后端 | ✅ **已完成**：本地 `mvn --batch-mode verify`（127 tests、JaCoCo LINE 0.8980）、`SpringBootOnlyArchitectureTest` 保持通过、#32 前端命令全绿；**PR #42（head `fb65eda`）上 CI 两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ 该 AC 的直接证据已闭合（来源：主 agent 核验的 GitHub CI 结果）。**PR 仍为 OPEN、未合并** |
+| AC-33-5 | Full backend and frontend CI passes after legacy removal | `FrontendApiMigrationTest` 重写 + `SpringBootOnlyArchitectureTest` 保持通过 + CI 前后端 | ✅ **已完成**：本地 `mvn --batch-mode verify`（127 tests、JaCoCo LINE 0.8980）、`SpringBootOnlyArchitectureTest` 保持通过、#32 前端命令全绿；**PR #42（head `fb65eda`）上 CI 两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ 该 AC 的直接证据已闭合（来源：主 agent 核验的 GitHub CI 结果）；**PR 已于 2026-10-16 合并（`d618b64`），合并后 `main` 上双 job 仍 SUCCESS** |
 | AC-33-6 | M2 regression checklist is complete | 计划 §7 的 checklist（已逐条回填证据） | ✅ **已完成（原 3 条非完全通过已闭合 2 条）**：**M2-BE-6 → ✅ SUCCESS**（PR #42 两 job）；**M2-DOC-2 → ✅**（`git ls-files src/main/webapp` = 0）；M2-DOC-3 → ✅（提交后仅剩未跟踪 `.idea/*`，待主 agent 决定是否排除）；**M2-BE-5 仍为部分验证**（干净 checkout 端到端未单独复现，CI 的 `npm ci` + build 作为间接补强） |
 
 > **证据要求（已满足）**：AC 对应的实际命令与结果已填入上表（均为**主 agent 亲跑**）；原标注为「无法执行」的 CI 项（M2-BE-6）已随 **PR #42（head `fb65eda`）的 CI 首跑**回填为 SUCCESS（来源：主 agent 核验的 GitHub CI 结果）。docs-writer 只读复核了 `git status`/`git diff`/`git ls-files`/`unzip -l`/surefire/jacoco 产物与源码。
-> **未发生的事实（已更新）**：改动已提交（`092147a`/`fb65eda`）、已推送、**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**；docker 生产 smoke 已实际执行（非 CI，在本地）。**PR 未合并、issue 未关闭** → 不得声称「已合并」。
+> **事实（已更新，2026-10-16）**：改动已提交（`092147a`/`fb65eda`）、已推送，**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS，合并后 `main`（`d618b64`）上双 job 亦 SUCCESS**；**issue #33 已由 GitHub 依 PR 正文的 `Closes #33` 自动关闭**（`CLOSED`）；远端分支已删除；docker 生产 smoke 已实际执行（非 CI，在本地）；里程碑 Phase 2（#2）已关闭（10/10）。
 > **已回填**：PR 链接/提交号、CI 首跑（后端 job + #32 的 `frontend` job）、`git ls-files src/main/webapp` = 0（提交 `092147a` 后成立）。
 
 ## 7. 关联记录
@@ -164,8 +164,8 @@ Final M2 issue; depends on all feature migration and quality issues.
 | scout 调查报告 | `.pi/artifacts/scout-issues-31-32-33.md` | §C（Spring Boot 静态资源、前端构建、Docker、legacy 退役范围、SPA 路由清单、生产验证手段）；**未覆盖 §3.3 的两处 Java 重定向** |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` | §1 迁移进度（M2 已收尾）、§2 **legacy 已退役**、§8 架构守卫、§9 会话/认证、§10 AD-2、**§11 SPA fallback 与前端测试设施/Node 22 CI（新增）** |
 | 工作流日志 | `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md` | **已创建**（三个 issue 共用；含生产 smoke 与 M2 checklist 结果摘要） |
-| 远端 issue | #33（见 §1） | **不由 docs-writer 修改**；PR #42 与 CI 首跑结果已回填（本 §7 的 PR 行与计划 §7.1/§13.4） |
-| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已创建（OPEN，非 draft，MERGEABLE；未合并）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；`closingIssuesReferences` = #31/#32/#33；**CI 首跑两 job 均 SUCCESS** |
+| 远端 issue | #33（见 §1） | **不由 docs-writer 修改**；该 issue 已由 GitHub 依 PR #42 的 `Closes #33` 自动关闭（`CLOSED`，2026-10-16）；PR #42 合并与 CI 结果已回填（本 §7 的 PR 行与计划 §7.1/§13.4） |
+| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已合并（`MERGED`，2026-10-16；merge commit `d618b64`，`mergedAt` = 2026-10-16T04:57:00Z）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；`closingIssuesReferences` = #31/#32/#33；**CI 首跑与合并后 `main` 上两 job 均 SUCCESS**；远端分支已删除 |
 
 ## 8. 备注
 
@@ -173,7 +173,8 @@ Final M2 issue; depends on all feature migration and quality issues.
 - **2026-10-15（创建时）**：本文件与关联计划由 docs-writer 首次创建；**当时的计划状态 = 待 oracle 审查 / 未批准**；实现未开始、未运行任何测试/构建/Docker 命令。**当前状态见下一行的本轮批准记录。**
 - **2026-10-15（本轮）**：oracle 只读审查完成（报告 `.pi/artifacts/oracle-issues-31-32-33-plans.md`；结论：#33 需修订后可批准，B3/B4/B5 必须先闭合）→ **B3/B4/B5 已按裁定写入计划（B5 为行为变更，主 agent 明确批准）；主 agent 批准计划并全部接受 N-33-1..N-33-10/Q-1..Q-9**。
 - **2026-10-15（实施终验）**：worker 完成 #33 实现并由同一 worker 处理三路只读审查意见（无 Blocker）后复验；**主 agent 亲跑终验**：后端 `mvn verify` 127 tests / LINE 0.8980；`-Pfrontend` 打包与 dist 缺失失败守卫；**生产 compose smoke**（health 200 / 10 条深链 200 text/html / `/API/boot/cart` 404 JSON 等）；前端 195 tests / 92.35% / e2e 12 passed。详见计划 §7（checklist）与 §13。
-- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`（含 21 个 legacy 文件的删除）、文档提交 `fb65eda` 已推送；**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ M2-BE-6 与 AC-33-5 已闭合；`git ls-files src/main/webapp` = 0（M2-DOC-2 已为真）。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §7.1 与 §13.4。
+- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`（含 21 个 legacy 文件的删除）、文档提交 `fb65eda` 已推送；**PR #42 已创建**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ M2-BE-6 与 AC-33-5 已闭合；`git ls-files src/main/webapp` = 0（M2-DOC-2 已为真）。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §7.1 与 §13.4。
+- **2026-10-16（合并 / issue 关闭 / 里程碑关闭）**：**PR #42 已合并**（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）；**issue #33 由 GitHub 依 PR 正文的 `Closes #33` 自动关闭**（`CLOSED`）；远端分支 `codex/issue-31-32-33-m2-completion` 已删除（origin 仅剩 `main`）；本地 `main` 已同步到 `d618b64`；**合并后 `main` 上 CI 双 job（Java 11 + Frontend）SUCCESS**；**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭**（`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z）。来源：主 agent 核验的 GitHub 结果（docs-writer 未直接访问 GitHub）。
 - **镜像可拉取性**：主 agent 已在本机用 `docker manifest inspect` 验证 `node:22-alpine`、`maven:3.9-eclipse-temurin-11`、`eclipse-temurin:11-jre` 均可拉取；**生产 smoke 已实际执行**（未标注“未执行”）。
 - **§3.3 的两处 legacy 重定向已闭合并已实施（D-33-7）**：`CustomerAuthController.java:68` → `/login`、`SearchController.java:47` → `/movies?mode=fulltext&<query>`，两个测试与 `fabflix.http` 已同步，`mvn verify` 全绿。
 - docs-writer 无 GitHub 访问授权；§1 元数据来自主 agent 用 `gh` 获取的原文。§3.2/§3.3 的数量与文件:行号均为 docs-writer 通过 `git ls-files` / `grep` / 读源码亲自核实。

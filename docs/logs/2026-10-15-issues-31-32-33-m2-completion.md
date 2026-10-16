@@ -7,17 +7,29 @@
 
 | 项目 | 值 |
 | --- | --- |
-| 完成日期 | 2026-10-15（主 agent 终验） |
-| 分支 | `codex/issue-31-32-33-m2-completion`（工作区已提交、已推送；HEAD `fb65eda`） |
-| 提交 | `092147a`（实现：员工仪表盘、质量门、生产构建、legacy 退役）＋ `fb65eda`（文档：计划/审查/工作流日志） |
-| PR | **#42 — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42**（`Complete the React migration: employee dashboard, quality gates, and production build`；base `main` ← head `codex/issue-31-32-33-m2-completion`；**OPEN，非 draft，MERGEABLE，未合并**；`closingIssuesReferences` = #31/#32/#33） |
-| CI 首跑 | **head `fb65eda`：两个 job 均 SUCCESS** —— `Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`（后者是新 `frontend` job 的首次运行） |
-| Issue | [#31](https://github.com/PNZ-z/ai-powered-Fabflix/issues/31) / [#32](https://github.com/PNZ-z/ai-powered-Fabflix/issues/32) / [#33](https://github.com/PNZ-z/ai-powered-Fabflix/issues/33)（均**已存在于远端**，本工作流不修改远端 issue） |
+| 完成日期 | 2026-10-15（主 agent 终验）；2026-10-16（PR #42 合并与里程碑关闭） |
+| 分支 | `codex/issue-31-32-33-m2-completion`（工作区已提交、已推送；HEAD `fb65eda`）→ **已随 PR #42 于 2026-10-16 合并**；合并后**远端分支已删除**（origin 仅剩 `main`；本地 `main` = `d618b64`） |
+| 提交 | `092147a`（实现：员工仪表盘、质量门、生产构建、legacy 退役）＋ `fb65eda`（文档：计划/审查/工作流日志）；**合并提交 `d618b64`**（PR #42，2026-10-16） |
+| PR | **#42 — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42**（`Complete the React migration: employee dashboard, quality gates, and production build`；base `main` ← head `codex/issue-31-32-33-m2-completion`；**`MERGED`，2026-10-16（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）**；`closingIssuesReferences` = #31/#32/#33） |
+| CI | **首跑（head `fb65eda`）与合并后 `main`（`d618b64`）：两个 job 均 SUCCESS** —— `Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`（后者是新 `frontend` job 的首次运行） |
+| Issue | [#31](https://github.com/PNZ-z/ai-powered-Fabflix/issues/31) / [#32](https://github.com/PNZ-z/ai-powered-Fabflix/issues/32) / [#33](https://github.com/PNZ-z/ai-powered-Fabflix/issues/33)（均**已由 GitHub 依 PR #42 正文的 `Closes #31`/`#32`/`#33` 于 2026-10-16 自动关闭**，状态 `CLOSED`；docs-writer 未修改远端 issue） |
+| 里程碑 | **`Phase 2 — React Frontend Migration`（#2）已关闭**（2026-10-16；`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z） |
 | 计划文档 | `docs/plans/issue-31-migrate-employee-dashboard.md`、`…issue-32-…md`、`…issue-33-…md`（均含实施终验回填节） |
 | 跟踪文档 | `docs/issues/issue-31-…md`、`issue-32-…md`、`issue-33-…md` |
 | 全局约束 | `docs/architecture/frontend-migration-contracts.md`（本轮更新 §1/§2/§3/§6/§7/§8/§9 并新增 §11/§12） |
 | 实现者 | 单个 `worker`（按批准计划实施；三路只读 reviewer 审查后由同一 worker 修复并复验） |
 | 审查 | 三路并行只读审查（正确性/边界、测试覆盖、必要性与复杂度）：**均无 Blocker**；接受项已修复并复验 |
+
+### 合并与里程碑关闭（2026-10-16，主 agent 核验）
+
+| 项 | 结果 |
+| --- | --- |
+| PR #42 合并 | **已合并**（`state = MERGED`；merge commit **`d618b643699e7edf761d2cc27d3ef28f7914f918`**（短 `d618b64`）；`mergedAt` = 2026-10-16T04:57:00Z） |
+| issue 关闭 | GitHub 依据 PR 正文的 `Closes #31`/`#32`/`#33` **自动关闭三个 issue**（#31/#32/#33 当前均 `CLOSED`）；本地跟踪文档已回填（#31/#32/#33 的 issue 文档状态块与 §7 PR 行） |
+| 分支清理 | 远端分支 `codex/issue-31-32-33-m2-completion` **已删除**（origin 仅剩 `main`）；本地 `main` 已同步到 `d618b64` |
+| `main` 上的 CI | **合并后 `main`（`d618b64`）CI 双 job SUCCESS**：`Build and test (Java 11)` 与 `Frontend (lint, test, coverage, build, e2e)`（即本轮的覆盖率/a11y/e2e 闸门已在默认分支生效） |
+| 里程碑关闭 | **`Phase 2 — React Frontend Migration`（#2）已关闭**：`state = closed`、`open_issues = 0`、`closed_issues = 10`、`closed_at` = 2026-10-16T05:00:27Z（10/10 全部关闭） |
+| 来源与边界 | 以上均为**主 agent 用 GitHub 核验**的事实；docs-writer **未**执行任何 GitHub 写操作（未创建/修改/合并 PR、issue 或里程碑），仅据主 agent 提供的事实更新本地文档 |
 
 ### 实际运行的验证命令与结果（除 CI 行外均为**主 agent 亲跑**）
 
@@ -34,7 +46,7 @@
 | `mvn -Pfrontend -DskipTests clean package` | 成功；`target/fablix.jar` 含 **6 个** `BOOT-INF/classes/static` 条目（`index.html`、`favicon.svg`、`assets/index-*.css`、`assets/index-*.js` + 2 个目录条目） |
 | dist 缺失守卫（临时移走 `frontend/dist` 后 `mvn -Pfrontend -DskipTests package`） | **BUILD FAILURE**（enforcer `require-frontend-dist`，报错含 `frontend/dist/index.html is missing`） |
 | 生产 compose smoke（`docker compose build app` + `up -d --no-deps app`） | health **200**；`/` 含 `id="root"`；**10 条深链全部 200 `text/html`**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → **404**；顾客登录（`local` profile、dev 种子账号）→ session/customer 200 + cart `[]`；员工登录 → dashboard session 200 + metadata `status:success`；随后 `docker compose rm -sf app`（mysql 容器与数据卷未动） |
-| **CI 首跑**（PR #42，head `fb65eda`）—— 非 docs-writer 执行 | **`Build and test (Java 11)` → SUCCESS**；**`Frontend (lint, test, coverage, build, e2e)` → SUCCESS**（该新 job 的第一次运行，因此 M2 checklist 中此前待验证的 CI 项与 AC-32-5/AC-33-5 的 CI 部分均已闭合）。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer **未**直接访问 GitHub，**未**触发任何 CI 运行） |
+| **CI 首跑与合并后 `main` 的 CI**（PR #42，head `fb65eda`；合并提交 `d618b64`）—— 非 docs-writer 执行 | **首跑（head `fb65eda`）**：**`Build and test (Java 11)` → SUCCESS**；**`Frontend (lint, test, coverage, build, e2e)` → SUCCESS**（该新 job 的第一次运行，因此 M2 checklist 中此前待验证的 CI 项与 AC-32-5/AC-33-5 的 CI 部分均已闭合）；**合并后 `main`（`d618b64`）上双 job 仍 SUCCESS**（闸门在默认分支生效）。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer **未**直接访问 GitHub，**未**触发任何 CI 运行） |
 
 > docs-writer 的**只读**复核（未运行任何测试/构建）：`git status`/`git diff`、`target/surefire-reports/*`（聚合 127/0/0/0）、`target/site/jacoco/jacoco.csv`（LINE 968/110/1078）、`unzip -l target/fablix.jar`、`git ls-files`、`grep`、配置与测试源码内容。
 
@@ -105,7 +117,7 @@
 
 ### 潜在问题与残余风险（跨三个 issue，与 `docs/plans/…§13.5` 一致）
 
-1. ~~**提交/推送/PR/CI 均未发生**~~ → **已闭合（2026-10-15）**：已提交 `092147a`/`fb65eda`、已推送、**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**，M2-BE-6 与 AC-32-5/AC-33-5 的 CI 证据已回填。**仍待处理**：PR 合并与 issue 关闭（需用户/主 agent 决定）——在此之前**不得**写「已合并/已关闭」。
+1. ~~**提交/推送/PR/CI/合并 均未发生**~~ → **已全部闭合（2026-10-15 提交/推送/PR/CI；2026-10-16 合并与 issue 关闭）**：已提交 `092147a`/`fb65eda`、已推送、**PR #42 已合并**（merge commit `d618b64`，2026-10-16）；**CI 首跑（head `fb65eda`）与合并后 `main`（`d618b64`）上两个 job 均 SUCCESS**，M2-BE-6 与 AC-32-5/AC-33-5 的 CI 证据已回填；**三个 issue 已由 GitHub 依 `Closes` 自动关闭**、远端分支已删除、里程碑 `Phase 2`（#2）已关闭（10/10）——详见上文「合并与里程碑关闭」。
 2. ~~**legacy 删除尚未反映到 git 索引**~~ → **已闭合（2026-10-15）**：21 个文件已随提交 `092147a` 移除，`git ls-files src/main/webapp` = **0**（M2-DOC-2 已为真）。
 3. **手工颜色对比度**：jsdom 无布局/无颜色计算 → axe 的 `color-contrast` 全局禁用；新增暗色色值按 ≥4.5:1 选择，**仍需人工在浏览器确认**。
 4. **axe 规则边界**：`region` 按渲染树区分（页面级禁用 / shell 级启用）；其余依赖布局的规则未专门处理 → 「违规集合为空」不等于真实浏览器审计结论。
@@ -121,8 +133,9 @@
 
 ### 后续事项
 
-1. ~~主 agent 授权后：暂存/提交/推送 → `github-operator` 创建 PR（`Closes #31`/`#32`/`#33`）→ 回填 PR 链接、CI 首跑结果~~ → **已完成（2026-10-15）**：提交 `092147a`/`fb65eda`、已推送、PR **#42** 已创建（OPEN，未合并，`closingIssuesReferences` = #31/#32/#33）；CI 首跑两个 job 均 SUCCESS，计划/issue 文档已回填（#31/#32 计划 §13、#33 计划 §7.1/§13.4）。
-   - **仍待主 agent/用户决定**：PR 合并与 issue 关闭；`.idea/*` 是否纳管。
+1. ~~主 agent 授权后：暂存/提交/推送 → `github-operator` 创建 PR（`Closes #31`/`#32`/`#33`）→ 回填 PR 链接、CI 首跑结果~~ → **已完成（2026-10-15 创建；2026-10-16 合并）**：提交 `092147a`/`fb65eda`、已推送、PR **#42**（`closingIssuesReferences` = #31/#32/#33）**已于 2026-10-16 合并（`d618b64`）**；CI 首跑与合并后 `main` 上两个 job 均 SUCCESS，计划/issue 文档已回填（#31/#32 计划 §13、#33 计划 §7.1/§13.4）。
+   - **已完成**：PR 合并、三个 issue 由 GitHub 依 `Closes` 自动关闭、远端分支已删除、里程碑 `Phase 2`（#2）关闭（10/10）。
+   - **仍待主 agent 决定**：`.idea/*` 是否纳管。
 2. ~~提交后复核 `git ls-files src/main/webapp` 为空、`git ls-files frontend/dist` 为空~~ → **已复核（2026-10-15，docs-writer 只读）**：两者均为 0 行。
 3. **M2-BE-5（干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package` 单次端到端复现）仍未单独执行**：各步骤已分别验证，CI 的 `npm ci` + build 作为间接补强。
 4. 人工浏览器检查：暗色模式对比度、360px 窄屏观感、toast 2 秒消失、键盘焦点可见性。
@@ -204,4 +217,4 @@
 
 ---
 
-> **本日志口径**：所有“通过/实测”数字均来自主 agent 终验、**PR #42 的 CI 首跑结果（主 agent 核验）**与 docs-writer 的只读产物复核；docs-writer **未**运行测试/构建、**未**触发 CI。当前状态：已提交（`092147a`/`fb65eda`）、已推送、**PR #42 OPEN（未合并）**；CI 首跑两 job 均 SUCCESS。PR 合并/关闭后（若发生）需再次更新本日志与相关计划/issue 文档。
+> **本日志口径**：所有“通过/实测”数字均来自主 agent 终验、**PR #42 的 CI 首跑与合并后 `main` 的 CI 结果（主 agent 核验）**与 docs-writer 的只读产物复核；docs-writer **未**运行测试/构建、**未**触发 CI，**未**执行任何 GitHub 写操作。当前状态：已提交（`092147a`/`fb65eda`）、**PR #42 已于 2026-10-16 合并（`d618b64`）**、**三个 issue 已关闭**、远端分支已删除、`main` 上 CI 双 job SUCCESS、**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭（10/10）**。
