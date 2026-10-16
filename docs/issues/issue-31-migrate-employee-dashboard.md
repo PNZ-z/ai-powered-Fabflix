@@ -4,8 +4,8 @@
 > 它**不是**发布草稿，`github-operator` **不需**为本 issue 创建新 issue。docs-writer 不修改远端 issue 内容。
 >
 > **本地计划状态（2026-10-15）：`docs/plans/issue-31-migrate-employee-dashboard.md` = 已批准（主 agent，2026-10-15，依据 oracle 报告）→ 实现完成，已通过主 agent 终验（2026-10-15）。**
-> **实现状态：已完成（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、PR #42 已创建（OPEN，未合并））。**
-> **验证状态：后端 `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，`Tests run: 127`，JaCoCo BUNDLE LINE 968/110/1078 = 0.8980（闸门 0.85）；前端 `npm test` → 30 files / 195 passed，`npm run test:coverage` → Lines 92.35%，`npm run lint` 干净，`npm run build` 成功，`npm run test:e2e` → 12 passed（本地 Node 24；Node 22 容器两次一致）。提交/推送/PR 与 CI 首跑：提交 `092147a`/`fb65eda`、已推送、**PR #42（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**。** AC 逐条状态与证据见 §6。
+> **实现状态：已完成并已合并（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`）；**issue #31 已关闭**（GitHub 依 PR 正文的 `Closes #31` 自动关闭）；合并后远端分支已删除，`main`（`d618b64`）CI 双 job SUCCESS）。**
+> **验证状态：后端 `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，`Tests run: 127`，JaCoCo BUNDLE LINE 968/110/1078 = 0.8980（闸门 0.85）；前端 `npm test` → 30 files / 195 passed，`npm run test:coverage` → Lines 92.35%，`npm run lint` 干净，`npm run build` 成功，`npm run test:e2e` → 12 passed（本地 Node 24；Node 22 容器两次一致）。提交/推送/合并：提交 `092147a`/`fb65eda`、已推送、**PR #42 已合并（`d618b64`，2026-10-16）**；**CI 首跑（head `fb65eda`）与合并后 `main`（`d618b64`）上两个 job 均 SUCCESS**。** AC 逐条状态与证据见 §6。
 
 ## 1. 远端元数据
 
@@ -16,7 +16,7 @@
 | 标题（远端原文） | Migrate employee dashboard |
 | Milestone | Phase 2 — React Frontend Migration（与 #32/#33 共用；由主 agent 提供） |
 | 获取方式 | 主 agent 用 `gh` 获取的远端原文，并在任务说明中逐字提供（docs-writer 无 GitHub 访问授权，**未**直接查询远端） |
-| 远端状态核对 | **未确认**（docs-writer 未查询远端；以远端为准） |
+| 远端状态核对 | **已关闭（`CLOSED`）**——2026-10-16 由 GitHub 依 PR #42 正文的 `Closes #31` 自动关闭（主 agent 核验）；docs-writer 未直接查询远端，仍以远端为准 |
 | 本地记录文档 | 本文件 |
 | 关联计划 | `docs/plans/issue-31-migrate-employee-dashboard.md`（**已批准（主 agent，2026-10-15）→ 实施完成，已通过主 agent 终验（2026-10-15）**；实现结果与裁定差异见其 §13） |
 | 关联全局约束 | `docs/architecture/frontend-migration-contracts.md` |
@@ -109,7 +109,7 @@ Depends on the shared authentication and API infrastructure.
 
 > **证据要求（已满足）**：AC 对应的实际命令与结果已填入上表（`mvn --batch-mode --no-transfer-progress verify`、`npm test`、`npm run test:coverage`、`npm run lint`、`npm run build`、`npm run test:e2e`），均为**主 agent 亲跑**；docs-writer 只读复核了 `target/surefire-reports/*`（127/0/0/0）与 `target/site/jacoco/jacoco.csv`（LINE 968/110/1078）。
 > **已知缺口（已接受，N-31-7）**：本 issue **未**新增 `AdminRepositoryTest` → metadata 遍历与 `add_movie` 存储过程结果集解析**仍无直接测试**；不得在交付报告中声称已覆盖。
-> **未发生的事实（已更新）**：本 issue 的改动已提交（`092147a`/`fb65eda`）、已推送、**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）`Build and test (Java 11)` 与 `Frontend (lint, test, coverage, build, e2e)` 均 SUCCESS**（来源：主 agent 核验的 GitHub CI 结果，docs-writer 未直接访问 GitHub）。**PR 未合并、issue 未关闭** → 不得声称「已合并」。
+> **事实（已更新，2026-10-16）**：本 issue 的改动已提交（`092147a`/`fb65eda`）、已推送，**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）；**CI 首跑（head `fb65eda`）`Build and test (Java 11)` 与 `Frontend (lint, test, coverage, build, e2e)` 均 SUCCESS，合并后 `main`（`d618b64`）上双 job 亦 SUCCESS**；**issue #31 已由 GitHub 依 PR 正文的 `Closes #31` 自动关闭**（状态 `CLOSED`）；远端分支 `codex/issue-31-32-33-m2-completion` 已删除；里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭（10/10）。来源：主 agent 核验的 GitHub 结果（docs-writer 未直接访问 GitHub）。
 > **已批准差异提醒**：员工登录表单带 `required`（legacy `_dashboard.html` 实际也带 `required`；计划文本的「legacy 无 required」判断有误，已在计划 §13.2 更正）；员工登录**无 reCAPTCHA**（D-31-2，legacy 有）→ 不得声称 parity。
 
 ## 7. 关联记录
@@ -120,8 +120,8 @@ Depends on the shared authentication and API infrastructure.
 | scout 调查报告 | `.pi/artifacts/scout-issues-31-32-33.md` | §A（后端 employee 接口、认证/授权、legacy 行为参考、现有测试模式、前端现状与缺口） |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` | §3（已删占位机制）、§4 三件套约定、§6 错误响应约定、§7 测试设施与 CI 闸门（已更新）、§8 架构守卫、§9 会话/认证（已补员工登出语义）、§10 AD-1/AD-2、**§11 SPA fallback（新增）** |
 | 工作流日志 | `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md` | **已创建**（三个 issue 共用一份日志；含「修改了哪些文件及潜在问题」与「新增知识点 / 重点学习对象」两大节） |
-| 远端 issue | #31（见 §1） | **不由 docs-writer 修改**；PR #42 与 CI 首跑结果已回填（本 §7 的 PR 行与计划 §13.5） |
-| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已创建（OPEN，非 draft，MERGEABLE；未合并）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；GitHub 已识别 `Closes #31`/`#32`/`#33`（`closingIssuesReferences`）；**CI 首跑两个 job 均 SUCCESS** |
+| 远端 issue | #31（见 §1） | **不由 docs-writer 修改**；该 issue 已由 GitHub 依 PR #42 的 `Closes #31` 自动关闭（`CLOSED`，2026-10-16）；PR #42 合并与 CI 结果已回填（本 §7 的 PR 行与计划 §13.5） |
+| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已合并（`MERGED`，2026-10-16；merge commit `d618b64`，`mergedAt` = 2026-10-16T04:57:00Z）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；GitHub 已识别 `Closes #31`/`#32`/`#33`（`closingIssuesReferences`）并**据此自动关闭本 issue**；**CI 首跑与合并后 `main` 上两个 job 均 SUCCESS**；远端分支已删除 |
 
 ## 8. 备注
 
@@ -129,9 +129,10 @@ Depends on the shared authentication and API infrastructure.
 - **2026-10-15（创建时）**：本文件与关联计划由 docs-writer 首次创建；**当时的计划状态 = 待 oracle 审查 / 未批准**；实现未开始、未运行任何测试。**当前状态见下一行的本轮批准记录。**
 - **2026-10-15（本轮）**：oracle 只读审查完成 → **主 agent 批准计划并全部接受 N-31-1..N-31-10/Q-1..Q-8**。
 - **2026-10-15（实施终验）**：worker 完成 #31 实现并由同一 worker 处理三路只读审查意见（正确性/测试/复杂度均无 Blocker）后复验；**主 agent 亲跑终验**：后端 `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS、127 tests、JaCoCo LINE 0.8980；前端 195 tests / 92.35% lines / 12 e2e（本地 Node 24 + Node 22 容器两次一致）。AC 状态与证据已写入 §6；计划侧的实现结果与 4 处裁定差异见 `docs/plans/issue-31-migrate-employee-dashboard.md` §13。
-- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`、文档提交 `fb65eda`（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`）已推送；**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §13.5。
-- **仍待回填（更新）**：仅剩 PR 的**合并/关闭状态**（当前 OPEN、未合并）与人工浏览器检查项；**不得**在合并前写「已合并 / issue 已关闭」。
+- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`、文档提交 `fb65eda`（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`）已推送；**PR #42 已创建**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §13.5。
+- **2026-10-16（合并 / issue 关闭 / 里程碑关闭）**：**PR #42 已合并**（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）；**issue #31 由 GitHub 依 PR 正文的 `Closes #31` 自动关闭**（`CLOSED`）；远端分支 `codex/issue-31-32-33-m2-completion` 已删除（origin 仅剩 `main`）；本地 `main` 已同步到 `d618b64`；**合并后 `main` 上 CI 双 job（Java 11 + Frontend）SUCCESS**；**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭**（`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z）。来源：主 agent 核验的 GitHub 结果（docs-writer 未直接访问 GitHub）。
+- **待回填项（已收敛）**：PR 合并/issue 关闭状态已于 2026-10-16 回填；仅剩人工浏览器检查项（对比度、窄屏观感等，见计划 §13.5）。
 - **待实现时回填（已回填）**：`npm test` 改前/改后用例数（155 tests / 26 files → **195 tests / 30 files**）、`mvn verify` 测试数与 JaCoCo 数字（**127 / 0.8980**）、`npm run lint` 退出码（**0**）。
 - **已知差异（已批准）**：legacy 员工登录页有 reCAPTCHA（`_dashboard.html:38-44`、`_dashboard.js:17-25`），React 员工登录页**没有**（D-31-2）；必须在实现完成后的文档与交付报告中如实记录，**不得**声称 parity。
-- **顺序约束**：删除 legacy（#33）之前，#31 必须完成；`FrontendApiMigrationTest.java:33-34` 要求 `_dashboard.js`/`dashboard.js` 仍存在。
+- **顺序约束（历史，已失效）**：删除 legacy（#33）之前 #31 必须先完成（已满足）；当时 `FrontendApiMigrationTest.java:33-34` 要求 `_dashboard.js`/`dashboard.js` 仍存在——该约束已在 #33 完成后失效：legacy 已退役、该测试已反转为**退役守卫**（见 #33 跟踪文档与架构文档 §8）。
 - docs-writer 无 GitHub 访问授权；§1 元数据来自主 agent 用 `gh` 获取的原文。

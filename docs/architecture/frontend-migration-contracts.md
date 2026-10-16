@@ -7,9 +7,9 @@
 > - **【既有模式】**：仓库内一致遵循的写法，无自动化强制，新代码应沿用以免风格分裂。
 >
 > 本文档**不包含**任何未经批准的方案决策。各 issue 的计划/实施结果见：
-> `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（**实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送（`d6b3e07`/`eeb935f`），PR #40 为 OPEN、未合并**）、
+> `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（**实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送（`d6b3e07`/`eeb935f`），PR #40 已于 2026-10-16 合并（MERGED，merge commit `9154749`）、issue #30 已关闭；详见 #30 工作流日志 §4.1**）、
 > `docs/plans/issue-31-migrate-employee-dashboard.md`、`docs/plans/issue-32-add-responsive-styling-accessibility-frontend-tests-and-ci.md`、`docs/plans/issue-33-integrate-production-react-build-and-retire-legacy-frontend.md`
-> （**#31/#32/#33：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 为 OPEN、未合并；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**，工作流日志 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`）。
+> （**#31/#32/#33：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 已于 2026-10-16 合并（merge commit `d618b64`）、三个 issue 已关闭（GitHub 依 `Closes`）、远端分支已删除；CI 首跑（head `fb65eda`）与合并后 `main`（`d618b64`）上两个 job 均 SUCCESS；里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭（10/10）**，工作流日志 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`）。
 > 若与本文档冲突，以代码和测试为准，并更新本文档。
 >
 > **本轮（2026-10-15，#31/#32/#33）更新摘要**：§1 迁移进度已收尾；§2 legacy 已退役（守卫测试替代钉死测试）；§3 占位/路由联动机制已随占位机制删除而失效；§6 补员工/顾客登出语义与 filter 归属；§7 测试设施/CI 事实全部重写（Playwright/axe/coverage/Node 22 job）；§8 新增退役守卫；§9 补员工登出；**§11/§12 为新增的跨 issue 约定**（SPA fallback、前端测试设施与 CI）。
@@ -18,7 +18,7 @@
 
 - 已完成迁移（源码可证）：路由壳 #34（`frontend/src/app/`）、API+认证 #35/#36（`frontend/src/features/auth/`、`frontend/src/api/apiClient.js`）、discovery #37（`frontend/src/features/home/`）、movie list #38、detail #39（`frontend/src/features/movies/`）、cart / checkout / confirmation **#30**（`frontend/src/features/cart/`、`frontend/src/features/checkout/`）、**employee login/dashboard #31**（`frontend/src/features/employee/`）。
 - **不再有占位路由**：`frontend/src/app/routeDefinitions.js` 与 `frontend/src/features/placeholders/RoutePlaceholderPage.jsx` **已删除**（#31，Q-3 裁定）；所有路由在 `frontend/src/app/AppRoutes.jsx` 中显式声明。【测试强制】（`App.test.jsx` 不再引用 `routeDefinitions`）。
-- **M2 已收尾（#33）**：生产 React 构建经 Maven `frontend` profile 打入可执行 jar，SPA fallback 由 `SpaFallbackConfig` 提供（§11）；legacy `src/main/webapp/**` 已退役（§2）；Docker Compose 提供 `app` 服务（多阶段构建，运行时非 root）。
+- **M2 已完成，React 是唯一前端（#33；里程碑 `Phase 2 — React Frontend Migration` 已关闭，10/10，2026-10-16）**：生产 React 构建经 Maven `frontend` profile 打入可执行 jar，SPA fallback 由 `SpaFallbackConfig` 提供（§11）；legacy `src/main/webapp/**` 已退役（§2，不再有 legacy 保留）；Docker Compose 提供 `app` 服务（多阶段构建，运行时非 root）。
 - **迁移完成后的「新增页面」操作规则**：新页面在 `AppRoutes.jsx` 显式注册（公共路由或放入 `ProtectedRoute`），并同步在相关页面级测试/`App.test.jsx` 中按 URL 分派 `fetch`（§3 的 N13 规则仍适用）。
 
 ## 2. legacy `src/main/webapp` 已退役【测试强制】（#33 D-33-3）

@@ -1,7 +1,7 @@
 # Issue #31 方案 / 计划 — Migrate employee dashboard
 
-> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、PR #42 已创建（OPEN，未合并）。**
-> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ PR **#42**（https://github.com/PNZ-z/ai-powered-Fabflix/pull/42，base `main`）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（见 §13.5）。
+> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、**PR #42 已于 2026-10-16 合并**（merge commit **`d618b64`**），**issue #31 已关闭**（GitHub 依 PR 正文的 `Closes #31` 自动关闭）。**
+> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ PR **#42**（https://github.com/PNZ-z/ai-powered-Fabflix/pull/42，base `main`）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（见 §13.5）；**合并后远端分支已删除、`main`（`d618b64`）上 CI 双 job（Java 11 + Frontend）亦 SUCCESS**；里程碑 **Phase 2 — React Frontend Migration（#2）已关闭**（10/10）。
 > 本文档 §1–§11（及 §12 的批准时记录）保留为**批准时的计划文本**（事实性内容未追改）；实现结果、与计划的逐项差异、终验证据与残余风险见 **§13**。
 >
 > **文档状态（批准时）：已批准（主 agent，2026-10-15）— 已交 worker 实现。**
@@ -430,8 +430,8 @@ add-star / add-movie 表单与结果/错误展示，并与顾客路由**隔离**
 
 ## 13. 实现结果与计划差异（主 agent 终验后回填，2026-10-15）
 
-> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 已创建（OPEN，未合并）；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS（§13.5）。**
-> 证据来源：主 agent 亲跑的终验命令与输出（§13.4 标注「主 agent 实测」）、主 agent 核验的 PR #42 与 CI 运行结果（§13.5）、本轮 docs-writer 的**只读**复核（`git status`/`git diff`、`target/surefire-reports/*`、`target/site/jacoco/jacoco.csv`、`unzip -l target/fablix.jar`、源码与测试文件内容）。
+> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、**PR #42 已于 2026-10-16 合并（merge commit `d618b64`）**、**issue #31 已关闭**；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS，合并后 `main`（`d618b64`）双 job 亦 SUCCESS；里程碑 Phase 2 已关闭（§13.5）。**
+> 证据来源：主 agent 亲跑的终验命令与输出（§13.4 标注「主 agent 实测」）、主 agent 核验的 PR #42 合并结果与 CI 运行结果（§13.5）、本轮 docs-writer 的**只读**复核（`git status`/`git diff`、`target/surefire-reports/*`、`target/site/jacoco/jacoco.csv`、`unzip -l target/fablix.jar`、源码与测试文件内容）。
 > 本节的数字**均来自实际产物或主 agent 实测报告**；docs-writer 未运行任何测试/构建命令。
 
 ### 13.1 实际改动文件（相对 §5 计划清单）
@@ -498,7 +498,7 @@ add-star / add-movie 表单与结果/错误展示，并与顾客路由**隔离**
 
 | # | 项 | 状态 |
 | --- | --- | --- |
-| 1 | **提交 / 推送 / PR / CI**（原「待 PR 后回填」项，**已回填 2026-10-15**） | **已提交**：实现 `092147a`、文档 `fb65eda`；分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）**已推送**；**PR #42 已创建（OPEN、非 draft、MERGEABLE，`closingIssuesReferences` = #31/#32/#33）**；**CI 首跑（head `fb65eda`）**：`Build and test (Java 11)` → **SUCCESS**、`Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（该新 job 的第一次运行；来源：主 agent 核验的 GitHub CI 结果，docs-writer 未直接访问 GitHub）。**合并尚未发生** → 不得写「已合并 / issue 已关闭」 |
+| 1 | **提交 / 推送 / PR / 合并 / issue 关闭 / CI**（原「待 PR 后回填」项，**已回填 2026-10-15；合并结果 2026-10-16 回填**） | **已提交**：实现 `092147a`、文档 `fb65eda`；分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）已推送；**PR #42 已于 2026-10-16 合并**（merge commit **`d618b64`**；`mergedAt` = 2026-10-16T04:57:00Z）→ 合并后远端分支 `codex/issue-31-32-33-m2-completion` **已删除**（origin 仅剩 `main`），本地 `main` 已同步到 `d618b64`；**issue #31 已关闭**（GitHub 依 PR 正文的 `Closes #31` 自动关闭，状态 `CLOSED`）；**CI**：head `fb65eda` 首跑与合并后 `main`（`d618b64`）上 `Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)` **均 SUCCESS**；**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭**（`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z）。来源：主 agent 核验的 GitHub 结果（docs-writer 未直接访问 GitHub） |
 | 2 | **手工颜色对比度** | 无法在 jsdom 自动验证（#32 `color-contrast` 规则禁用，见 #32 §13）；员工页新增的 `.form-success`/`.form-error`/`.logout-control [role='alert']` 暗色色值按 ≥4.5:1 选择，**仍需人工在浏览器确认** |
 | 3 | `AdminRepository`（metadata 遍历 / `add_movie` 存储过程解析） | **已知缺口**（计划 Q-6 裁定不补），本 issue 后仍无直接测试 |
 | 4 | 真实浏览器 + 真实 MySQL 的员工存储过程往返 | **未自动化**（#32 的 e2e 全部用 `page.route` mock API）；生产 smoke 只验证了 metadata 与登录/登出链路（#33 §13） |

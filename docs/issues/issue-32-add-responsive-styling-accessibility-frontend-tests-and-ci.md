@@ -4,8 +4,8 @@
 > 它**不是**发布草稿，`github-operator` **不需**为本 issue 创建新 issue。docs-writer 不修改远端 issue 内容。
 >
 > **本地计划状态（2026-10-15）：`docs/plans/issue-32-add-responsive-styling-accessibility-frontend-tests-and-ci.md` = 已批准（主 agent，2026-10-15，依据 oracle 报告）→ 实现完成，已通过主 agent 终验（2026-10-15）。**
-> **实现状态：已完成（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、PR #42 已创建（OPEN，未合并））。**
-> **验证状态：前端 `npm test` → 30 files / 195 passed；`npm run test:coverage` → Lines 92.35%（846/916，阈值 88）、Statements 90.05%、Branches 82.16%、Functions 91.17%；`npm run lint` 干净；`npm run build` 成功；`npm run test:e2e` → 12 passed（chromium，360/1440）；Node 22 容器连续两次一致。后端 `mvn verify` 回归 → 127 tests / LINE 0.8980。提交/推送/PR 与 CI 首跑：`092147a`/`fb65eda`、已推送、**PR #42（OPEN，未合并）**；**head `fb65eda` 上 `Build and test (Java 11)` 与 `Frontend (lint, test, coverage, build, e2e)` 均 SUCCESS**。** AC 逐条状态与证据见 §6。
+> **实现状态：已完成并已合并（分支 `codex/issue-31-32-33-m2-completion`，HEAD `fb65eda`；已提交 `092147a`/`fb65eda`、已推送、**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`）；**issue #32 已关闭**（GitHub 依 PR 正文的 `Closes #32` 自动关闭）；合并后远端分支已删除，`main`（`d618b64`）CI 双 job SUCCESS）。**
+> **验证状态：前端 `npm test` → 30 files / 195 passed；`npm run test:coverage` → Lines 92.35%（846/916，阈值 88）、Statements 90.05%、Branches 82.16%、Functions 91.17%；`npm run lint` 干净；`npm run build` 成功；`npm run test:e2e` → 12 passed（chromium，360/1440）；Node 22 容器连续两次一致。后端 `mvn verify` 回归 → 127 tests / LINE 0.8980。提交/推送/合并：`092147a`/`fb65eda`、已推送、**PR #42 已合并（`d618b64`，2026-10-16）**；**head `fb65eda` 上 `Build and test (Java 11)` 与 `Frontend (lint, test, coverage, build, e2e)` 均 SUCCESS，合并后 `main`（`d618b64`）上双 job 亦 SUCCESS**。** AC 逐条状态与证据见 §6。
 
 ## 1. 远端元数据
 
@@ -16,7 +16,7 @@
 | 标题（远端原文） | Add responsive styling, accessibility, frontend tests, and CI |
 | Milestone | Phase 2 — React Frontend Migration（与 #31/#33 共用；由主 agent 提供） |
 | 获取方式 | 主 agent 用 `gh` 获取的远端原文，并在任务说明中逐字提供（docs-writer 无 GitHub 访问授权，**未**直接查询远端） |
-| 远端状态核对 | **未确认**（docs-writer 未查询远端；以远端为准） |
+| 远端状态核对 | **已关闭（`CLOSED`）**——2026-10-16 由 GitHub 依 PR #42 正文的 `Closes #32` 自动关闭（主 agent 核验）；docs-writer 未直接查询远端，仍以远端为准 |
 | 本地记录文档 | 本文件 |
 | 关联计划 | `docs/plans/issue-32-add-responsive-styling-accessibility-frontend-tests-and-ci.md`（**已批准（主 agent，2026-10-15）→ 实施完成，已通过主 agent 终验（2026-10-15）**；实现结果/实际阈值/差异见其 §13） |
 | 关联全局约束 | `docs/architecture/frontend-migration-contracts.md`（§7 测试设施与 CI 闸门：**已由本 issue 实施后更新**，新增 §11 前端测试设施与 Node 22 CI job 约定） |
@@ -62,7 +62,7 @@ Can progress alongside page migration, but completes after all React flows exist
 > **新增依赖已批准（共 3 个 devDependencies）**：`@playwright/test`、`@vitest/coverage-v8`、`axe-core`（+ Playwright 浏览器下载）；**不引入 `vitest-axe`**。
 > 其他已定稿要点：**B1** `vitest.config.js` 显式 `test.exclude` 加入 `**/e2e/**`（保留默认排除项）；**B2** a11y 用 `axe-core` + 自建 helper `frontend/src/test/axe.js`；独立 **`frontend` CI job**（`timeout-minutes: 20`）；`engines: { "node": ">=22.12.0" }`；**本 issue 重新生成并提交 `frontend/package-lock.json`**；覆盖率先测再定阈值（行 ≥75%，基线下方 2–5 点）；**架构文档 §7 两条事实由 #32 更新**。
 > **已回填（实施终验）**：**覆盖率阈值定稿为 `lines: 88`（实测行覆盖 92.35% = 低于基线 4.35pp、远高于 75% 下限）**。
-> **已回填（2026-10-15，PR/CI）**：CI 配置已落地，且**CI 首跑已发生**——PR **#42**（head `fb65eda`）上 `Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（新 job 首次运行），`Build and test (Java 11)` → **SUCCESS**；**PR 仍为 OPEN、未合并**。
+> **已回填（2026-10-15 PR/CI；2026-10-16 合并）**：CI 配置已落地，且**CI 首跑已发生**——PR **#42**（head `fb65eda`）上 `Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（新 job 首次运行），`Build and test (Java 11)` → **SUCCESS**；**PR 已于 2026-10-16 合并（`d618b64`），合并后 `main` 上双 job 仍 SUCCESS。**
 
 ## 4. 范围（依据 issue + 已批准决定）
 
@@ -105,10 +105,10 @@ Can progress alongside page migration, but completes after all React flows exist
 | AC-32-2 | Forms and navigation are keyboard usable | 全局 `:focus-visible` + 语义/label 补齐；Playwright 键盘路径 | ✅ **已完成**：`:focus-visible`（`outline: 2px solid var(--accent)`）；e2e 键盘用例 2 条（login `keyboard.type/Tab/Enter`、browsing `Tab`+`Enter`）；组件测试的 label/role 断言全绿 |
 | AC-32-3 | Automated accessibility checks cover key pages | **`axe-core` 直连 + `frontend/src/test/axe.js` 的 `expectNoA11yViolations(container)`**（Q-1 裁定，不引入 `vitest-axe`）对 **9 个具体页面**断言 + App shell 的 landmark 断言 | ✅ **已完成**：9 个页面测试文件各含 1 条 axe 断言（Home/Login/MovieList/MovieDetail/Cart/Payment/Confirmation/员工登录/员工仪表盘）＋ `App.test.jsx` 2 条 shell 断言；**jsdom 下 `color-contrast` 全局禁用、页面级渲染禁用 `region`（shell 级启用）→ 对比度仍需手工确认** |
 | AC-32-4 | Frontend test and coverage commands run deterministically | `@vitest/coverage-v8` + `test:coverage`、Playwright `test:e2e`（仅 chromium + mock API）、Node 22 固定；**确定性 = 连续两次用例数与覆盖率一致** | ✅ **已完成**：本地 Node 24：195 passed / 30 files、Lines **92.35% (846/916)**、lint 0、build 成功、e2e 12 passed；**Node 22 容器（`node:22-slim` v22.23.3）连续两次一致**：lint 0、195/30、Lines 92.35%、build 成功、e2e 12 passed |
-| AC-32-5 | CI blocks regressions in linting, tests, coverage, or build | `.github/workflows/ci.yml` **新增独立 `frontend` job**（lint/test/coverage/build/e2e，`timeout-minutes: 20`）；后端 `mvn verify` 不弱化 | ✅ **已完成**：`frontend` job 已写入 ci.yml（步骤 `npm ci → lint → test → test:coverage → build → npx playwright install --with-deps chromium → test:e2e`）；**PR #42（head `fb65eda`）首次运行 → `Frontend (lint, test, coverage, build, e2e)` SUCCESS，同行后端 `Build and test (Java 11)` 亦 SUCCESS**（来源：主 agent 核验的 GitHub CI 结果，docs-writer 未直接访问 GitHub）。**PR 仍为 OPEN、未合并** |
+| AC-32-5 | CI blocks regressions in linting, tests, coverage, or build | `.github/workflows/ci.yml` **新增独立 `frontend` job**（lint/test/coverage/build/e2e，`timeout-minutes: 20`）；后端 `mvn verify` 不弱化 | ✅ **已完成**：`frontend` job 已写入 ci.yml（步骤 `npm ci → lint → test → test:coverage → build → npx playwright install --with-deps chromium → test:e2e`）；**PR #42（head `fb65eda`）首次运行 → `Frontend (lint, test, coverage, build, e2e)` SUCCESS，同行后端 `Build and test (Java 11)` 亦 SUCCESS**（来源：主 agent 核验的 GitHub CI 结果，docs-writer 未直接访问 GitHub）；**PR 已于 2026-10-16 合并（`d618b64`），合并后 `main` 上双 job 仍 SUCCESS。** |
 
 > **证据要求（已满足）**：AC 对应的实际命令与结果已填入上表（均为**主 agent 亲跑**：本地 Node 24 + Node 22 容器）；docs-writer 只读复核了配置/测试源码与 diff。
-> **未发生的事实（已更新）**：改动已提交（`092147a`/`fb65eda`）、已推送、**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两 job 均 SUCCESS**。**PR 未合并、issue 未关闭** → 不得声称「已合并」。
+> **事实（已更新，2026-10-16）**：改动已提交（`092147a`/`fb65eda`）、已推送，**PR #42 已于 2026-10-16 合并**（merge commit `d618b64`）；**CI 首跑（head `fb65eda`）两 job 均 SUCCESS，合并后 `main`（`d618b64`）上双 job 亦 SUCCESS**；**issue #32 已由 GitHub 依 PR 正文的 `Closes #32` 自动关闭**（`CLOSED`）；远端分支已删除；里程碑 Phase 2（#2）已关闭（10/10）。
 > **已知限制**：① `color-contrast` 无法在 jsdom 自动验证 → 新增暗色色值按 ≥4.5:1 选择，仍需**人工浏览器确认**；② `frontend/src/App.jsx` 行覆盖 **0%**（计入分母，不排除）；③ e2e 全为 `page.route` mock，不代表真实后端/MySQL 往返；④ `oxlint src` **不覆盖** `e2e/`（e2e 未纳入 lint）。
 
 ## 7. 关联记录
@@ -119,8 +119,8 @@ Can progress alongside page migration, but completes after all React flows exist
 | scout 调查报告 | `.pi/artifacts/scout-issues-31-32-33.md` | §B（样式体系、无障碍现状、测试设施、CI、覆盖率工具） |
 | 架构约束 | `docs/architecture/frontend-migration-contracts.md` | §4 既有模式、**§7 测试设施与 CI（已更新）**、**§11 SPA fallback（已更新）**、§10 AD-1/AD-2 |
 | 工作流日志 | `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md` | **已创建**（三个 issue 共用一份；含实际的 axe 规则边界、覆盖率口径与 Node 22 证据） |
-| 远端 issue | #32（见 §1） | **不由 docs-writer 修改**；PR #42 与 CI 首跑结果已回填（本 §7 的 PR 行与计划 §13.4） |
-| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已创建（OPEN，非 draft，MERGEABLE；未合并）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；`closingIssuesReferences` = #31/#32/#33；**CI 首跑两 job 均 SUCCESS** |
+| 远端 issue | #32（见 §1） | **不由 docs-writer 修改**；该 issue 已由 GitHub 依 PR #42 的 `Closes #32` 自动关闭（`CLOSED`，2026-10-16）；PR #42 合并与 CI 结果已回填（本 §7 的 PR 行与计划 §13.4） |
+| PR | **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42 | **已合并（`MERGED`，2026-10-16；merge commit `d618b64`，`mergedAt` = 2026-10-16T04:57:00Z）**：分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ base `main`；`closingIssuesReferences` = #31/#32/#33，并**据此自动关闭本 issue**；**CI 首跑与合并后 `main` 上两 job 均 SUCCESS**；远端分支已删除 |
 
 ## 8. 备注
 
@@ -128,7 +128,8 @@ Can progress alongside page migration, but completes after all React flows exist
 - **2026-10-15（创建时）**：本文件与关联计划由 docs-writer 首次创建；**当时的计划状态 = 待 oracle 审查 / 未批准**；实现未开始、未运行任何测试。**当前状态见下一行的本轮批准记录。**
 - **2026-10-15（本轮）**：oracle 只读审查完成（报告 `.pi/artifacts/oracle-issues-31-32-33-plans.md`；结论：#32 需修订后可批准，B1/B2 必须闭合）→ **B1/B2 已按最小修复写入计划；主 agent 批准计划并全部接受 N-32-1..N-32-12/Q-1..Q-10**。
 - **2026-10-15（实施终验）**：worker 完成 #32 实现并由同一 worker 处理三路只读审查意见（无 Blocker）后复验；**主 agent 亲跑终验**：本地 Node 24 与 Node 22 容器分别跑通 lint/test/coverage/build/e2e（**195 tests / 30 files**、**Lines 92.35%**、**e2e 12 passed**，容器两次结果一致）；后端回归 `mvn verify` 127 tests / LINE 0.8980。实现细节与差异见计划 §13。
-- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`、文档提交 `fb65eda`（HEAD `fb65eda`）已推送；**PR #42 已创建（OPEN，未合并）**；**CI 首跑两个 job 均 SUCCESS** —— `Frontend (lint, test, coverage, build, e2e)`（本 issue 新增 job 的首次运行）与 `Build and test (Java 11)`。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §13.4。
+- **2026-10-15（提交 / PR / CI 首跑）**：实现提交 `092147a`、文档提交 `fb65eda`（HEAD `fb65eda`）已推送；**PR #42 已创建**；**CI 首跑两个 job 均 SUCCESS** —— `Frontend (lint, test, coverage, build, e2e)`（本 issue 新增 job 的首次运行）与 `Build and test (Java 11)`。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。详见计划 §13.4。
+- **2026-10-16（合并 / issue 关闭 / 里程碑关闭）**：**PR #42 已合并**（merge commit `d618b64`；`mergedAt` = 2026-10-16T04:57:00Z）；**issue #32 由 GitHub 依 PR 正文的 `Closes #32` 自动关闭**（`CLOSED`）；远端分支 `codex/issue-31-32-33-m2-completion` 已删除（origin 仅剩 `main`）；本地 `main` 已同步到 `d618b64`；**合并后 `main` 上 CI 双 job（Java 11 + Frontend）SUCCESS**；**里程碑 `Phase 2 — React Frontend Migration`（#2）已关闭**（`open_issues` = 0、`closed_issues` = 10、`closed_at` = 2026-10-16T05:00:27Z）。来源：主 agent 核验的 GitHub 结果（docs-writer 未直接访问 GitHub）。
 - **文档一致性（已处理）**：架构文档 §7 原写的「**没有** Playwright / Cypress / Selenium 等 e2e 设施」与「CI 不跑前端（属手动验证门）」**已由本 issue 更新**（Q-7）——现该文档 §7 记录 vitest/Playwright/axe/覆盖率阈值现状，并新增 §11 约定。
 - **工作区提醒（已更新）**：`frontend/package-lock.json` 已由本 issue 重新生成并随提交 `092147a` 提交；`.idea/*`（6 个）**提交后仍为未跟踪的本机 IDE 文件**（非本次变更），是否纳管待主 agent 决定。
 - docs-writer 无 GitHub 访问授权；§1 元数据来自主 agent 用 `gh` 获取的原文。
