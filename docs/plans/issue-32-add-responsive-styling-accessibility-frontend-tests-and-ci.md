@@ -1,7 +1,7 @@
 # Issue #32 方案 / 计划 — Add responsive styling, accessibility, frontend tests, and CI
 
-> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；未提交 / 未推送 / 无 PR。**
-> 分支 `codex/issue-31-32-33-m2-completion`（改动未暂存、未提交）；PR 创建与 CI 首跑**尚未发生**（见 §13.4）。
+> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、PR #42 已创建（OPEN，未合并）。**
+> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）→ PR **#42**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**——其中 `Frontend (lint, test, coverage, build, e2e)` 是该新 job 的**第一次运行**，故本 issue 的 CI 证据已闭合（见 §13.4）。
 > 本文档 §1–§11（及 §12 的批准时记录）保留为**批准时的计划文本**（事实性内容未追改）；实现结果、与计划的逐项差异、终验证据（含实际覆盖率数字与阈值）与残余风险见 **§13**。
 >
 > **文档状态（批准时）：已批准（主 agent，2026-10-15）— 已交 worker 实现。**
@@ -360,8 +360,8 @@ GitHub Actions 中的 lint / 测试 / 覆盖率 / 生产构建。
 
 ## 13. 实现结果与计划差异（主 agent 终验后回填，2026-10-15）
 
-> **状态：实施完成，已通过主 agent 终验（2026-10-15）；未提交 / 未推送 / 无 PR。**
-> 证据来源：主 agent 亲跑的终验命令与输出（标注「主 agent 实测」）、Node 22 容器内的复跑证据，以及本轮 docs-writer 的**只读**复核（`git status`/`git diff`、配置文件与测试源码内容）。docs-writer **未**运行任何 npm 命令。
+> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 已创建（OPEN，未合并）；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS（§13.4）。**
+> 证据来源：主 agent 亲跑的终验命令与输出（标注「主 agent 实测」）、Node 22 容器内的复跑证据、主 agent 核验的 PR #42 与 CI 运行结果，以及本轮 docs-writer 的**只读**复核（`git status`/`git diff`、配置文件与测试源码内容）。docs-writer **未**运行任何 npm 命令。
 
 ### 13.1 实际改动文件（相对 §5 计划清单）
 
@@ -415,17 +415,17 @@ GitHub Actions 中的 lint / 测试 / 覆盖率 / 生产构建。
 | AC-32-2 | 全局 `:focus-visible`；组件测试的 label/role 断言；e2e 键盘路径（login `keyboard.type/Tab/Enter`、browsing `Tab`+`Enter` 打开列表） | 前端 **195 passed**；e2e 12 passed（含 2 条键盘用例） | 主 agent 实测 |
 | AC-32-3 | `frontend/src/test/axe.js` + 9 个页面的 axe 断言（Home/Login/MovieList/MovieDetail/Cart/Payment/Confirmation/员工登录/员工仪表盘）＋ `App.test.jsx` 的 2 条 shell 断言 | 前端 195 passed（axe 违规集合必须为空） | 主 agent 实测 |
 | AC-32-4 | Node 22（`engines >= 22.12.0`；CI `node-version: 22`）+ 仅 chromium + 全 API mock；**连续两次同一命令用例数/覆盖率一致** | 本地 Node 24：`npm test` **195 passed / 30 files**、`npm run test:coverage` **Lines 92.35% (846/916)**、Statements 90.05%、Branches 82.16%、Functions 91.17%、`npm run lint` 干净、`npm run build` 成功；**Node 22 容器（`node:22-slim`，v22.23.3）连续两次结果一致**：lint 0、195 tests / 30 files、Lines 92.35%、build 成功 | 主 agent 实测（本地 + 容器） |
-| AC-32-5 | `.github/workflows/ci.yml` 新增独立 `frontend` job，步骤按 lint→test→coverage→build→e2e 全部阻塞回归；后端 job 保持 `mvn verify` | 配置已落地（docs-writer 复核 diff）；**CI 首跑尚未发生**（无 PR）→ 运行结果待主 agent 回传回填 | 只读复核 diff；**运行结果未产生** |
+| AC-32-5 | `.github/workflows/ci.yml` 新增独立 `frontend` job，步骤按 lint→test→coverage→build→e2e 全部阻塞回归；后端 job 保持 `mvn verify` | 配置已落地（docs-writer 复核 diff）；**CI 首跑（head `fb65eda`）已发生且两 job 均 SUCCESS**：`Frontend (lint, test, coverage, build, e2e)` **SUCCESS**（新 job 首次运行）、`Build and test (Java 11)` **SUCCESS** | 主 agent 核验的 GitHub CI 运行结果（docs-writer 未直接访问 GitHub） |
 
 > **后端回归**（本 issue 未改后端，仍作为整体闸门复核）：`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，`Tests run: 127`，`All coverage checks have been met.`，BUNDLE LINE 968/110/1078 = **0.8980**（闸门 0.85）。
 
-### 13.4 待 PR 后回填
+### 13.4 PR 与 CI 首跑（原「待 PR 后回填」项，**已回填 2026-10-15**）
 
 | 项 | 状态 |
 | --- | --- |
-| **PR 链接 / 提交号** | **未创建**（分支 `codex/issue-31-32-33-m2-completion`，工作区改动未暂存未提交）→ 主 agent 回传后回填 |
-| **CI 首跑结果（后端 job + `frontend` job）** | **未发生** → 回填前不得写「CI 已通过」；#33 §7 的 M2-BE-6 与此同源 |
-| Playwright 浏览器下载耗时 / job 实际时长 | 未观测（CI 未跑）；`timeout-minutes: 20` 为计划值 |
+| **PR 链接 / 提交号** | ✅ **已回填**：实现提交 `092147a`、文档提交 `fb65eda`；分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）已推送；PR **#42** — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42（标题 `Complete the React migration: employee dashboard, quality gates, and production build`；base `main`） |
+| **CI 首跑结果（后端 job + `frontend` job）** | ✅ **已回填**：head `fb65eda` 上 `Build and test (Java 11)` → **SUCCESS**；`Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（**该 job 自加入 ci.yml 后的第一次运行**）。来源：主 agent 核验的 GitHub CI 结果（docs-writer 未直接访问 GitHub）。**PR 仍为 OPEN、未合并** |
+| Playwright 浏览器下载耗时 / job 实际时长 | **仍未观测**（本次未回填具体时长数据；`timeout-minutes: 20` 为计划值） |
 
 ### 13.5 残余风险、未验证项与后续事项
 

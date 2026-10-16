@@ -1,7 +1,7 @@
 # Issue #33 方案 / 计划 — Integrate production React build and retire the legacy frontend
 
-> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；未提交 / 未推送 / 无 PR。**
-> 分支 `codex/issue-31-32-33-m2-completion`（改动未暂存、未提交）；**注意**：legacy 删除在工作区已完成，但尚未暂存/提交，故 `git ls-files src/main/webapp` 仍列出 21 个文件（§7 的 M2-DOC-2）。
+> **实现状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a` 实现 + `fb65eda` 文档）、已推送、PR #42 已创建（OPEN，未合并）。**
+> 分支 `codex/issue-31-32-33-m2-completion`（HEAD `fb65eda`）；legacy 删除已随实现提交 `092147a` 进入 git（`git ls-files src/main/webapp` = **0**，§7 的 M2-DOC-2 已为真）；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**（见 §7.1 M2-BE-6 与 §13.4）。
 > 本文档 §1–§11（及 §12 的批准时记录）保留为**批准时的计划文本**（事实性内容未追改）；实现结果、与计划的逐项差异、**M2 checklist（§7）的逐条证据回填**与残余风险见 **§7** 与 **§13**。
 >
 > **文档状态（批准时）：已批准（主 agent，2026-10-15）— 已交 worker 实现。**
@@ -278,7 +278,7 @@
 
 ## 7. M2 Regression Checklist（已定稿，D-33-4；**证据列已由主 agent 终验回填，2026-10-15**）
 
-> 定位：M2 收尾的可执行清单。**§7 各“结果”列已由主 agent 终验（2026-10-15）逐条回填**；未执行/部分验证/不能为真的条目已明确标注（不得当作已通过）。
+> 定位：M2 收尾的可执行清单。**§7 各“结果”列已由主 agent 终验（2026-10-15）逐条回填，并已随 PR #42（head `fb65eda`）的 CI 首跑回填 M2-BE-6**；未执行/部分验证的条目已明确标注（不得当作已通过）。
 > 记录方式：每条填「命令/操作 + 实际输出摘要（如 `Tests run: N`、HTTP 状态、文件存在性）+ 执行日期」；标注来源为「主 agent 实测」或「docs-writer 只读复核」。
 > **Docker 镜像可拉取性已由主 agent 在本机用 `docker manifest inspect` 验证通过**（`node:22-alpine`/`maven:3.9-eclipse-temurin-11`/`eclipse-temurin:11-jre`）→ **7.3 的生产 smoke 已实际执行并回填**。
 
@@ -289,10 +289,10 @@
 | M2-BE-1 | `mvn --batch-mode --no-transfer-progress verify`（默认 profile） | BUILD SUCCESS；测试全绿；`All coverage checks have been met`（BUNDLE LINE ≥ 0.85） | ✅ **通过**：BUILD SUCCESS；`Tests run: 127, Failures: 0, Errors: 0, Skipped: 0`；`All coverage checks have been met.`；BUNDLE LINE **968 covered / 110 missed / 1078 total = 0.8980**（闸门 0.85）。新增/改动类均为 **0 行未覆盖**：`SpaFallbackConfig` 13/13、`SpaFallbackConfig$SpaResourceResolver` 5/5、`EmployeeController` 13/13、`CustomerAuthController` 24/24、`SearchController` 13/13（主 agent 实测；docs-writer 由 `target/surefire-reports/*` 与 `target/site/jacoco/jacoco.csv` 只读复核一致） |
 | M2-BE-2 | `mvn -Pfrontend --batch-mode -DskipTests clean package` 后检查 `target/fablix.jar` 内 `BOOT-INF/classes/static/index.html` 与 `assets/**` 存在 | 存在 | ✅ **通过**：jar 内 **6 个** `BOOT-INF/classes/static` 条目 = `static/`、`static/assets/`、`assets/index-BINlLyG3.css`、`assets/index-CbFV0THv.js`、`favicon.svg`、`index.html`（前两项为目录条目）（主 agent 实测；docs-writer 只读 `unzip -l target/fablix.jar` 复核一致） |
 | M2-BE-2b（**N-33-7 新增**） | **dist 缺失时的失败守卫**：暂移 `frontend/dist` 后跑 `mvn -Pfrontend -DskipTests package` | **构建失败**（D-33-6/B4；不得静默成功） | ✅ **通过（负向验证）**：临时移走 `frontend/dist` → **BUILD FAILURE**，失败来自 enforcer `require-frontend-dist`，报错信息含 `frontend/dist/index.html is missing`（主 agent 实测） |
-| M2-BE-3 | 删除 legacy 后重跑 `mvn --batch-mode verify` | 全绿（含重写后的守卫测试） | ✅ **通过**：工作区已删除 `src/main/webapp/**`（21 个 `D`），`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，**127 tests** 全绿（含重写后的 `FrontendApiMigrationTest` 退役守卫与 `SpaFallbackTest`）（主 agent 实测） |
+| M2-BE-3 | 删除 legacy 后重跑 `mvn --batch-mode verify` | 全绿（含重写后的守卫测试） | ✅ **通过**：21 个 legacy 文件已删除（已随提交 `092147a` 进入 git），`mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，**127 tests** 全绿（含重写后的 `FrontendApiMigrationTest` 退役守卫与 `SpaFallbackTest`）（主 agent 实测） |
 | M2-BE-4 | `grep -rn "webapp\|\.html" src/main/java src/main/resources pom.xml compose.yaml Dockerfile` | 无 legacy 文件引用（仅留已批准的 D-33-7 新落点） | ✅ **通过**（docs-writer 只读 grep）：`src/main/java`、`src/main/resources`、`pom.xml`、`compose.yaml`、`Dockerfile`、`fabflix.http`、`.github/workflows/ci.yml` 均无 `login.html`/`movieList.html`/`webapp`；两处重定向已用新落点（`/login`、`/movies?mode=fulltext&`）。**备注**：命中项只出现在文档（如本计划的历史段落与架构文档的历史说明）中 |
 | M2-BE-5（**N-33-7 新增**） | **干净 checkout 的可复现性**：`npm ci` + `mvn -Pfrontend clean package` | 从干净树可重现成功构建（无隐式前置步骤） | ⚠️ **部分验证**：Node 22 容器（依赖安装 → `npm run build`）与 `mvn -Pfrontend -DskipTests clean package`（含 dist 存在/缺失两态）分别跑通；但**未单独执行**「干净 checkout 单次端到端 `npm ci` + `mvn -Pfrontend clean package`」的专门复现 → 记为**未完全验证**，PR CI 从干净 checkout 跑 `npm ci` 与构建后可作为间接补强（M2-BE-6） |
-| M2-BE-6（**N-33-7 新增**） | **PR 上 CI 全绿**（后端 + #32 的独立 `frontend` job） | 两个 job 均 SUCCESS | ⏳ **未执行 —— 待主 agent 回传后回填**：分支 `codex/issue-31-32-33-m2-completion` 的改动**未提交、未推送、无 PR** → 无 CI 运行 |
+| M2-BE-6（**N-33-7 新增**） | **PR 上 CI 全绿**（后端 + #32 的独立 `frontend` job） | 两个 job 均 SUCCESS | ✅ **通过（已回填，2026-10-15）**：PR **#42**（head `fb65eda`）上 `Build and test (Java 11)` → **SUCCESS**；`Frontend (lint, test, coverage, build, e2e)` → **SUCCESS**（新 `frontend` job 的首次运行）。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer 未直接访问 GitHub）。**PR 仍为 OPEN、未合并**（见 §13.4） |
 | M2-BE-7（**N-33-7 新增**） | `git ls-files frontend/dist` | **为空**（dist 未提交，C-33-1） | ✅ **通过**：`git ls-files frontend/dist` → 0 行（`frontend/.gitignore` 忽略 `dist`）（docs-writer 只读执行） |
 
 ### 7.2 前端（命令由 #32 引入）
@@ -324,10 +324,10 @@
 | # | 检查项 | 预期 | 结果（终验后已回填，2026-10-15） |
 | --- | --- | --- | --- |
 | M2-DOC-1 | `grep -rn "login.html\|movieList.html\|webapp\|legacy" README.md frontend/README.md docs/architecture/frontend-migration-contracts.md` | 仅剩说明"已退役"的表述，无"仍然可用"的误导 | ✅ **通过**（docs-writer 只读 grep）：`README.md`/`frontend/README.md` 仅剩「已退役（has been retired）」表述，无「仍然可用」措辞；架构文档 §2 已改写为「已退役（本 issue）」并把 #30 时代的保留策略标为历史（同时新增 §11 SPA fallback 与 §7 测试设施/CI 更新） |
-| M2-DOC-2 | `git ls-files src/main/webapp` | 空（目录已删除） | ⚠️ **当前不能为「空」**：删除是**未暂存的工作区删除**（`git status` 显示 21 个 `D`），因此 `git ls-files src/main/webapp` 仍列出 **21** 个文件；该条在**暂存/提交之后**才为真。文档与报告**不得**据现状声称「已从 git 移除」 |
+| M2-DOC-2 | `git ls-files src/main/webapp` | 空（目录已删除） | ✅ **通过（已回填，2026-10-15）**：docs-writer 本轮只读执行 `git ls-files src/main/webapp` → **0 行**；21 个文件已随实现提交 **`092147a`** 从 git 移除（`git show --stat 092147a -- src/main/webapp` = 21 files changed, 2057 deletions） |
 | M2-DOC-4（**N-33-7/N-33-4**） | 核验 `README.md:3/:15/:67/:99` 与 `frontend/README.md:3/:56/:57-67` 已改写，无遗留 `login.html`/`movieList.html` 旧路径 | 无遗留引用 | ✅ **通过**：`README.md:3`（React 为唯一前端）、`:15`（架构图改为「React + Vite single-page app」）、原 `:67` 的 `/login.html` 段落改写为「Docker Compose 全栈 / 本地开发 / 生产构建」三节、原 `:99` 改写为「React is the only supported frontend…」；`frontend/README.md:3` 与生产构建段落已改写；两文件中已无 `login.html`/`movieList.html` |
 | M2-DOC-5（**N-33-10**） | 核验 `fabflix.http` 的 jump-back/legacy 示例已更新（不再请求 `/movieList.html`） | 示例与新落点一致 | ✅ **通过**：`fabflix.http` 的 jump-back 注释更新为「应返回 302，Location 指向 `/movies?mode=fulltext&...`」 |
-| M2-DOC-3 | `git status --short` | 无未预期文件（`frontend/dist` 仍被忽略） | ⚠️ **部分通过**：`git status --short --untracked-files=all` 共 **83** 项（本日志文件创建前为 81 项）—— 均为本次三个 issue 的预期改动（源码/测试/配置/文档）与 `frontend/dist` 忽略项；**例外**：`.idea/*`（6 个未跟踪的本机 IDE 文件）**不属于本次变更**，提交前需由主 agent 确认不纳入（`frontend/coverage`、`frontend/test-results`、`frontend/playwright-report` 已按 `.gitignore` 忽略） |
+| M2-DOC-3 | `git status --short` | 无未预期文件（`frontend/dist` 仍被忽略） | ✅ **通过（已回填，2026-10-15）**：提交（`092147a`/`fb65eda`）后 `git status --short --untracked-files=all` **仅 6 项**，均为未跟踪的 `.idea/*`（本机 IDE 文件，**非本次变更**）；`frontend/dist`/`coverage`/`test-results`/`playwright-report` 均按 `.gitignore` 忽略。`.idea/*` 是否纳管仍待主 agent 决定 |
 
 ## 8. 依赖
 
@@ -405,7 +405,7 @@
 ## 12. 状态（批准时记录 → 已由 §7/§13 更新为实施完成）
 
 - **文档状态（批准时）：已批准（主 agent，2026-10-15）— 可交 worker 实现。** B3/B4/B5 已闭合（D-33-5/D-33-6/D-33-7），N-33-1..N-33-10 与 Q-1..Q-9 已全部裁定（§10/§11）；**本批修订未改变 AC-33-1..AC-33-6**。
-- **批准后的破坏性动作（已授权，已实施）**：删除 **21 个** legacy 跟踪文件（`src/main/webapp/**`，D-33-3）+ **两处重定向行为变更**（`/login.html`→`/login`、`/movieList.html?<query>`→`/movies?mode=fulltext&<query>`，D-33-7）；已逐项落地（§13.1）。**当前状态为工作区删除（未暂存未提交）**。
+- **批准后的破坏性动作（已授权，已实施）**：删除 **21 个** legacy 跟踪文件（`src/main/webapp/**`，D-33-3）+ **两处重定向行为变更**（`/login.html`→`/login`、`/movieList.html?<query>`→`/movies?mode=fulltext&<query>`，D-33-7）；已逐项落地（§13.1）。**当前状态：已随提交 `092147a` 进入 git（`git ls-files src/main/webapp` = 0）**。
 - **测试/构建状态（批准时）：未运行任何测试，未运行任何构建/Docker 命令。** §7 的 M2 checklist 当时**全部为“未执行”**——现已由主 agent 终验逐条回填（含生产 smoke）。
 - **实现前状态（批准时）**：无 `Dockerfile`/`.dockerignore`/`app` 服务/`frontend` profile/SPA fallback/dist 失败守卫；`src/main/webapp` 21 个文件仍在；`FrontendApiMigrationTest` 未改；两处 Java legacy 重定向仍在。**现已全部完成**（§13.1）。
 - **批准时「仍由 worker 确认」的点**：镜像 tag、`-Pfrontend` 体积/资源 hash、失败守卫插件选择与绑定相位、fallback 与默认静态资源处理的交互、jump-back 新落点、`local` profile 下顾客登录——均已在 §13 回填。
@@ -414,7 +414,7 @@
 
 ## 13. 实现结果与计划差异（主 agent 终验后回填，2026-10-15）
 
-> **状态：实施完成，已通过主 agent 终验（2026-10-15）；未提交 / 未推送 / 无 PR。**
+> **状态：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 已创建（OPEN，未合并）；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS（§13.4）。**
 > 证据来源：主 agent 亲跑的终验命令与输出（本地 Node 24 + Node 22 容器 + Docker 生产 smoke）＋本轮 docs-writer 的**只读**复核（`git status`/`git diff`、`unzip -l target/fablix.jar`、`target/surefire-reports/*`、`target/site/jacoco/jacoco.csv`、`git ls-files`、`grep`）。M2 checklist 的逐条结果见 **§7**。
 
 ### 13.1 实际改动文件（相对 §5 计划清单）
@@ -436,7 +436,7 @@
 | `src/main/java/com/fabflix/boot/web/SpaFallbackConfig.java` | 新（路径与计划提案一致） | `@Configuration @Order(Ordered.LOWEST_PRECEDENCE) implements WebMvcConfigurer`；`/**` → `classpath:/static/` + `.resourceChain(false).addResolver(new SpaResourceResolver())`；`static boolean shouldFallback(String path)`（`api/**`、`error`/`error/**`、**含 `.` 的路径**、空/null 不 fallback，**大小写归一**）；`SpaResourceResolver extends PathResourceResolver`（真实资源优先，缺失且判定为 SPA 路径 → `index.html`） |
 | `src/main/java/com/fabflix/boot/auth/CustomerAuthController.java` | 改（D-33-7） | `sendRedirect("/login.html")` → **`sendRedirect("/login")`**（302 语义不变） |
 | `src/main/java/com/fabflix/boot/search/SearchController.java` | 改（D-33-7） | 302 `Location` → **`/movies?mode=fulltext&<query>`**（保留 `title=&pageSize=10&pageNumber=0` 默认查询串） |
-| `src/main/webapp/**`（21 个跟踪文件） | **删除（工作区，未暂存）** | `META-INF/MANIFEST.MF`、`styles.css` 及 19 个 `.html`/`.js` legacy 文件，共 21 个；见 §7 M2-DOC-2 的暂存状态说明 |
+| `src/main/webapp/**`（21 个跟踪文件） | **删除（已随提交 `092147a` 进入 git）** | `META-INF/MANIFEST.MF`、`styles.css` 及 19 个 `.html`/`.js` legacy 文件，共 21 个；`git ls-files src/main/webapp` 现为 0 行（见 §7 M2-DOC-2） |
 | `src/test/java/com/fabflix/boot/web/SpaFallbackTest.java` | 新 | 5 个用例：真值表（含大小写变体）、真实资源/入口文档、缺失资源与 `api` 路径返回 null、`index.html` 缺失时返回 null、**注册层断言**（`/**` handler 使用 `SpaResourceResolver` 且 location 为 `classpath:/static/`） |
 | `src/test/java/com/fabflix/boot/FrontendApiMigrationTest.java` | 重写（N-33-3 双保险） | `legacyWebappDirectoryIsRemoved()`（断言目录不存在）+ `noLegacyFrontendFilesRemain()`（若存在则遍历断言无 `.html`/`.js`）；**删除** `criticalPagesUseTheirSpringBootEndpoints` 与 `Files.walk` 缺失目录的旧写法 |
 | `src/test/java/com/fabflix/boot/auth/CustomerAuthControllerTest.java` | 改 | 第 97 行断言 → `redirectedUrl("/login")` |
@@ -465,17 +465,17 @@
 | AC-33-2 | `docker compose build app` + `up -d --no-deps app` + health | ✅ 构建成功；health **200**；smoke 后 `docker compose rm -sf app`（mysql 与卷未动） |
 | AC-33-3 | `SpaFallbackTest` 真值表/注册层 + 生产 smoke 深链 | ✅ 单测全绿（含到后端 127 内）；**10 条深链全部 200 `text/html`**；`/assets/missing.js` 404 |
 | AC-33-4 | 退役守卫测试 + grep 无遗留引用 + 两处重定向新落点 + `fabflix.http` | ✅ `FrontendApiMigrationTest` 重写后全绿；`src/main/java`/`pom.xml`/`compose.yaml`/`Dockerfile`/`.http` 无 legacy 路径；两处重定向已改并同步测试 |
-| AC-33-5 | `mvn --batch-mode verify` + #32 前端命令 | ✅ 本地全部通过（后端 127 / 前端 195 / e2e 12 / lint 干净 / build 成功）；**PR CI 未运行**（无 PR）→ 该 AC 的「CI 全绿」直接证据**待回填**（§13.4） |
-| AC-33-6 | §7 的 M2 checklist | ✅ 已逐条回填；**3 条标注为非完全通过**：M2-BE-5（干净 checkout 端到端未单独复现）、M2-BE-6（CI 未跑）、M2-DOC-2（`git ls-files` 在提交前不可能为空）；M2-FE-1 与 M2-DOC-3 标为部分/附带说明 |
+| AC-33-5 | `mvn --batch-mode verify` + #32 前端命令 | ✅ **已完成**：本地全部通过（后端 127 / 前端 195 / e2e 12 / lint 干净 / build 成功）；**PR #42（head `fb65eda`）上 CI 两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ 该 AC 的「CI 全绿」直接证据**已回填**（§13.4）；**PR 仍为 OPEN、未合并** |
+| AC-33-6 | §7 的 M2 checklist | ✅ **已逐条回填**；原「非完全通过」的 3 条已有两条随 PR/提交闭合：**M2-BE-6 → ✅ SUCCESS（PR #42 两 job）**、**M2-DOC-2 → ✅ `git ls-files src/main/webapp` = 0**（提交 `092147a`）；**仅 M2-BE-5 仍为部分验证**（干净 checkout 端到端未单独复现，CI 的 `npm ci` + build 作为间接补强）；M2-DOC-3 已更新为「提交后仅剩未跟踪 `.idea/*`」 |
 
-### 13.4 待 PR 后回填 / 未验证项
+### 13.4 PR、CI 首跑与提交后状态（原「待 PR 后回填 / 未验证项」，**已回填 2026-10-15**）
 
 | # | 项 | 状态 |
 | --- | --- | --- |
-| 1 | **PR 链接与 CI 首跑（含 #32 新增的 `frontend` job）** | **未发生**（改动未暂存未提交、无 PR）→ M2-BE-6 与 AC-33-5 的 CI 直接证据待主 agent 回传后回填；回填前**不得**写「CI 已通过/已合并」 |
-| 2 | M2-BE-5「干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package` 单次端到端复现」 | **未单独执行**（各步骤已分别验证）→ 记为未完全验证；PR CI 可作为间接补强 |
-| 3 | M2-DOC-2「`git ls-files src/main/webapp` 为空」 | 需在**提交后**才成立；当前为工作区删除（21 个 `D`） |
-| 4 | `.idea/*`（6 个未跟踪本机文件） | 非本次变更，提交前需主 agent 决定是否排除（M2-DOC-3 备注） |
+| 1 | **PR 链接与 CI 首跑（含 #32 新增的 `frontend` job）** | ✅ **已回填**：提交 `092147a`（实现）+ `fb65eda`（文档）已推送；PR **#42**（HEAD `fb65eda`）；**CI 首跑两个 job 均 SUCCESS**（`Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`）→ M2-BE-6 与 AC-33-5 的 CI 直接证据已闭合（来源：主 agent 核验的 GitHub CI 结果）。**PR 仍为 OPEN、未合并** |
+| 2 | M2-BE-5「干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package` 单次端到端复现」 | **仍未单独执行**（各步骤已分别验证）→ 记为未完全验证；PR CI 的 `npm ci` + `npm run build`（干净 checkout）作为间接补强（M2-BE-6） |
+| 3 | M2-DOC-2「`git ls-files src/main/webapp` 为空」 | ✅ **已成立**：docs-writer 本轮只读复核 `git ls-files src/main/webapp` → 0 行（21 文件随 `092147a` 移除） |
+| 4 | `.idea/*`（6 个未跟踪本机文件） | **仍未处理**：提交后 `git status --short --untracked-files=all` 仅剩这 6 项，非本次变更，待主 agent 决定是否排除（M2-DOC-3） |
 | 5 | 真实浏览器 + 真实 MySQL 的存储过程往返（`add_movie`） | **未自动化**（e2e 全 mock；生产 smoke 只到 metadata）；见 #31 §13.5 |
 | 6 | 手工颜色对比度确认 | jsdom 无法验证（#32 §13.5）；需人工在浏览器确认 |
 

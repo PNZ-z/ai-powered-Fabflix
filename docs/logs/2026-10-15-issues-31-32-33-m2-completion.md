@@ -8,8 +8,10 @@
 | 项目 | 值 |
 | --- | --- |
 | 完成日期 | 2026-10-15（主 agent 终验） |
-| 分支 | `codex/issue-31-32-33-m2-completion`（工作区改动**未暂存、未提交、未推送**） |
-| 提交 / PR | **无提交、无 PR（PR 未创建，待授权）**；PR 链接与 CI 首跑结果待主 agent 回传后回填 |
+| 分支 | `codex/issue-31-32-33-m2-completion`（工作区已提交、已推送；HEAD `fb65eda`） |
+| 提交 | `092147a`（实现：员工仪表盘、质量门、生产构建、legacy 退役）＋ `fb65eda`（文档：计划/审查/工作流日志） |
+| PR | **#42 — https://github.com/PNZ-z/ai-powered-Fabflix/pull/42**（`Complete the React migration: employee dashboard, quality gates, and production build`；base `main` ← head `codex/issue-31-32-33-m2-completion`；**OPEN，非 draft，MERGEABLE，未合并**；`closingIssuesReferences` = #31/#32/#33） |
+| CI 首跑 | **head `fb65eda`：两个 job 均 SUCCESS** —— `Build and test (Java 11)`、`Frontend (lint, test, coverage, build, e2e)`（后者是新 `frontend` job 的首次运行） |
 | Issue | [#31](https://github.com/PNZ-z/ai-powered-Fabflix/issues/31) / [#32](https://github.com/PNZ-z/ai-powered-Fabflix/issues/32) / [#33](https://github.com/PNZ-z/ai-powered-Fabflix/issues/33)（均**已存在于远端**，本工作流不修改远端 issue） |
 | 计划文档 | `docs/plans/issue-31-migrate-employee-dashboard.md`、`…issue-32-…md`、`…issue-33-…md`（均含实施终验回填节） |
 | 跟踪文档 | `docs/issues/issue-31-…md`、`issue-32-…md`、`issue-33-…md` |
@@ -17,7 +19,7 @@
 | 实现者 | 单个 `worker`（按批准计划实施；三路只读 reviewer 审查后由同一 worker 修复并复验） |
 | 审查 | 三路并行只读审查（正确性/边界、测试覆盖、必要性与复杂度）：**均无 Blocker**；接受项已修复并复验 |
 
-### 实际运行的验证命令与结果（均为**主 agent 亲跑**）
+### 实际运行的验证命令与结果（除 CI 行外均为**主 agent 亲跑**）
 
 | 命令 | 结果 |
 | --- | --- |
@@ -32,6 +34,7 @@
 | `mvn -Pfrontend -DskipTests clean package` | 成功；`target/fablix.jar` 含 **6 个** `BOOT-INF/classes/static` 条目（`index.html`、`favicon.svg`、`assets/index-*.css`、`assets/index-*.js` + 2 个目录条目） |
 | dist 缺失守卫（临时移走 `frontend/dist` 后 `mvn -Pfrontend -DskipTests package`） | **BUILD FAILURE**（enforcer `require-frontend-dist`，报错含 `frontend/dist/index.html is missing`） |
 | 生产 compose smoke（`docker compose build app` + `up -d --no-deps app`） | health **200**；`/` 含 `id="root"`；**10 条深链全部 200 `text/html`**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → **404**；顾客登录（`local` profile、dev 种子账号）→ session/customer 200 + cart `[]`；员工登录 → dashboard session 200 + metadata `status:success`；随后 `docker compose rm -sf app`（mysql 容器与数据卷未动） |
+| **CI 首跑**（PR #42，head `fb65eda`）—— 非 docs-writer 执行 | **`Build and test (Java 11)` → SUCCESS**；**`Frontend (lint, test, coverage, build, e2e)` → SUCCESS**（该新 job 的第一次运行，因此 M2 checklist 中此前待验证的 CI 项与 AC-32-5/AC-33-5 的 CI 部分均已闭合）。来源：主 agent 核验的 GitHub CI 运行结果（docs-writer **未**直接访问 GitHub，**未**触发任何 CI 运行） |
 
 > docs-writer 的**只读**复核（未运行任何测试/构建）：`git status`/`git diff`、`target/surefire-reports/*`（聚合 127/0/0/0）、`target/site/jacoco/jacoco.csv`（LINE 968/110/1078）、`unzip -l target/fablix.jar`、`git ls-files`、`grep`、配置与测试源码内容。
 
@@ -91,7 +94,7 @@
 | `src/main/java/com/fabflix/boot/web/SpaFallbackConfig.java` | SPA fallback：`/**` → `classpath:/static/` + 自定义 `SpaResourceResolver`；纯函数 `shouldFallback(path)`（排除 `api/**`、`error/**`、含 `.` 的路径、空/null；大小写归一） |
 | `src/main/java/com/fabflix/boot/auth/CustomerAuthController.java` | 非 JSON 登出 302 落点 `/login.html` → **`/login`**（D-33-7） |
 | `src/main/java/com/fabflix/boot/search/SearchController.java` | jump-back 302 落点 `/movieList.html?<q>` → **`/movies?mode=fulltext&<q>`**（D-33-7；缺失 `mode=fulltext` 会丢 `query`） |
-| `src/main/webapp/**`（**21 个跟踪文件**） | **已删除（工作区；未暂存未提交）**：`META-INF/MANIFEST.MF`、`styles.css` + 19 个 legacy `.html`/`.js` |
+| `src/main/webapp/**`（**21 个跟踪文件**） | **已删除并已随提交 `092147a` 进入 git**（`git ls-files src/main/webapp` = 0）：`META-INF/MANIFEST.MF`、`styles.css` + 19 个 legacy `.html`/`.js` |
 | `src/test/java/com/fabflix/boot/web/SpaFallbackTest.java` | 5 个用例：真值表（含 `API`/`Error` 大小写变体）、真实资源/入口文档、缺失资源与 `api` 路径 → null、入口文档缺失 → null、**注册层断言**（`/**` handler 用 SPA resolver 且 location 为 `classpath:/static/`） |
 | `src/test/java/com/fabflix/boot/FrontendApiMigrationTest.java` | 重写为**退役守卫**（目录不存在 + 若存在则无 `.html`/`.js`）；删除 `criticalPagesUseTheirSpringBootEndpoints` 与 `Files.walk` 缺失目录的旧写法 |
 | `CustomerAuthControllerTest.java` / `SearchControllerTest.java` | 断言更新为新落点 |
@@ -102,15 +105,15 @@
 
 ### 潜在问题与残余风险（跨三个 issue，与 `docs/plans/…§13.5` 一致）
 
-1. **提交/推送/PR/CI 均未发生**：改动未暂存、未提交；PR 未创建 → **无 CI 运行结果**。M2-BE-6 与 AC-32-5 的「CI 全绿」直接证据待主 agent 回传后回填；**不得**写「CI 已通过/已合并」。
-2. **legacy 删除尚未反映到 git 索引**：`git ls-files src/main/webapp` 仍列出 21 个文件（工作区删除、未暂存）→ M2-DOC-2 在提交后才为真；不应据此声称「已从 git 移除」。
+1. ~~**提交/推送/PR/CI 均未发生**~~ → **已闭合（2026-10-15）**：已提交 `092147a`/`fb65eda`、已推送、**PR #42 已创建（OPEN，未合并）**；**CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**，M2-BE-6 与 AC-32-5/AC-33-5 的 CI 证据已回填。**仍待处理**：PR 合并与 issue 关闭（需用户/主 agent 决定）——在此之前**不得**写「已合并/已关闭」。
+2. ~~**legacy 删除尚未反映到 git 索引**~~ → **已闭合（2026-10-15）**：21 个文件已随提交 `092147a` 移除，`git ls-files src/main/webapp` = **0**（M2-DOC-2 已为真）。
 3. **手工颜色对比度**：jsdom 无布局/无颜色计算 → axe 的 `color-contrast` 全局禁用；新增暗色色值按 ≥4.5:1 选择，**仍需人工在浏览器确认**。
 4. **axe 规则边界**：`region` 按渲染树区分（页面级禁用 / shell 级启用）；其余依赖布局的规则未专门处理 → 「违规集合为空」不等于真实浏览器审计结论。
 5. **e2e 全为 mock**：`page.route` 保真度已尽量贴近契约，但不能替代真实后端/MySQL 往返；真实存储过程（`add_movie`）往返未自动化。
 6. **已知测试缺口**：`AdminRepository` 的 metadata 遍历与 `add_movie` 结果集解析**仍无直接测试**（计划 Q-6 裁定不补，记录为已知缺口）。
 7. **`frontend/src/App.jsx` 前端行覆盖 0%**：因 `coverage.include: src/**` 计入分母（不排除以抬分），拖低整体数字但仍高于阈值。
-8. **M2-BE-5 未完全验证**：未单独执行「干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package`」单次端到端复现（各步骤分别验证过）；PR CI 可作为间接补强。
-9. **仓库卫生**：`git status --short --untracked-files=all` 共 **83** 项（本日志文件创建前为 81 项），含 6 个**未跟踪的 `.idea/*` 本机 IDE 文件（非本次变更）** → 提交前需主 agent 确认排除；`frontend/dist`/`coverage`/`test-results`/`playwright-report` 均已被 gitignore。
+8. **M2-BE-5 未完全验证**：未单独执行「干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package`」单次端到端复现（各步骤分别验证过）；**已由 PR #42 CI 首跑间接补强**（`frontend` job 在干净 checkout 上跑通 `npm ci → … → npm run build`、后端 job 跑通 `mvn verify`，两 job 均 SUCCESS）——但该条本身仍记为**未完全验证**。
+9. **仓库卫生（已随提交改善）**：提交后 `git status --short --untracked-files=all` **仅剩 6 项**未跟踪的 `.idea/*`（本机 IDE 文件，**非本次变更**）→ 是否纳管（或加入 `.gitignore`）仍需主 agent 决定；`frontend/dist`/`coverage`/`test-results`/`playwright-report` 均已被 gitignore。
 10. **未验证的显式边界**：`RecaptchaField` 在真实浏览器 + 真实 key 下的渲染（#32 未改、未验证）；「同一浏览器同时持有顾客与员工身份后员工登出」仅有后端单测断言（`user` 保留），无 e2e 覆盖。
 11. **依赖抬升**：`@vitest/coverage-v8` 的 peer 要求使 vitest 5.0.3 → 5.0.5（已接受，Node 24 与 Node 22 下复跑通过）。
 
@@ -118,10 +121,12 @@
 
 ### 后续事项
 
-1. 主 agent 授权后：暂存/提交/推送 → `github-operator` 创建 PR（`Closes #31`/`#32`/`#33`）→ 回填 PR 链接、CI 首跑结果（后端 job + `frontend` job）、M2-BE-6、AC-32-5。
-2. 提交后复核 `git ls-files src/main/webapp` 为空、`git ls-files frontend/dist` 为空。
-3. 人工浏览器检查：暗色模式对比度、360px 窄屏观感、toast 2 秒消失、键盘焦点可见性。
-4. 若后续需要：补 `AdminRepositoryTest`（metadata/存储过程）、真实 MySQL 的员工存储过程往返测试、e2e 真实后端 smoke（均属新范围，需另立计划）。
+1. ~~主 agent 授权后：暂存/提交/推送 → `github-operator` 创建 PR（`Closes #31`/`#32`/`#33`）→ 回填 PR 链接、CI 首跑结果~~ → **已完成（2026-10-15）**：提交 `092147a`/`fb65eda`、已推送、PR **#42** 已创建（OPEN，未合并，`closingIssuesReferences` = #31/#32/#33）；CI 首跑两个 job 均 SUCCESS，计划/issue 文档已回填（#31/#32 计划 §13、#33 计划 §7.1/§13.4）。
+   - **仍待主 agent/用户决定**：PR 合并与 issue 关闭；`.idea/*` 是否纳管。
+2. ~~提交后复核 `git ls-files src/main/webapp` 为空、`git ls-files frontend/dist` 为空~~ → **已复核（2026-10-15，docs-writer 只读）**：两者均为 0 行。
+3. **M2-BE-5（干净 checkout 的 `npm ci` + `mvn -Pfrontend clean package` 单次端到端复现）仍未单独执行**：各步骤已分别验证，CI 的 `npm ci` + build 作为间接补强。
+4. 人工浏览器检查：暗色模式对比度、360px 窄屏观感、toast 2 秒消失、键盘焦点可见性。
+5. 若后续需要：补 `AdminRepositoryTest`（metadata/存储过程）、真实 MySQL 的员工存储过程往返测试、e2e 真实后端 smoke（均属新范围，需另立计划）。
 
 ---
 
@@ -199,4 +204,4 @@
 
 ---
 
-> **本日志口径**：所有“通过/实测”数字均来自主 agent 终验与 docs-writer 的只读产物复核；**未提交、未推送、无 PR、无 CI 运行结果**。PR/CI 结果由主 agent 回传后由 docs-writer 更新本日志与相关计划/issue 文档。
+> **本日志口径**：所有“通过/实测”数字均来自主 agent 终验、**PR #42 的 CI 首跑结果（主 agent 核验）**与 docs-writer 的只读产物复核；docs-writer **未**运行测试/构建、**未**触发 CI。当前状态：已提交（`092147a`/`fb65eda`）、已推送、**PR #42 OPEN（未合并）**；CI 首跑两 job 均 SUCCESS。PR 合并/关闭后（若发生）需再次更新本日志与相关计划/issue 文档。

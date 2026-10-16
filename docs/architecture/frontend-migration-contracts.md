@@ -9,7 +9,7 @@
 > 本文档**不包含**任何未经批准的方案决策。各 issue 的计划/实施结果见：
 > `docs/plans/issue-30-migrate-cart-payment-confirmation-flows.md`（**实施完成，已通过主 agent 终验（2026-10-14）；已提交并推送（`d6b3e07`/`eeb935f`），PR #40 为 OPEN、未合并**）、
 > `docs/plans/issue-31-migrate-employee-dashboard.md`、`docs/plans/issue-32-add-responsive-styling-accessibility-frontend-tests-and-ci.md`、`docs/plans/issue-33-integrate-production-react-build-and-retire-legacy-frontend.md`
-> （**#31/#32/#33：实施完成，已通过主 agent 终验（2026-10-15）；未提交 / 未推送 / 无 PR**，工作流日志 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`）。
+> （**#31/#32/#33：实施完成，已通过主 agent 终验（2026-10-15）；已提交（`092147a`/`fb65eda`）、已推送、PR #42 为 OPEN、未合并；CI 首跑（head `fb65eda`）两个 job 均 SUCCESS**，工作流日志 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`）。
 > 若与本文档冲突，以代码和测试为准，并更新本文档。
 >
 > **本轮（2026-10-15，#31/#32/#33）更新摘要**：§1 迁移进度已收尾；§2 legacy 已退役（守卫测试替代钉死测试）；§3 占位/路由联动机制已随占位机制删除而失效；§6 补员工/顾客登出语义与 filter 归属；§7 测试设施/CI 事实全部重写（Playwright/axe/coverage/Node 22 job）；§8 新增退役守卫；§9 补员工登出；**§11/§12 为新增的跨 issue 约定**（SPA fallback、前端测试设施与 CI）。
@@ -23,7 +23,7 @@
 
 ## 2. legacy `src/main/webapp` 已退役【测试强制】（#33 D-33-3）
 
-- **现状（2026-10-15，工作区）**：`src/main/webapp/**` 的 **21 个 git 跟踪文件已删除**（工作区删除；**尚未暂存/提交**，故 `git ls-files src/main/webapp` 仍列出 21 个文件，提交后才为空）。`.html`/`.js` legacy 页面**不再是仓库内容、也不是行为参考**。
+- **现状（2026-10-15，已提交）**：`src/main/webapp/**` 的 **21 个 git 跟踪文件已删除并已提交**（实现提交 `092147a`；`git ls-files src/main/webapp` = **0 行**）。`.html`/`.js` legacy 页面**不再是仓库内容、也不是行为参考**。
 - **强制方式（替代原「钉死 legacy」测试）**：`src/test/java/com/fabflix/boot/FrontendApiMigrationTest.java` 已重写为**退役守卫**双保险：
   1. `legacyWebappDirectoryIsRemoved()`：`assertFalse(Files.exists("src/main/webapp"))`；
   2. `noLegacyFrontendFilesRemain()`：**若**目录存在，则遍历断言其中无 `.html`/`.js`。
