@@ -1,12 +1,19 @@
 # AI-powered Fabflix
 
-Fabflix is a Java movie-commerce application being modernized into a Spring Boot and Spring AI agent platform. The online application uses Spring Boot, JDBC, and MySQL and serves a React + Vite single-page frontend that Maven packages into the executable jar. The legacy browser-based HTML/JavaScript frontend has been retired — React is the only supported frontend. Offline import and maintenance programs remain available as standalone utilities.
+Fabflix is a Java movie-commerce application being modernized into a Spring Boot application, with Spring AI and agent workflows on the roadmap. The online application uses Spring Boot, JDBC, and MySQL and serves a React + Vite single-page frontend that Maven packages into the executable jar. The legacy browser-based HTML/JavaScript frontend has been retired — React is the only supported frontend. Offline import and maintenance programs remain available as standalone utilities.
 
 ## Modernization roadmap
 
+Items 3 and 4 are planned work: no AI capability exists in the codebase yet.
+
 1. **Foundation:** preserve behavior with characterization tests, enforce coverage for the deployed web application, remove committed secrets, and make local infrastructure reproducible.
 2. **Spring Boot:** migrate one vertical slice at a time into controller, application-service, and repository layers while keeping API behavior stable.
-3. **Spring AI:** add evaluated natural-language search, recommendations, and retrieval-augmented movie Q&A.
+3. **Spring AI (planned):** add evaluated AI features on top of the existing lexical search, separating what the current data supports from what needs new corpora:
+   - **Natural-language search:** natural language in, structured query and ranking out, with an evaluated quality gate.
+   - **Movie catalog semantic retrieval (doable now):** embed structured catalog cards — `title`, `year`, `director`, `genres`, `stars`, `rating` — so catalog questions such as "movies similar to X" or "1990s sci-fi" work without any external corpus.
+   - **Project/developer knowledge RAG Q&A:** the first-version corpus is the existing `docs/` (11 markdown documents, excluding these AI roadmap drafts) plus this `README.md`; every answer must cite its sources.
+   - **Movie plot/synopsis Q&A is out of scope for this phase:** the `movies` table has no synopsis field, so plot questions require an external synopsis corpus (data acquisition and licensing), deferred to a later stage.
+   - Recommendations and multi-turn conversational features are deferred to the agent-platform stage.
 4. **Agent workflows:** expose narrowly scoped tools with authorization, human approval for writes, budgets, audit logs, and end-to-end observability.
 
 ## Current architecture
