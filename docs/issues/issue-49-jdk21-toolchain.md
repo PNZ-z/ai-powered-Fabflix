@@ -1,11 +1,11 @@
 # Step 4/7 — 用机器可执行的方式强制 JDK 21 并归档镜像证据（enforcer + README）（GitHub issue #49 记录）
 
-> **文档状态：🟢 已在 GitHub 存在（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **文档状态：🟢 已在 GitHub 存在（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。~~**本文件不表示该步骤已实施**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。~~ → **2026-10-20 更新：本步已实施**（分支 `codex/issue-49-jdk21-toolchain`，`pom.xml` +23 / `README.md` +17；JDK 21 `validate` PASS、JDK 27 `validate` BUILD FAILURE（预期）、`verify` 134 用例 / 0.9165 / major 61、容器 health 200 + JDK 21.0.12.1 + 非 root 1001），**未提交 / 未推送 / 无 PR / 未合并**（#49 仍 OPEN）；AC 逐条状态见文末「实施结果与 AC 回填（2026-10-20）」。
 > **远端元数据（主 agent 核验，2026-10-19）**：编号 **#49** · 标题 `[Step 4/7] Enforce JDK 21 in the build and document/verify it` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > `github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
 > 拆分总览：`docs/plans/issue-44-migration-steps.md`。**已裁定 —— C-1 = (a)**：`ci.yml` 的 JDK 升版已在 **Step 3** 完成；**B-1**：`Dockerfile` 两行 `FROM` 也已在 **Step 3** 完成。本步只负责**构建期强制（enforcer）+ README + 对镜像/容器的验证取证**，**不再改镜像**。
 > **本轮修订（oracle B-1 / P2-3 / P1-2）**：标题改为 `[Step 4/7] Enforce JDK 21 in the build and document/verify it`；删除“本步才改镜像”的表述；AC-2 明写可用**本机 JDK 27** 取证“错误 JDK → BUILD FAILURE”（删去“可能未执行”的犹豫表述）；正文加 `Part of #44`。
-> 本文件**不声称**任何验证已运行。
+> 本文件**不声称**任何验证已运行。~~（2026-10-19 稿）~~ → **2026-10-20**：上文口径已被实测取代 —— 本步的 `mvn`/Docker/容器结果见 §0 与文末 AC 回填；`docs-writer` 本人**未运行** `mvn`/Docker/CI，只做只读复核。
 
 ## GitHub issue title
 
@@ -100,9 +100,55 @@ Revert the single pull request: the enforcer rule and the README paragraph are i
 | 依赖关系 | **前置 S3**（必须已完成 CI 的 JDK 21 切换**与 `Dockerfile` 两阶段 JDK 21**）；**后继 S6** |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) |
 | labels | **空** |
-| 状态 | **🟢 已在 GitHub 存在（#49），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**（前置 S3 也未开始） |
+| 状态 | **🟢 已在 GitHub 存在（#49），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现：已实施（2026-10-20），待提交 / PR** —— 分支 `codex/issue-49-jdk21-toolchain`（基点 `70fb78b`），`pom.xml` +23 / `README.md` +17；**未提交 / 未推送 / 无 PR / 未合并**，远端 #49 仍 **OPEN**；AC-1..AC-6 均已取证（见文末回填） |
 | 估算 | 1 天 |
 | 负责人角色 | docs-writer → oracle（重点审 enforcer 与 profile 执行的合并、以及"错误 JDK 失败"的可验证性）→ 主 agent 批准 → 单一 `worker` → 3 reviewer → `worker` 修复 → docs-writer 回填 → 主 agent 提交 → `github-operator` 建 PR |
 | 事实来源（可核验，本轮只读） | `pom.xml:178-186`（`<profile><id>frontend</id>`）+ `:181` 起的 `maven-enforcer-plugin:3.5.0`（**仅存在于 profile 内**）及其 `require-frontend-dist` 执行；`pom.xml:87` 起的主 `<build>`（当前无 enforcer）；`Dockerfile`（**修订后**：`Dockerfile` 的两个 `FROM` 由 **S3** 改为 JDK 21，本步只取证）；`ci.yml`（JDK 由 S3 改） |
-| 未确认 | ① `requireJavaVersion` 与该 profile 执行合并后是否完全无副作用（待实测）；② README 现有章节的最小改动位置（实施时定）；③ 本地能否 `docker compose build app`（Docker/网络）。**已闭合**：本机 Maven 默认跑 **JDK 27**（在 `[21,22)` 之外），因此 AC-2 的“错误 JDK → BUILD FAILURE”**可直接取证**（P2-3）；另（主 agent 确认，2026-10-19）**JDK 21 已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），所以 AC-1/AC-3 的“JDK 21 下通过”也可本机取证 |
+| 未确认 | ① `requireJavaVersion` 与该 profile 执行合并后是否完全无副作用（待实测）；② README 现有章节的最小改动位置（实施时定）；③ 本地能否 `docker compose build app`（Docker/网络）。**已闭合**：本机 Maven 默认跑 **JDK 27**（在 `[21,22)` 之外），因此 AC-2 的“错误 JDK → BUILD FAILURE”**可直接取证**（P2-3）；另（主 agent 确认，2026-10-19）**JDK 21 已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），所以 AC-1/AC-3 的“JDK 21 下通过”也可本机取证。→ **三项全部闭合（2026-10-20 实施后）**：① `require-jdk-21` 与 `require-frontend-dist` 合并后**两条都执行**（`-Pfrontend` 日志逐条可见，dist 移走仍失败）；② README 的最小改动位置 = `## Current architecture` 与 `## Local database` 之间新增 `## Java toolchain`（既有章节未改）；③ 本地 `docker compose build app` **成功**且容器 health **200** |
 | 待裁定 | **已全部闭合（2026-10-19）**：**B-1**（镜像并入 S3）、**C-1 = (a)**（CI 在 S3）、**P2-3**（AC-2 用 JDK 27 取证）已落入正文。**是否创建本 issue → 已创建 #49（2026-10-19）**。 |
+
+---
+
+## 实施结果与 AC 回填（2026-10-20）
+
+> 本分区**不发布到 GitHub**；上方 `## GitHub issue body` 围栏原文**未改**（AC 措辞保持发布时的样子，逐条状态记录在此）。
+
+| 项目 | 值 |
+| --- | --- |
+| 实施状态 | **已实施（2026-10-20），待提交 / PR** |
+| 分支 | **`codex/issue-49-jdk21-toolchain`**（基于 `70fb78b` = `Merge pull request #56 from PNZ-z/codex/issue-48-core-boot3-jakarta`） |
+| 提交 / 推送 / PR | **未提交、未推送、无 PR**（`git diff --cached` 为空）；远端 #49 仍 **OPEN** |
+| 改动规模 | `git diff --stat` = **2 files changed, 40 insertions(+), 0 deletions(-)**（`pom.xml` **+23**、`README.md` **+17**） |
+| 工具链 | `JAVA_HOME=/opt/homebrew/opt/openjdk@21` → **Java 21.0.12.1**（Homebrew）；对照 JDK **27** = `/opt/homebrew/opt/openjdk`（`openjdk version "27"`，本机 Maven 默认） |
+| 证据 | **`docs/logs/2026-10-20-issue-49-jdk21-toolchain.md`**（§0 的 E1–E8 证据索引、§1.5 遗留风险、§二 新增知识点） |
+
+### 逐条 AC 状态
+
+| AC | 状态 | 证据 / 说明 |
+| --- | --- | --- |
+| **AC-1** `pom.xml` 主 `<build>` 有绑定 `validate` 的 `requireJavaVersion [21,22)` execution；JDK 21 下 `validate` 成功且规则被执行 | ✅ **满足** | 主 `<build><plugins>` 首位新增 `maven-enforcer-plugin:3.5.0`，execution **`require-jdk-21`**（`phase=validate`、`goal=enforce`、`fail=true`）。`JAVA_HOME=/opt/homebrew/opt/openjdk@21 mvn --batch-mode --no-transfer-progress validate` → `enforcer:3.5.0:enforce (require-jdk-21)` → **`Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed`** + **BUILD SUCCESS**。（enforcer 的 `<message>` 只在失败时输出，属预期行为，因此「规则被执行」由 execution id + `Rule 0 … passed` 行证明。） |
+| **AC-2** 范围外 JDK → BUILD FAILURE 且引用规则消息 | ✅ **满足**（**预期失败，不是 bug**，P1-3） | `JAVA_HOME=/opt/homebrew/opt/openjdk`（**JDK 27**）同命令 → **BUILD FAILURE**，`Rule 0 … RequireJavaVersion failed with message:` → `Fabflix pins the build and Maven-run to JDK 21 (bytecode release=17; Boot 3.5 runs on 17-24, but this project is verified on 21 only); set JAVA_HOME to a JDK 21 installation - see README`。消息已按 review 意见消除「22–24 也被支持」的歧义。 |
+| **AC-3** `frontend` profile 的 `require-frontend-dist` 未被破坏（正向 + 负向） | ✅ **满足** | `mvn -Pfrontend -DskipTests clean package`（`frontend/dist` 存在）→ **BUILD SUCCESS**，日志中**两条 execution 都执行**（`require-jdk-21` passed → `require-frontend-dist` passed），jar 含 **6 个 `static` 条目**；移走 `frontend/dist` 后同命令 → **BUILD FAILURE**（`enforcer:3.5.0:enforce (require-frontend-dist)`：`frontend/dist/index.html is missing …`），**随后已恢复 `frontend/dist`**。 |
+| **AC-4** 镜像**只验证未改**：两阶段 JDK 21、`uid/gid 1001`、`docker compose build app` 成功、容器 health 200 | ✅ **满足（只验证，未改 `Dockerfile`）** | `Dockerfile` 仍为 build `maven:3.9-eclipse-temurin-21` / runtime `eclipse-temurin:21-jre`，`groupadd/useradd` **uid/gid 1001** 非 root、`USER fabflix`、`EXPOSE 8081`、`ENTRYPOINT` 均**未动**（`git status` 证明本步对 `Dockerfile` 零改动）；`docker compose build app` 成功 → 容器启动后 health **200**（`{"application":"fabflix-spring-boot","status":"UP"}`）、容器内 `java -version` = **21.0.12.1**、`id` = **uid=1001 gid=1001**；随后 `docker compose rm -sf app`，**未 `down` mysql**（MySQL 容器与数据卷保持原状）。 |
+| **AC-5** `README.md` 记录 JDK 21 要求、`JAVA_HOME` 要求与 `mvn -version` 检查 | ✅ **满足** | 新增 `## Java toolchain`（在 `## Current architecture` 与 `## Local database` 之间），最终措辞要点：`Building the backend — every mvn command, including mvn spring-boot:run — requires JDK 21`，且 `JAVA_HOME must point at a JDK 21 installation`；自检 `mvn -version   # must report "Java version: 21.x"` 与 `export JAVA_HOME=/path/to/jdk-21`；`IDE-embedded Maven uses the IDE's project JDK, so set that to 21 as well.`；`release=17` → class file **major 61** → **打包后的 jar 可在 Java 17+ 运行**（**「JDK 21 是构建工具链，不是语言级别」**）；CI 与 `Dockerfile` **both JDK stages** 为 21；Compose 命令在镜像内运行而**不依赖宿主 JDK**。既有章节原文未改。 |
+| **AC-6** JDK 21 `verify` 与 S3 后的用例数/覆盖率一致，字节码仍 61 | ✅ **满足** | `mvn --batch-mode --no-transfer-progress verify`（JDK 21）→ **BUILD SUCCESS**；**134 tests / 0 failures / 0 errors / 0 skipped**（与 S3 后基线一致）；`All coverage checks have been met.`；JaCoCo **988 covered / 90 missed / 1078 = 0.9165**（阈值仍 **0.90**、`excludes` 仍 **8**，本步未改）；`javap -verbose -cp target/classes com.fabflix.boot.FablixApplication` → **`major version: 61`**（`release=17` 未变）。 |
+
+### 三路 review 与文案修正（无 Blocker）
+
+三路只读 review（正确性与边界 / 测试覆盖 / 必要性与复杂度）**均无 Blocker**；主 agent 接受并已由 worker 修入工作区的 **5 项文案**：
+
+1. enforcer 消息对 **JDK 22–24** 的歧义 → 改为「pin 21；Boot 3.5 能跑 17–24，但本项目只在 21 上验证」；
+2. README 首句 "Building and running the backend" 过宽 → 收窄为「构建（所有 `mvn` 命令）」；
+3. `mvn -version` 断言 `"Java version: 21"` → **`"21.x"`**；
+4. 补 `export JAVA_HOME=/path/to/jdk-21` 与 IDE 内嵌 Maven 提示；
+5. `both stages` → **`both JDK stages`**。
+
+### 范围边界（未扩大）
+
+**未改动**：`Dockerfile`、`.github/workflows/ci.yml`、`compose.yaml`、`src/main/**`、`src/test/**`、JaCoCo 阈值与 `excludes`、`mysql-connector-j` pin、`maven.compiler.release`。**未走备选方案**：没有放宽 `[21,22)`、没有改用 `toolchains.xml`、没有把门禁放到 `verify` 阶段。
+
+### 仍待完成（依赖后续动作）
+
+1. **提交、推送与 PR**：由主 agent 执行（`pom.xml` + `README.md` + 本轮 `docs/`）；工作区有开工前既存的未跟踪 `?? .idea/`，不应带入提交。
+2. **本步 PR 的 CI**：PR 出现后由主 agent 核验并回填（在此之前**不得**写「已合并」）。
+3. **后续登记项（本步不改代码）**：`frontend/README.md` 的 `mvn -Pfrontend` 说明需提 JDK 21（**S7 docs 清单**）；`SpringBootOnlyArchitectureTest` 可加 enforcer 规则守卫（**S6/S7 评估**）；`maven-enforcer-plugin` 版本字面量在主 build 与 profile **两处重复**（可选清理）；`docs/architecture/frontend-migration-contracts.md` §11/§8 的旧 JDK 11 / `jakarta` 禁令描述（**S7**）。
