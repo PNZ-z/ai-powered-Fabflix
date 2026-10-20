@@ -102,9 +102,9 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 | # | 标题（issue 前缀） | 目标（一句话） | 主要改动面 | 依赖 | 估算 | 验证要点 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **S1**（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)） | `[Step 1/7] Record the pre-migration baseline and start the migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出。**状态（2026-10-20）：基线已测量**（JDK 27 与 JDK 21 均 `127` 用例 / `0.8980`；前端 `195` tests / `92.35%` / `12` e2e），见 `docs/logs/2026-10-20-issue-46-baseline.md` 与 `docs/plans/issue-44-migration-checklist.md`；**待提交 / PR / 合并** |
+| **S1**（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)） | `[Step 1/7] Record the pre-migration baseline and start the migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出。**状态（2026-10-20）：基线已测量**（JDK 27 与 JDK 21 均 `127` 用例 / `0.8980`；前端 `195` tests / `92.35%` / `12` e2e），见 `docs/logs/2026-10-20-issue-46-baseline.md` 与 `docs/plans/issue-44-migration-checklist.md`；**待提交 / PR / 合并**。⚠️ **该组数字是 2026-10-20 门槛收紧（0.85/88 → 0.90/90）前的快照，S3/S6 不再以它作对照基线**，改用 checklist 的「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」（后端 `134` / `0.9165`、前端 `195` / `92.35%`） |
 | **S2**（[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)） | `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` | 在 Boot 2.7 + Java 11 上单独定版并验证 `mysql-connector-j`（及 jasypt 的 JDK 21 检查），把 JDBC 差异与 Boot 3 差异分离 | `pom.xml`（1 个依赖版本）；可能 1 处配置文件 | 无（可与 S1 并行） | **1 天** | `mvn verify` 全绿 + 真 MySQL compose smoke 的日期/时区语义 |
-| **S3**（[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)） | `[Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace` | 唯一一次原子升级：BOM 3.5.x + `release=17` + 11 文件 jakarta + 守卫白名单 + CI JDK 21 + **两阶段镜像 JDK 21** | `pom.xml`、11 个 `src/main/java` 文件、`SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、**`Dockerfile`（两行 `FROM`，B-1）** | S1、S2 | **2–3 天** | `mvn verify`（127 用例/0.8980 不下降，JDK 21 环境下）、守卫集合相等断言 == 11、jar 形态、dist 缺失仍失败、`major version: 61`、PR CI 双 job 绿、**`docker compose build app` 成功 + 容器 health 200** |
+| **S3**（[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)） | `[Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace` | 唯一一次原子升级：BOM 3.5.x + `release=17` + 11 文件 jakarta + 守卫白名单 + CI JDK 21 + **两阶段镜像 JDK 21** | `pom.xml`、11 个 `src/main/java` 文件、`SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、**`Dockerfile`（两行 `FROM`，B-1）** | S1、S2 | **2–3 天** | `mvn verify`（**≥134 用例 / LINE ≥ 0.9165 不下降**（收紧后基线），JDK 21 环境下）、守卫集合相等断言 == 11、jar 形态、dist 缺失仍失败、`major version: 61`、PR CI 双 job 绿、**`docker compose build app` 成功 + 容器 health 200** |
 | **S4**（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)） | `[Step 4/7] Enforce JDK 21 in the build and document/verify it` | 用机器可执行的方式强制 JDK 21 并归档证据：enforcer `requireJavaVersion [21,22)` + README；**只验证不改镜像**（Dockerfile 已在 S3） | `pom.xml`（主 `<build>` 新增 enforcer 执行）、`README.md` | S3 | **1 天** | 错 JDK → BUILD FAILURE（可用本机 JDK 27 取证）；JDK 21 → 通过；两 stage 镜像为 21 + `docker compose build app` 成功（证据）；`-Pfrontend` 打包与 dist 守卫不回退 |
 | **S5**（[#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50)） | `[Step 5/7] Replace deprecated @MockBean with @MockitoBean in the tests` | 消除 Boot 3.4+ 的 `@MockBean` 弃用警告（9 文件 / 11 处） | 9 个测试文件（仅 import + 注解） | S3 | **0.5 天** | `mvn verify` 全绿且用例数不变；弃用警告计数归零；无任何测试语义改动 |
 | **S6**（[#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51)） | `[Step 6/7] Prove the migration with full regression and production smoke evidence` | 对最终形态跑全量门禁 + HTTP 语义 + 顾客/员工流程 + 提交版 compose smoke，产出可核验证据 | 仅 `docs/`（证据记录）；**不改源码** | S3、S4、S5 | **1 天** | #44 的 AC-1..AC-7/AC-9/AC-11 逐条取证；环境不足则**显式标注未执行** |
@@ -113,6 +113,8 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 **合计工作量**：0.5 + 1 + (2–3) + 1 + 0.5 + 1 + 0.5 = **6.5–7.5 人日**（S1∥S2 可压缩 0.5–1 天）。
 
 > **环境更新（2026-10-19，主 agent 确认）**：**JDK 21 已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），且 Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，**未跑 `mvn verify`**）。因此 S1 的“额外在 JDK 21 上复跑”从“可能不可用”转为**可执行**；按 S1 的跨 JDK 对比规则（P2-4），**建议 S1 基线在 JDK 21 下复跑**，使 S3/S6 的“数量不下降”与后续步骤在**同一 JDK** 上对比、避免 cross-JDK caveat；Boot 2.7.18 能否在 JDK 21 上跑完 `mvn verify` 仍**未实测**。
+
+> **覆盖率门槛更新（2026-10-20，经用户批准）**：后端 JaCoCo `BUNDLE/LINE COVEREDRATIO` **0.85 → 0.90**、前端 `thresholds.lines` **88 → 90**，属**独立 PR**（分支 `codex/coverage-threshold-90`）的**迁移前置变更**，**不属于 S1–S7 任一步的范围**，也不改变各步的 Scope/AC，只把“不下降”的对照基准换为：后端 **134 tests / 988-90-1078 = 0.9165**、前端 **195 tests / Lines 92.35%**（详见 `docs/plans/issue-44-migration-checklist.md` 的「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」与 `docs/logs/2026-10-20-coverage-threshold-90.md`）。S1 记录的 127 / 0.8980 降为历史快照，**不再作为 S3/S6 的对照基线**。收紧后后端只剩 **N ≤ 19 行**新增未覆盖代码的余量 → S3/S5 等步骤新增生产代码**必须配测试**。
 
 > **每个 step 都是完整工作流**：按 `AGENTS.md` §2/§8，每个 step 建立**自己的** `docs/plans/issue-<n>-<slug>.md` 与完成日志 `docs/logs/YYYY-MM-DD-issue-<n>-<slug>.md`（可按需精简，但必须有）；`<n>` 用**该 step 自己的 issue 编号**，epic #44 在文档/日志中引用而非替代（P2-5/P2-6）。
 
@@ -140,7 +142,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 ### S3 — 核心升级（最大但有界）
 
 - **DoD（一次性全部满足）**：
-  1. `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，`Tests run` **≥ 127**、`Failures/Errors = 0`，`All coverage checks have been met.`，JaCoCo `excludes` **仍是 8 项**。
+  1. `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS，`Tests run` **≥ 134**（2026-10-20 收紧门槛后的基线；收紧前快照为 127）、`Failures/Errors = 0`，`All coverage checks have been met.`（JaCoCo `BUNDLE/LINE ≥ 0.90`，基线 **0.9165**），JaCoCo `excludes` **仍是 8 项**。
   2. `SpringBootOnlyArchitectureTest` 改为**白名单 + 集合相等 == 11 条路径**（`assertFalse(source.contains("jakarta.servlet"))` 不再存在；保留 `@WebServlet` / `extends HttpServlet` 禁令、`jar` + `repackage` 断言、`jakarta.servlet-api` 字面量不存在的断言、`jakarta.servlet.annotation.WebServlet` 禁令）。
   3. **Jakarta 迁移边界（P1-4）**：(a) 含 `jakarta.servlet` 的 `src/main/java` 文件**恰好 11 个**（守卫白名单集合相等，且 `git diff` 中这 11 个都在）；(b) 任何**额外**的 `src/main/java` 改动必须**逐条**列在 PR 说明并说明升级必要性，且**不得借机改动业务逻辑**。
   4. 打包形态不变：`cd frontend && npm ci && npm run build` → `mvn -Pfrontend -DskipTests clean package` → `unzip -l target/fablix.jar` 含 `BOOT-INF/classes/static/index.html`;移走 `frontend/dist` 后 `package` → BUILD FAILURE(`require-frontend-dist` 仍生效)。
@@ -171,7 +173,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 - **DoD**：逐条对 #44 的 AC 取证，**每条都写"命令 + 输出摘要 + 是否执行"**：
   - AC-1/AC-2：`mvn --batch-mode --no-transfer-progress verify`（数字与 S1 基线对比；若 S1 的 JDK 21 基线不可得，按 **S1 的跨 JDK 对比规则**标注 cross-JDK caveat，P2-4）；
-  - AC-5：`npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e`（195 用例 / Lines ≥88 / 12 次 e2e）；
+  - AC-5：`npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e`（195 用例 / Lines ≥90（2026-10-20 收紧后；收紧前为 ≥88）/ 12 次 e2e）；
   - AC-6：`docker compose build app` + `docker compose up -d --no-deps app`（8081）→ health 200；`/` 含 `id="root"`；**10 条深链**均 200 `text/html`（P2-1）：`/home`、`/movies`、`/movies/:id`、`/cart`、`/checkout`、`/confirmation`、`/login`、`/employee/login`、`/employee/dashboard`、`/playground`；未认证 `/api/boot/cart` → 401 JSON；`/API/boot/cart` → 404 JSON;`/assets/missing.js` → 404;顾客登录 → session/cart 200;员工登录 → dashboard `status:success`;若驱动为 9.x 另验日期/`CURDATE()`/SSL 警告;
   - AC-7：`changeSessionId()`、401 body 形状、员工登出 204 且保留 `user`；
   - AC-9：`excludes` 仍 8 项；AC-11：`mvn -version` + 字节码 61 + 两个 Docker stage 为 21（CI 与 enforcer 由 S3/S4 取证）。
@@ -222,7 +224,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 | #44 AC | 子 issue（主责 / 复核） | 主责步骤 | 复核步骤 | 证据形式 |
 | --- | --- | --- | --- | --- |
 | AC-1 `mvn verify` 用例数不下降 | #48 / #51 | S3 | S6 | 命令输出 + 与 S1 基线对比 |
-| AC-2 覆盖率闸门 0.85 不变 | #48 / #51 | S3 | S6 | `All coverage checks have been met.` |
+| AC-2 覆盖率闸门**不放松**（门槛已于 2026-10-20 由用户批准收紧为 **0.90**，前端 **90**；本 epic 以收紧后门槛验收） | #48 / #51 | S3 | S6 | `All coverage checks have been met.` |
 | AC-3 jar 形态（`BOOT-INF/classes/static/index.html`） | #48 / — | S3 | — | `unzip -l` 输出 |
 | AC-4 dist 缺失 → BUILD FAILURE | #48 / #49 | S3 | S4（回退检查） | 两次构建结果对比 |
 | AC-5 前端全绿且不变 | #51 / — | S6 | — | 前端 5 条命令输出 + `git diff` 证明前端零改动 |
@@ -279,7 +281,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 | **日历（含审查/修复/PR/CI）** | **≈ 5–7.5 周** @ 每周 >10 小时 | 建议值：S1+S2 并行 ≈ 1–1.5 周；S3–S7 ≈ 4–6 周。**7 轮 ×（oracle 预审 + 3 reviewer + 修复 + CI）是主要成本** |
 | 与已批准计划对照 | 计划 §5 给 "**1.5–3 周**"（A0–A7） | 口径不同（纯工作量 vs 含审查日历）。**C-4 已裁定 (a)**：epic 正文改写为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，两口径同时写明，避免被读成违约。**注**：远端 `Estimate` 行仍为“~1.5–3 weeks”，该改写**未落远端**（见元数据表“估算”行与 #44 文档“剩余待确认”第 9 项） |
 
-**估算假设**：单开发者；现有测试兜底（127/195/12）；**未含** jasypt 必须替换、Boot 3 行为差异导致大范围重写、本地 Docker 不可用导致 S6 顺延等情形。
+**估算假设**：单开发者；现有测试兜底（后端 134（门槛收紧后；收紧前 127）/ 前端 195 / e2e 12）；**未含** jasypt 必须替换、Boot 3 行为差异导致大范围重写、本地 Docker 不可用导致 S6 顺延等情形。
 
 ---
 
@@ -320,7 +322,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 - 迁移范围 = #44 正文的 Scope（Boot 3.5.x + `release=17` + JDK 21 工具链/CI/镜像 + 11 文件 jakarta + 守卫白名单 + 依赖核查 + CI/Docker/文档 + 回归验证）；
 - **零行为变更**红线：URL、状态码、JSON 形状与文案、认证/会话语义、SPA fallback 真值表、数据库 schema 全部不变；
-- 质量闸门：后端 JaCoCo `BUNDLE/LINE ≥ 0.85`（基线 0.8980）、前端 `lines ≥ 88`（基线 92.35%）、e2e 12 次；**不得扩 `excludes`（8 项）、不得降阈值、不得跳过 e2e**；
+- 质量闸门：后端 JaCoCo `BUNDLE/LINE ≥ 0.90`（**2026-10-20 收紧后**；基线 **0.9165 / 134 tests**；收紧前快照 0.85 / 0.8980 / 127 tests）、前端 `lines ≥ 90`（基线 92.35%；收紧前为 88）、e2e 12 次；**不得扩 `excludes`（8 项）、不得降阈值、不得跳过 e2e**；
 - 已批准决策：D1/D-A1（Boot 3.x 取 3.5.x）、D-A2（`release=17` + 本地/CI/镜像 JDK 21）；**D-A3/D-A4/D-A5/D-A7 仍未逐条裁定**（本拆分按"计划建议"落位：白名单 (a)、`@MockBean` 拆出（C-2 已裁定为 epic 子 issue）、pin 先保持、允许的等价修改清单）；
 - `docs/architecture/frontend-migration-contracts.md` §10 的 **AD-1**（不引入 Spring Security/JWT 到网页端）、**AD-2**（单 JVM）；
 - 后续 AI 路线（Option B/C：本地 LLM、RAG、agent 平台）**不受本拆分影响**，只是被 S3 解锁依赖前提——本文件不新增任何 AI 范围。

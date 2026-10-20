@@ -58,6 +58,16 @@ class CartControllerTest {
     }
 
     @Test
+    void returnsServerErrorWhenCartLookupFails() throws Exception {
+        when(cartService.getCart(any())).thenThrow(new RuntimeException("cart table is unreachable"));
+
+        mockMvc.perform(get("/api/boot/cart")
+                        .sessionAttr("user", new AuthenticatedCustomer("viewer@example.com")))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.errorMessage").value("Unable to process commerce request."));
+    }
+
+    @Test
     void returnsBadRequestForInvalidAction() throws Exception {
         doThrow(new IllegalArgumentException("Unknown action"))
                 .when(cartService).updateCart(any(), any(), any());

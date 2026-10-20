@@ -135,7 +135,7 @@ Run the complete verification lifecycle with:
 mvn verify
 ```
 
-CI enforces an **85% line-coverage gate** for the Spring Boot online application. One-off XML parsers and their import model, importer worker/tasks, local account setup, password initialization programs, and index-maintenance utilities are deliberately excluded because they are not part of the deployed request path. Their exclusion is defined centrally in `pom.xml`; new online application classes are covered by default.
+CI enforces a **90% line-coverage gate** for the Spring Boot online application. One-off XML parsers and their import model, importer worker/tasks, local account setup, password initialization programs, and index-maintenance utilities are deliberately excluded because they are not part of the deployed request path. Their exclusion is defined centrally in `pom.xml`; new online application classes are covered by default.
 
 JaCoCo HTML reports are generated under `target/site/jacoco/`.
 

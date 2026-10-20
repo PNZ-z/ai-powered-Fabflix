@@ -39,6 +39,34 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PA
 
 ---
 
+## 2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线
+
+> **本节是 S2–S7 的唯一比较基线。** 2026-10-20 **经用户批准**，后端 JaCoCo 门槛 `BUNDLE/LINE COVEREDRATIO` 由 **0.85 → 0.90**、前端 `vitest` `thresholds.lines` 由 **88 → 90**（独立 PR，分支 `codex/coverage-threshold-90`，**迁移前置变更**，不属于 S1–S7 任一步的范围）。
+
+| 门禁 | 收紧后门槛 | 收紧后实测（2026-10-20） | 收紧前快照（S1 `docs/logs/2026-10-20-issue-46-baseline.md`） |
+| --- | --- | --- | --- |
+| 后端 JaCoCo `BUNDLE / LINE` | **≥ 0.90** | **134 tests / 0 failures**；**988 covered / 90 missed / 1078 total = 0.9165** | 127 tests；968 / 110 / 1078 = 0.8980 |
+| 前端 `thresholds.lines` | **≥ 90** | **195 tests / 30 files**；**Lines 92.35%（846/916）** | 195 tests / 30 files；Lines 92.35% |
+| Playwright e2e | 不涉及门槛变更 | 12 passed | 12 passed |
+
+- **S3/S6 的“数量与覆盖率不下降”一律对比本表右侧的收紧后数字**（后端 ≥134 用例、LINE ≥ 0.9165；前端 195 用例、Lines ≥ 90）。S1 记录的 **127 / 0.8980 仍然保留为收紧前的历史快照**，但它**不再作为 S3/S6 的对照基线**（S1 基线记录自身 §对比规则 第 6 条的失效条件已被本次 `pom.xml` 与测试数量变更触发，故由本表接管）。
+- **后端余量只有 N ≤ 19 行**：`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`。因此**后续任何新增生产代码都必须同时配测试**，且**不得扩 `excludes`（仍为 8 项）、不得降阈值**。
+- **前端余量 2.35pp**（92.35 − 90）：新增页面/组件计入分母，`coverage.include`/`exclude` 不得为抬分而扩大（契约文档 §7）。
+- **已知覆盖缺口（本次不处理，不视为回归）**：
+
+| 类 | 行覆盖（`target/site/jacoco/jacoco.csv`，2026-10-20） | 说明 |
+| --- | --- | --- |
+| `admin/AdminRepository` | **0 covered / 39 missed** | 既有缺口，原记录见 `docs/plans/issue-31-migrate-employee-dashboard.md:68`（无 `AdminRepositoryTest`，metadata 遍历与 `add_movie` 解析未覆盖）；保留原记录，本次不改 |
+| `auth/GoogleRecaptchaVerifier` | **0 covered / 17 missed** | **本次补登记**：类上有 `@Profile("!local")`，测试**从未实例化**它（`CustomerAuthControllerTest` 注入的是 `RecaptchaVerifier` 接口的 mock，`LocalRecaptchaVerifierTest` 只测 local 实现），因此它那 17 行（含构造器、超时/空 token 早返回、`RestTemplate` 调用与响应解析）计入分母但永远无人触达 |
+| `movie/MovieListRequest` | 38 covered / 14 missed | 既有缺口 |
+| `movie/MovieSummaryStar` | 6 covered / 6 missed | 既有缺口 |
+| `search/SearchService` | 26 covered / 4 missed | 既有缺口 |
+| `movie/MovieListQueryFactory` | 45 covered / 3 missed | 既有缺口 |
+
+> 补充证据：`docs/logs/2026-10-20-coverage-threshold-90.md`（本轮实测与复核记录）。收紧门槛时新增/修改的 5 个后端测试文件：`AdminApiExceptionHandlerTest`、`EmployeeRepositoryTest`、`GenreServiceTest`、`AutocompleteRepositoryTest` 与 `CartControllerTest`（后者新增 1 个用例，驱动 `CommerceApiExceptionHandler` 的 **500 分支**）。
+
+---
+
 ## S1 — 记录迁移前基线并建立 checklist（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)）
 
 **(a) 目标**：在**完全未改动**的 Boot 2.7.18 树上复跑后端/前端/e2e 门禁并逐字记录，作为 S3/S6 “数量与覆盖率不下降”的唯一基准；同时建立本 checklist 与各步回退点。
@@ -58,6 +86,8 @@ cd .. && git status --short   # 必须仍只有与源码无关的未跟踪条目
 
 **已记录的基线数字**（`docs/logs/2026-10-20-issue-46-baseline.md`）：后端 **127 / 0 / 0 / 0**、JaCoCo LINE **968 / 110 / 1078 = 0.8980**（JDK 27 与 JDK 21 **一致**）；前端 **30 files / 195 tests**、**Lines 92.35% (846/916)**、e2e **12 passed**。
 
+> **⚠️ 该基线已被 2026-10-20 的门槛收紧取代**：这些数字是**收紧前**（门槛 0.85 / 88）的快照，仍作为历史记录保留在本节，但 **S2–S7 的对照基准改为上方「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」表**（后端 134 / 0.9165、前端 195 / 92.35%）。依据：基线记录自身的对比规则第 6 条 —— 在 S3 前改动 `pom.xml`（本次把 JaCoCo 阈值改为 0.90）或测试数量（127 → 134），基线即失效，须由主 agent 决定是否重取。
+
 **(c) 回退点**：纯文档 → 删除本 PR 的 4 个 `docs/` 文件即回退，**不影响任何构建/运行/CI**。
 
 **(d) 完成分支 / commit**：分支 `codex/issue-46-baseline`（基于 `main` @ `fff314f`）；**当前未提交/未推送**，commit SHA 待提交后回填；证据 = `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件。
@@ -76,7 +106,7 @@ grep -n "mysql-connector-j" -A3 pom.xml
 
 # 2) 后端全绿且用例数不下降（与 S1 基线同 JDK 对比）
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
-  mvn --batch-mode --no-transfer-progress verify   # 期望 Tests run: 127 / 0.8980
+  mvn --batch-mode --no-transfer-progress verify   # 期望 Tests run ≥ 134 / LINE ≥ 0.9165（收紧后基线；127 / 0.8980 为收紧前快照）
 
 # 3) jasypt 在 JDK 21 下可解密（无 IllegalAccessError / InaccessibleObjectException）
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
@@ -97,7 +127,7 @@ docker compose down        # 保留数据卷；如需彻底清理再 -v（会丢
 
 ## S3 — 一次性原子升级：Boot 3.5 + `release=17` + Jakarta + 守卫 + CI JDK 21 + 两阶段镜像（[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)）
 
-**(a) 目标**：让项目在 **Boot 3.5.x / `maven.compiler.release=17` / `jakarta.*`** 上编译并跑通现有 127 个用例，且**同一 PR** 内同步守卫测试、CI JDK 版本与 `Dockerfile` 两阶段镜像（否则生产路径损坏而 CI 仍绿）。
+**(a) 目标**：让项目在 **Boot 3.5.x / `maven.compiler.release=17` / `jakarta.*`** 上编译并跑通现有 **134** 个用例（门槛收紧后的基线；收紧前为 127），且**同一 PR** 内同步守卫测试、CI JDK 版本与 `Dockerfile` 两阶段镜像（否则生产路径损坏而 CI 仍绿）。
 
 **(b) 验证命令**
 
@@ -105,7 +135,7 @@ docker compose down        # 保留数据卷；如需彻底清理再 -v（会丢
 # 1) 后端全绿、用例与覆盖率不下降（JDK 21 环境）
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
   mvn --batch-mode --no-transfer-progress verify
-#   期望 Tests run: 127, Failures: 0, Errors: 0, Skipped: 0；968/1078 = 0.8980；All coverage checks have been met.
+#   期望 Tests run ≥ 134, Failures: 0, Errors: 0, Skipped: 0；LINE ≥ 0.9165（988/1078）；All coverage checks have been met.
 
 # 2) Jakarta 迁移边界：含 jakarta.servlet 的 src/main/java 文件恰好 11 个
 grep -rl "jakarta.servlet" src/main/java | sort            # 逐行核对，与守卫白名单一致
@@ -194,7 +224,7 @@ grep -rn "@MockitoBean" src/test/java | wc -l           # 期望 11
 
 # 3) 全绿且用例/覆盖率不下降
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
-  mvn --batch-mode --no-transfer-progress verify        # 期望 127 / 0.8980
+  mvn --batch-mode --no-transfer-progress verify        # 期望 Tests run ≥ 134 / LINE ≥ 0.9165（收紧后基线）
 
 # 4) 弃用警告计数（证据，非闸门）
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
@@ -219,12 +249,12 @@ git diff --stat && git diff -- src/test/java | grep -E "^[+-]" | grep -vE "^[+-]
 ```bash
 # AC-1 / AC-2 / AC-9：后端全绿 + 覆盖率闸门 + excludes 不被扩
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH \
-  mvn --batch-mode --no-transfer-progress verify        # ≥127 用例、0.8980、All coverage checks have been met.
+  mvn --batch-mode --no-transfer-progress verify        # ≥134 用例、LINE ≥ 0.9165、All coverage checks have been met.
 grep -c "<exclude>" pom.xml                             # 期望 8
 
 # AC-5：前端 5 条命令全绿且数字不下降
 cd frontend && npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e
-cd ..   # 期望 195 tests / 30 files、Lines 92.35%（≥88）、12 passed
+cd ..   # 期望 195 tests / 30 files、Lines 92.35%（≥90）、12 passed
 git diff --stat -- frontend/src frontend/e2e            # 期望无输出（前端零行为改动）
 
 # AC-3 / AC-11：jar 形态、字节码、工具链
@@ -266,7 +296,7 @@ docker compose rm -sf app
 # 契约文档 §8（守卫语义）、§11（容器两阶段 = JDK 21）、§12（CI JDK 21）、§7（覆盖率余量）
 grep -n "jakarta.servlet" docs/architecture/frontend-migration-contracts.md
 grep -n "JDK 21\|21-jre\|temurin-21" docs/architecture/frontend-migration-contracts.md
-grep -n "0.8980\|110" docs/architecture/frontend-migration-contracts.md
+grep -n "0.9165\|≥ 0.90\|0.90" docs/architecture/frontend-migration-contracts.md
 
 # README 与实现一致
 grep -n "JDK 21\|java_home\|JAVA_HOME" README.md
@@ -291,3 +321,4 @@ grep -n "修改了哪些文件\|新增知识点" docs/logs/*issue-52*.md
 2. 状态词只用图例中的五种，不写模糊表述（如“基本完成”）。
 3. 任何步骤的范围变化、验收放宽或回退到备选方案，必须回到主 agent 裁定并在 `docs/plans/issue-44-migration-steps.md` §10 记录，**不得只改本 checklist**。
 4. 本 checklist 的验证命令与 `issue-44-migration-steps.md` §4 的 DoD 一一对应；两者冲突时**以 §4 + 子 issue 正文的 AC 为准**，并修正本文件。
+5. 覆盖率门槛与基线以「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」一节为准；**任何后续步骤不得降低阈值、不得扩 `excludes`、不得跳过 e2e**。若有人再次改动 `pom.xml` 的 JaCoCo `check` 或测试数量，该表失效，须由主 agent 决定是否重取基线（不得静默沿用）。

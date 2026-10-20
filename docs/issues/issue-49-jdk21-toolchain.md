@@ -56,7 +56,7 @@ Current state to be aware of:
 - No `compose.yaml` change (the `app` service builds with `build: .`, no image tag to bump).
 - No Spring Boot / dependency version change; no Java target change (`release=17` stays).
 - No new build profiles, no `toolchains.xml` requirement (the requirement is expressed through the enforcer rule and `JAVA_HOME`, not through a per-machine toolchain file).
-- No CI minutes/tooling changes, no coverage-gate changes.
+- No CI minutes/tooling changes, **no coverage-gate lowering or bypassing** (the gate was already tightened to backend 0.90 / frontend 90 on 2026-10-20, before the migration; this step must leave it as-is).
 
 ## Dependency
 

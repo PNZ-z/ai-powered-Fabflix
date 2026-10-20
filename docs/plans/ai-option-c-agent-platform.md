@@ -66,7 +66,7 @@ Option C 是把 Option B 的"问答助手"（**B-① 电影目录语义检索 + 
 | 订单数据：`sales(customer_id, movie_id, sale_date)`，**无 quantity/price 列** | `createtable.sql`；#30 计划 §1.2（"不存在 orders 表"） |
 | **AD-1**：网页端 session 认证；**JWT/Spring Security 仅保留给未来 Spring AI agent 平台的独立 trust boundary**，须**另立 issue + 计划 + oracle 审查** | 契约文档 §10 |
 | **AD-2**：单 JVM 实例（session 在 JVM 内存） | 契约文档 §10 |
-| 覆盖率闸门：后端 0.85（现 0.8980）、前端 lines 88（现 92.35%）；扩 exclude 与政策冲突 | `pom.xml:163`；契约文档 §7 |
+| 覆盖率闸门：后端 **0.90**（2026-10-20 由 0.85 收紧；现 0.9165 / 134 tests）、前端 lines **90**（同日由 88 收紧；现 92.35%）；扩 exclude 与政策冲突 | `pom.xml:163`；契约文档 §7 |
 | e2e：Playwright，API 全 mock | 契约文档 §7 |
 | 认证现状：`CustomerAuthenticationFilter` 保护 `/api/boot/**`；员工 filter 保护 `dashboard*`；**无 Spring Security / CSRF token** | 契约文档 §6/§9 |
 | 会话属性须 `Serializable`（Tomcat 关闭时持久化 session） | 契约文档 §9 |

@@ -30,10 +30,11 @@ Every later claim ("migration complete, behaviour unchanged") depends on this st
 
 This is **step 6 of 7** in the migration tracked by #44 (`docs/plans/ai-option-a-boot3-migration.md`, split in `docs/plans/issue-44-migration-steps.md`). Steps 1–5 deliver: a recorded pre-migration baseline, the validated JDBC driver, the Spring Boot 3.5 / `release=17` / Jakarta upgrade, the JDK 21 enforcement and images, and the `@MockitoBean` cleanup. This step proves the *combination*.
 
-Reference values recorded on 2026-10-15 (they are comparison references, not today's truth — today's numbers come from the baseline taken in step 1):
+Reference values recorded on 2026-10-20 **after** the coverage thresholds were tightened (user approval, separate pre-migration PR):
 
-- backend `mvn verify`: `Tests run: 127, Failures: 0, Errors: 0, Skipped: 0`; JaCoCo line coverage `968/1078 = 0.8980` against the 0.85 gate;
-- frontend: 195 tests in 30 files, `lines` 92.35% (846/916) against the 88 threshold;
+- backend `mvn verify`: `Tests run: 134, Failures: 0, Errors: 0, Skipped: 0`; JaCoCo line coverage `988/1078 = 0.9165` against the **0.90** gate;
+- frontend: 195 tests in 30 files, `lines` 92.35% (846/916) against the **90** threshold;
+- the pre-tightening snapshot (recorded 2026-10-15: `127` tests, `968/1078 = 0.8980` against 0.85; `lines >= 88`) is **history only** and is no longer the comparison baseline — the thresholds were already tightened before the migration started, and this step must neither lower nor bypass them;
 - end-to-end: 12 Playwright executions (6 cases × 2 viewports);
 - production smoke: health 200, `/` contains `id="root"`, the 10 recorded deep links (`/home`, `/movies`, `/movies/:id`, `/cart`, `/checkout`, `/confirmation`, `/login`, `/employee/login`, `/employee/dashboard`, `/playground`) return 200 `text/html`, unauthenticated `/api/boot/cart` → 401 JSON, `/API/boot/cart` → 404 JSON, `/assets/missing.js` → 404, customer login → session/cart 200, employee login → dashboard `status:success`.
 
@@ -50,7 +51,7 @@ Reference values recorded on 2026-10-15 (they are comparison references, not tod
 ## Non-goals
 
 - **No source, test, `pom.xml`, CI, `Dockerfile` or architecture-document change.** A failing check goes back to the parent agent.
-- No new test cases to raise coverage; no threshold change; no new JaCoCo `exclude`; no skipped or quarantined test.
+- No new test cases to raise coverage; no threshold lowering or bypassing (the gates are the tightened **0.90 / 90** values approved on 2026-10-20); no new JaCoCo `exclude`; no skipped or quarantined test.
 - No new functional/HTTP contract: this step compares against the recorded truth table, it does not define a new one.
 - No visual/contrast regression claim (jsdom has no layout — that stays a manual, out-of-automation area).
 - No real-browser multi-tab / concurrency testing (existing boundary).
@@ -63,7 +64,7 @@ Reference values recorded on 2026-10-15 (they are comparison references, not tod
 ## Acceptance criteria
 
 - [ ] **AC-1** Backend: `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS, `Tests run` not lower than step 1's baseline, `All coverage checks have been met.`, and the `excludes` list identical to the baseline.
-- [ ] **AC-2** Frontend: lint clean, unit tests ≥ the baseline count, `Lines` ≥ 88 (baseline 92.35%), coverage build successful, Playwright ≥ 12 passing executions; and `git diff <baseline-sha> -- frontend/src` is empty.
+- [ ] **AC-2** Frontend: lint clean, unit tests ≥ the baseline count, `Lines` ≥ **90** (baseline 92.35%; threshold tightened from 88 on 2026-10-20), coverage build successful, Playwright ≥ 12 passing executions; and `git diff <baseline-sha> -- frontend/src` is empty.
 - [ ] **AC-3** Production smoke: every HTTP expectation listed in Scope is recorded with the observed status code (and response-body indicator where relevant), on the packaged application served from port 8081.
 - [ ] **AC-4** Auth/session: `changeSessionId()` on login, the 401 JSON body shape, and employee logout 204 with the `user` attribute retained are each evidenced (test output and/or smoke transcript).
 - [ ] **AC-5** Toolchain/artifact: `mvn -version` = JDK 21, bytecode `major version: 61`, both Docker stages on a JDK 21 image, enforcer rule active.

@@ -26,7 +26,7 @@
 > - **新增区块 2：`## Step → acceptance mapping`** —— 拆分总览 §5.3 的映射表（英文表述）：AC-1..AC-11 → 主责步骤 / 复核步骤 / 证据形式，含 AC-6 的条件分支（“if S2 concludes keep 8.3.0, the JDBC clause of AC-6 is not triggered”）。
 > - **正文内 2 处单行修改**：① `Non-goals` 的 `@MockBean` 句 → “**The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step.**”（原句其余文字保留）；② `Rollback` 段 → “**delivered as one pull request per step** … **Each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together.**”（末尾质量门禁句保留）。
 > - **未改动**：`## Goal`、`## Background`、`## Scope`（12 条）、`## Acceptance criteria`（AC-1..AC-11）、`## Dependency`、`## Risk notes` 逐字保持；标题、milestone #3、labels（空）、state（OPEN）均未变（编辑后核验：`44 | OPEN | milestone=3 | labels=0`）。
-> - **本文件 `## GitHub issue body` 分区的处理**：2026-10-19 按 `github-operator` 已推送到远端的正文（经其与 `gh issue view 44` 比对，仅差 GitHub 追加的尾部换行）**同步为 epic 版本**，因此本文正文**重新与远端逐字一致**（仅差末尾 1 个换行）。
+> - **本文件 `## GitHub issue body` 分区的处理**：2026-10-19 按 `github-operator` 已推送到远端的正文（经其与 `gh issue view 44` 比对，仅差 GitHub 追加的尾部换行）**同步为 epic 版本**，因此本文正文**重新与远端逐字一致**（仅差末尾 1 个换行）。**⚠️ 2026-10-20 例外**：本轮把覆盖率门槛口径改为 **0.90 / 90**（用户已批准，独立 PR），而**远端正文仍是 0.85 / 88**（docs-writer 不做 GitHub 写操作）→ **本文件 body 与远端暂时不一致**，待主 agent 授权 `github-operator` 编辑后恢复；详见 `## Internal tracking` → 「剩余待确认」第 10 项。
 
 > **状态：🟢 epic（已创建 7 个子 issue #46–#52，保持 OPEN）** —— 已在 GitHub 存在（[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)），无需新建。远端 issue 已由 `github-operator` 于 **2026-10-19** 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**；`## Internal tracking` 分区**未发布**），并同日按上述 6 项清单改为 epic（**state 仍为 OPEN**）。**注意「立项 ≠ 完成」**：本 issue 只表示**迁移工作已立项并已拆分**；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），AC-1..AC-11 均未取证。
 > **修订记录（2026-10-19，oracle 只读审查 `.pi/artifacts/oracle-option-a-issue-draft.md` 后；主 agent 裁定「全部接受」）**：闭合 **B-1**（`AC-10` 去掉流程语；`Scope → Docs` 只列**活文档**并声明历史记录不追改）、**B-2**（**写死** `@MockBean` 处置 = 本 issue 不迁移、列入 Non-goals）、**B-3**（补可复现的 JDK 21 固定机制：`README.md` + `JAVA_HOME` + 采纳 enforcer `requireJavaVersion [21,22)`；`AC-11` 增字节码级证据 major version 61；CI step 名一并列为改动点）；采纳 **P1-1..P1-5** 与 **P2-1..P2-9**；回填 **Y-1/Y-3/Y-4**；**Y-2**（milestone 名）当时标为「建议、待用户确认」，**现已确认并创建为 milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)**（原「待确认」表述已失效）。
@@ -70,7 +70,7 @@ This issue continues the roadmap's **Spring Boot** modernization work (removing 
   - `src/main/java/com/fabflix/boot/session/SessionController.java`
 - **4 other files must stay on `javax.*`** because those packages are JDK-provided and are not part of the Jakarta EE 9 rename: `javax.sql.DataSource` (1 file: `admin/AdminRepository.java`) and `javax.xml.parsers.*` (3 files: `ActorXMLParser`, `CastXMLParser`, `MainXMLParser`).
 - Local Maven currently runs on **JDK 27** (Homebrew). **Spring Boot 3.5.x officially supports Java 17–24**; JDK 27 is outside that supported range, and its ByteBuddy/Mockito chain fails at build/test time on an unrecognized class file version. Fixing the local JDK is a blocking prerequisite of this issue (see Scope and Acceptance criteria).
-- Baseline quality gates that must not regress: backend JaCoCo `BUNDLE/LINE >= 0.85` (recorded baseline 968/1078 = 0.8980, `Tests run: 127`), frontend `lines >= 88` (recorded 92.35%, 195 tests), Playwright e2e (12 executions). These numbers are recorded in the approved plan §6.1 and are the comparison baseline for this issue.
+- Baseline quality gates that must not regress: backend JaCoCo `BUNDLE/LINE >= 0.90` (the threshold was tightened from 0.85 to 0.90 on 2026-10-20 by user approval, in a separate PR; the gate now stands at 988/1078 = 0.9165 with `Tests run: 134`), frontend `lines >= 90` (tightened from 88 on the same date; recorded 92.35%, 195 tests), Playwright e2e (12 executions). The pre-tightening snapshot (968/1078 = 0.8980, 127 tests, `lines >= 88`) is kept only as history in `docs/logs/2026-10-20-issue-46-baseline.md`; the approved plan §6.1 and these tightened numbers are the comparison baseline for this issue.
 
 ## Scope
 
@@ -82,7 +82,7 @@ This issue continues the roadmap's **Spring Boot** modernization work (removing 
 - [ ] **Dependency compatibility check** (first implementation step): `mysql-connector-j` (currently pinned 8.3.0; Boot 3.5 manages 9.x — if upgraded, JDBC behavior deltas around time zones, `CURDATE()` and SSL connection warnings must be covered by the production smoke test), `jasypt:1.9.3` (**verification item**: 2014-era release — check reflective access on JDK 21 such as `IllegalAccessError` / `InaccessibleObjectException` and any reliance on removed JDK APIs; only `org.jasypt.util.password.*` is used today. **If the password-verification implementation has to be replaced, that is a scope change and must go back to the main agent for a ruling**), `mockito-core` / `byte-buddy` / `byte-buddy-agent`, `spring-boot-starter-test`, `maven-surefire-plugin:3.5.2`, `jacoco-maven-plugin:0.8.15`, `spring-boot-maven-plugin`, `maven-enforcer-plugin`, `maven-resources-plugin`, and `MockMvcBuilders.standaloneSetup` usage in the admin package. Also review the **BOM-managed transitive upgrades** that Boot 3.5 brings in: **HikariCP (4.0.3 → 6.x)**, **Jackson (2.13.5 → 2.19.x)**, **Logback/SLF4J (1.2.12 → 1.5.x)** and **Tomcat (9.0.83 → 10.1.x)**. Connection-pool behaviour and JSON serialization are covered by the AC-6 smoke test; any behavioural difference must be recorded, not silently accepted.
 - [ ] **CI**: `.github/workflows/ci.yml` backend job — `java-version: "11"` → **`"21"`** (`ci.yml:32`), rename the **job** `Build and test (Java 11)` → the new JDK version (`ci.yml:20`), **and** rename the **step** `Set up Java 11` → `Set up Java 21` (`ci.yml:28`).
 - [ ] **Docker**: `Dockerfile` build stage `maven:3.9-eclipse-temurin-11` → `maven:3.9-eclipse-temurin-21`, runtime stage `eclipse-temurin:11-jre` → `eclipse-temurin:21-jre`, keeping the non-root uid/gid 1001 setup.
-- [ ] **Docs (live documents only)**: update `README.md` (local JDK 21 requirement and `JAVA_HOME`, build/run instructions) and `docs/architecture/frontend-migration-contracts.md` — **§8** (the guard-test description: the `jakarta.servlet` ban becomes the 11-file allow-list) and **§12** (container/version conventions: JDK 21 images, CI JDK); also correct that document's stale coverage-margin figure, which currently reads "~106 lines remaining" — the correct statement is **110 lines are currently uncovered, with room for at most ≈60 additional uncovered lines**. **Historical workflow logs and closed-issue plan/issue documents are records of past runs and are not rewritten**: the files that still contain `Build and test (Java 11)` for historical reasons (`docs/logs/2026-*`, `docs/plans/issue-30..33-*.md`, `docs/issues/issue-30..33-*.md`) stay as they are.
+- [ ] **Docs (live documents only)**: update `README.md` (local JDK 21 requirement and `JAVA_HOME`, build/run instructions) and `docs/architecture/frontend-migration-contracts.md` — **§8** (the guard-test description: the `jakarta.servlet` ban becomes the 11-file allow-list) and **§12** (container/version conventions: JDK 21 images, CI JDK). **Do not change the coverage thresholds in this issue** — they were already tightened to 0.90 / 90 on 2026-10-20 (separate PR); only keep the documentation consistent with them, and record any newly discovered uncovered class as a known gap instead of silently absorbing it. **Historical workflow logs and closed-issue plan/issue documents are records of past runs and are not rewritten**: the files that still contain `Build and test (Java 11)` or the pre-tightening `85% / 88` figures for historical reasons (`docs/logs/2026-*`, `docs/plans/issue-30..33-*.md`, `docs/issues/issue-30..33-*.md`, `docs/issues/issue-46-baseline.md`) stay as they are.
 - [ ] **Verification**: backend, frontend, e2e and production compose smoke (see Acceptance criteria).
 
 ## Non-goals
@@ -97,15 +97,15 @@ This issue continues the roadmap's **Spring Boot** modernization work (removing 
 - No multi-instance / Spring Session / Redis work.
 - No frontend build-chain upgrade (Vite/React/vitest/Playwright are unrelated to the Boot version).
 - No restoration of the retired `src/main/webapp` legacy frontend.
-- No relaxation of quality gates: coverage thresholds and the JaCoCo `excludes` list stay unchanged.
+- No relaxation of quality gates: the coverage thresholds are the **tightened 0.90 (backend) / 90 (frontend)** values approved on 2026-10-20, the JaCoCo `excludes` list stays unchanged, and no test/e2e/lint step may be skipped. This issue may neither lower nor raise those thresholds.
 
 ## Acceptance criteria
 
 - [ ] **AC-1** `mvn --batch-mode --no-transfer-progress verify` → BUILD SUCCESS; backend test count does not decrease against the pre-migration baseline recorded in Scope step 0 (`Tests run: 127, Failures: 0, Errors: 0, Skipped: 0` is the recorded reference; increases must be explained).
-- [ ] **AC-2** Backend coverage gate unchanged: JaCoCo `verify` check passes with `BUNDLE/LINE >= 0.85` (recorded baseline 0.8980 against the fresh pre-migration re-run) and `All coverage checks have been met.`
+- [ ] **AC-2** No relaxation of the backend coverage gate: **the gate was tightened from 0.85 to 0.90 on 2026-10-20 by user approval (separate PR, before this migration starts)**, and this epic is accepted against the **tightened** threshold — the JaCoCo `verify` check must pass with `BUNDLE/LINE >= 0.90` and print `All coverage checks have been met.` (post-tightening reference: 988/1078 = 0.9165; margin for newly added uncovered lines is only ~19 lines, so new production code needs tests; no `exclude` may be added). **No quality gate may be relaxed anywhere in this epic.**
 - [ ] **AC-3** With `frontend/dist` built first (`cd frontend && npm ci && npm run build`), `mvn -Pfrontend -DskipTests clean package` succeeds and `unzip -l target/fablix.jar` contains `BOOT-INF/classes/static/index.html` (packaging shape unchanged).
 - [ ] **AC-4** With `frontend/dist` built as in AC-3 and then moved aside, `mvn -Pfrontend -DskipTests package` → BUILD FAILURE from the `require-frontend-dist` enforcer rule (the missing-`dist` guard still fails the build).
-- [ ] **AC-5** Frontend unchanged and green: `npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e` → 195 tests pass, Lines >= 88 (recorded 92.35%), 12 Playwright executions pass — compared against the fresh pre-migration baseline from Scope step 0.
+- [ ] **AC-5** Frontend unchanged and green: `npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e` → 195 tests pass, Lines >= 90 (**the threshold was tightened from 88 to 90 on 2026-10-20 by user approval; recorded 92.35%**), 12 Playwright executions pass — compared against the fresh pre-migration baseline from Scope step 0.
 - [ ] **AC-6** Production compose smoke (`docker compose build app` + `docker compose up -d --no-deps app`) reproduces the existing HTTP semantics: health endpoint 200; `/` contains `id="root"`; the 10 recorded deep links return 200 `text/html`; unauthenticated `/api/boot/cart` → 401 JSON; `/API/boot/cart` → 404 JSON; `/assets/missing.js` → 404; customer login → session/cart 200; employee login → dashboard with `status:success`. If the JDBC driver is upgraded to 9.x, also verify order/sale dates match `sales.sale_date` (no timezone offset / `CURDATE()` drift) and that SSL connection warnings do not become fatal. **This smoke test needs Docker locally and port 8081 free; if the environment is not available, record it explicitly as not executed instead of claiming it passed.**
 - [ ] **AC-7** Authentication/session semantics unchanged: `changeSessionId()` on login, 401 body shape, employee logout 204 keeping the `user` attribute.
 - [ ] **AC-8** Guard test and documentation agree (`docs/architecture/frontend-migration-contracts.md` §8 describes the allow-list that the code asserts; the allow-list is asserted as **exactly 11 paths**).
@@ -124,7 +124,7 @@ None. This issue is itself the prerequisite for the planned Spring AI work (Boot
 - **BOM-managed transitive upgrades** (HikariCP 4.0.3 → 6.x, Jackson 2.13.5 → 2.19.x, Logback/SLF4J 1.2.12 → 1.5.x, Tomcat 9.0.83 → 10.1.x) can change connection-pool and JSON serialization behaviour in ways unit tests do not see; the AC-6 smoke test covers them, and any difference must be written down.
 - **`jasypt:1.9.3` on JDK 21 is a verification item**: reflective access (`IllegalAccessError` / `InaccessibleObjectException`) and any use of removed APIs must be checked. Replacing the password-verification implementation is a **scope change** and requires a main-agent ruling.
 - **Local JDK 27 is outside Spring Boot 3.5's supported range (Java 17–24)** and would mask environment problems; the README declaration plus the enforcer `requireJavaVersion [21,22)` rule make a wrong JDK a hard build failure instead of a silent skew.
-- **Coverage budget**: without relaxing the gate there is room for at most **~60 additional uncovered lines** (110 lines are currently uncovered; the ≈161-line allowance at the 85% threshold minus those 110), so any newly introduced class needs a test. `docs/architecture/frontend-migration-contracts.md` still states a stale "~106 lines" figure; Scope → Docs corrects it in the same PR.
+- **Coverage budget**: the gate is now **0.90** (tightened on 2026-10-20 by user approval, from 0.85) and leaves room for at most **~19 additional uncovered lines** (`988/(1078+N) >= 0.90 ⇒ N <= 19`), so any newly introduced class needs a test and no `exclude` may be added. `docs/architecture/frontend-migration-contracts.md` §7 has been updated to the 0.90 threshold and the current 988/1078 = 0.9165 figure.
 - **Guard test must be updated first**, otherwise the migration cannot pass CI.
 - **Estimate**: ~1.5–3 weeks for a single developer (estimate, not a commitment); the main variable is hunting down Boot 3 behavioral differences, not the mechanical Jakarta rename.
 
@@ -149,7 +149,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 | #44 AC | Primary step | Re-checked by | Evidence form |
 | --- | --- | --- | --- |
 | AC-1 `mvn verify` test count does not decrease | S3 | S6 | command output + comparison against the S1 baseline |
-| AC-2 coverage gate 0.85 unchanged | S3 | S6 | `All coverage checks have been met.` |
+| AC-2 coverage gate 0.90 (tightened on 2026-10-20) | S3 | S6 | `All coverage checks have been met.` |
 | AC-3 jar shape (`BOOT-INF/classes/static/index.html`) | S3 | — | `unzip -l` output |
 | AC-4 missing `dist` → BUILD FAILURE | S3 | S4 (rollback check) | comparison of two build runs |
 | AC-5 frontend green and unchanged | S6 | — | the five frontend commands' output + `git diff` proving zero frontend change |
@@ -163,7 +163,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 
 ## Internal tracking
 
-> 本分区**不发布到 GitHub**；`github-operator` 只使用上方 `## GitHub issue body`（**已发布：远端正文与该分区逐字一致，本分区未外泄**）。
+> 本分区**不发布到 GitHub**；`github-operator` 只使用上方 `## GitHub issue body`（**已发布：远端正文与该分区逐字一致，本分区未外泄**；**但 2026-10-20 起正文的门禁数字（0.90 / 90）尚未同步到远端**，见「剩余待确认」第 10 项）。
 
 ### 远端 issue 元数据（2026-10-19 只读核验：`gh issue view 44`、`gh api repos/PNZ-z/ai-powered-Fabflix/milestones`，docs-writer/主 agent）
 
@@ -176,7 +176,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 | labels | **无（空数组）** |
 | state | **OPEN** |
 | 创建时间（createdAt） | **`2026-10-19T07:06:27Z`** |
-| 正文 | 与本文件 `## GitHub issue body` **逐字一致**（主 agent 核验）；`## Internal tracking` 分区**未发布**。**2026-10-19 epic 编辑后**：远端正文 = 原正文 + `## Steps` + `## Step → acceptance mapping` + 2 处单行修改；本文件 body 分区已同步为该版本（与远端仅差 GitHub 追加的尾部换行） |
+| 正文 | 与本文件 `## GitHub issue body` **逐字一致**（主 agent 核验）；`## Internal tracking` 分区**未发布**。**2026-10-19 epic 编辑后**：远端正文 = 原正文 + `## Steps` + `## Step → acceptance mapping` + 2 处单行修改；本文件 body 分区已同步为该版本（与远端仅差 GitHub 追加的尾部换行）。**2026-10-20 起不再逐字一致**：本地 body 已把覆盖率门槛改为 0.90 / 90，远端仍为 0.85 / 88（只读核对 `gh issue view 44`；见「剩余待确认」第 10 项） |
 | **当前跟踪状态** | **epic（已创建 7 个子 issue #46–#52，保持 OPEN）**；实现**未开始**：无代码/配置/测试改动、无 PR；本 issue 的 Scope 与 Acceptance criteria（AC-1..AC-11）**均未执行**，也未在任何子 issue 中开始（#46–#52 全部 OPEN、无 PR） |
 
 ### 本地跟踪表
@@ -222,6 +222,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 | 7 | ~~**是否授权安装 JDK 21**~~ | **已闭合（2026-10-19）**：JDK 21 **已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`，主 agent 确认）；Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，未跑 `mvn verify`）。 |
 | 8 | **PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 是否先合并** | 本文件与拆分文档均在该分支（`codex/ai-roadmap-planning`，state=OPEN）；未合并前这些修订不在 `main` |
 | 9 | **C-4 的 epic 正文改写未落远端**（**新发现，未确认是否有意**） | 拆分总览 §7 / 元数据要求把 epic 正文的工期口径改为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，但 `github-operator` 的 6 项清单（§5.1）**不包含**这一项：2026-10-19 核对远端正文的 `Estimate` 行仍为“~1.5–3 weeks”。**本轮 docs-writer 未修改远端**；如需补改，需主 agent 授权 `github-operator` 单独编辑。 |
+| 10 | **远端 #44 正文尚未同步“门槛已收紧为 0.90 / 90”的口径**（**2026-10-20 新发现，待授权**） | 2026-10-20 经**用户批准**，后端 JaCoCo 门槛 0.85 → **0.90**、前端 `thresholds.lines` 88 → **90**（分支 `codex/coverage-threshold-90`，独立 PR，未合并）。本轮已把本文件 `## GitHub issue body` 的 **Background 的门禁句、AC-2、AC-5、Scope→Docs、Non-goals、Risk notes（覆盖率预算）、`## Step → acceptance mapping` 的 AC-2 行**改为收紧后的口径；但 **docs-writer 不做 GitHub 写操作**，所以**远端正文仍写着 `>= 0.85` / `lines >= 88`**（2026-10-20 只读核对 `gh issue view 44` 确认）。**结论：本文件 body 与远端暂时不一致**，需主 agent 授权 `github-operator` 编辑 #44 后才能恢复“逐字一致”。 |
 
 ### 发布前置（go/no-go）——**已全部完成**
 
@@ -233,6 +234,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 
 ### 内部备注
 
+- **2026-10-20 覆盖率门槛收紧（0.90 / 90）对本 issue 的影响**：门槛收紧是**独立 PR（分支 `codex/coverage-threshold-90`，未提交/未推送）**、**迁移前的变更**，**不属于** #44 或 #46–#52 任一步的范围；本 epic 的验收**改用收紧后的门槛**（后端 `BUNDLE/LINE >= 0.90`，实测 988/1078 = 0.9165 / `Tests run: 134`；前端 `lines >= 90`，实测 92.35% / 195 tests），并保留“**不得放松任何质量门**”的原有约束。收紧后**后端仅剩 N ≤ 19 行**新增未覆盖代码的余量。证据：`docs/logs/2026-10-20-coverage-threshold-90.md`；比较基线：`docs/plans/issue-44-migration-checklist.md` 的「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」。**远端未同步**（见“剩余待确认”第 10 项）。
 - **拆分提案（2026-10-19）**：`docs/plans/issue-44-migration-steps.md` + 7 份子 issue 文档（现为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`）已按 oracle 审查（`.pi/artifacts/oracle-issue-44-split-review.md`）修订，主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受**。**2026-10-19 用户授权后**：子 issue 已创建、本 issue 已转 epic；**本文件 body 分区已同步为 epic 版本**（与远端仅差末尾换行）。
 - **epic 转换的记录位置**：远端变更由 `github-operator` 执行并留有证据 `.pi/artifacts/github-operator-issue-44-steps.md`；本地回填见本文件顶部“实际结果”与 `docs/plans/issue-44-migration-steps.md` §5.1。**docs-writer 本轮未做任何 GitHub 写操作**，也未修改任何历史日志。
 - 本 issue **不包含任何代码改动**；issue 本身已于 **2026-10-19** 创建（**#44**），对应总览 §12.3-A-1 的**已完成项**。**立项不等于实施**：Scope/Acceptance criteria 全部未执行。
