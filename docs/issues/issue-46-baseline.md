@@ -1,6 +1,7 @@
 # Step 1/7 — 迁移前基线与跟踪 checklist（GitHub issue #46 记录）
 
 > **文档状态：🟢 已在 GitHub 存在（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施**：正文的 Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **S1 进度（2026-10-20）**：基线**已测量并记录**（`docs/logs/2026-10-20-issue-46-baseline.md`；checklist `docs/plans/issue-44-migration-checklist.md`），树内**仍无源码/pom/CI/Dockerfile 改动**；但记录**未提交、未推送、无 PR**，因此 #46 **仍未完成**，状态保持 OPEN。
 > **远端元数据（主 agent 核验，2026-10-19）**：编号 **#46** · 标题 `[Step 1/7] Record the pre-migration baseline and start the migration checklist` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > 本文件是 GitHub issue 的**规范来源与本地跟踪记录**（原名 `docs/issues/proposed-step-1-baseline.md`，issue 创建后改名）。`github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
 > 拆分总览：`docs/plans/issue-44-migration-steps.md`（**已批准并已创建子 issue，2026-10-19**）。
@@ -94,9 +95,9 @@ Documentation only: reverting the pull request removes the record and nothing el
 | 依赖关系 | 无前置；S3/S6 依赖本步的基线数字 |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)（已存在，state=open） |
 | labels | **空**（与 #44 及既有 #28–#33 一致） |
-| 状态 | **🟢 已在 GitHub 存在（#46），无需新建** —— `github-operator` 按本文件批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**：Scope / AC-1..AC-6 全部未执行 |
+| 状态 | **🟢 已在 GitHub 存在（#46），无需新建** —— `github-operator` 按本文件批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**：Scope / AC-1..AC-6 全部未执行。**S1 基线已测量并记录（2026-10-20）**，**待提交/PR**（未提交、未推送、无 PR；#46 **未完成**，保持 OPEN）。证据：`docs/logs/2026-10-20-issue-46-baseline.md`、`docs/plans/issue-44-migration-checklist.md` |
 | 估算 | 0.5 天 |
 | 负责人角色 | docs-writer 写计划 → oracle 只读审查 → 主 agent 批准 → 单一 `worker` 执行（只跑命令 + 写记录）→ 3 reviewer（正确性/测试证据/必要性）→ `worker` 修复 → docs-writer 回填 → 主 agent 提交 → `github-operator` 建 PR |
 | 事实来源（可核验） | 基线数字：`docs/logs/2026-10-15-issues-31-32-33-m2-completion.md:38-45`（127 tests、0.8980、195 tests/30 files、92.35%、12 e2e）。JDK 现状：计划 §3（本地 Maven 跑 JDK 27）+ U-A1（JDK 21 是否已安装**未确认**）。命令：计划 §6.1 AC-A-1/AC-A-5、契约文档 §12 |
-| 未确认 | ① 本地是否已安装 **JDK 21**（U-A1）；② **Boot 2.7.18 是否能在 JDK 21 上运行**（本仓库未实测，草稿已把该尝试写成"尽力而为 + 如实记录"）；③ 本地 Docker/浏览器安装是否可用于 e2e；④ 基线记录文件的最终路径（建议 `docs/logs/<完成日>-issue-<S1 编号>-step-1-baseline.md`，含 checklist，避免新增一次性文档） |
-| 待裁定 | **已全部闭合**：① **P1-5**（2026-10-19，主 agent 裁定全部接受）删除“安装 JDK 是允许动作”→ 改为“缺 JDK 21 记为 steps 3–4 的 blocking gap；**安装 JDK 需主 agent 批准**，本步不得安装”；② **P2-4** AC-4 补“跨 JDK 对比规则”；③ **P1-2** 正文加 `Part of #44`；④ **是否创建本 issue → 已创建 #46（2026-10-19）**。**U-A1 已闭合（主 agent 确认，2026-10-19）**：JDK 21 **已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），且 Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，未跑 `mvn verify`）→ 本步的“额外在 JDK 21 上复跑”一条**变为可执行**，但**尚未执行**。 |
+| 未确认 | **已全部闭合（2026-10-20 基线测量）**：① 本地 JDK 21 → **已安装**（`/opt/homebrew/opt/openjdk@21`，`21.0.12.1`，2026-10-19 经用户授权）；② Boot 2.7.18 能否在 JDK 21 上运行 → **能，`mvn verify` BUILD SUCCESS / 127 用例 / 0.8980，与 JDK 27 完全一致**；③ 浏览器可用于 e2e → **已证实**（Playwright `12 passed`）；Docker 仍未在 S1 取证（属 S3/S6）；④ 基线记录最终路径 → **`docs/logs/2026-10-20-issue-46-baseline.md`**，checklist 独立为 **`docs/plans/issue-44-migration-checklist.md`**（未并入同一文件，属文档结构选择，不改变范围） |
+| 待裁定 | **已全部闭合**：① **P1-5**（2026-10-19，主 agent 裁定全部接受）删除“安装 JDK 是允许动作”→ 改为“缺 JDK 21 记为 steps 3–4 的 blocking gap；**安装 JDK 需主 agent 批准**，本步不得安装”；② **P2-4** AC-4 补“跨 JDK 对比规则”；③ **P1-2** 正文加 `Part of #44`；④ **是否创建本 issue → 已创建 #46（2026-10-19）**。**U-A1 已闭合（主 agent 确认，2026-10-19）**：JDK 21 **已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），且 Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，未跑 `mvn verify`）→ 本步的“额外在 JDK 21 上复跑”一条已于 **2026-10-20 执行**（`JAVA_HOME=/opt/homebrew/opt/openjdk@21` → BUILD SUCCESS / 127 用例 / 0.8980，与 JDK 27 一致），见 `docs/logs/2026-10-20-issue-46-baseline.md` §3.2。 |
