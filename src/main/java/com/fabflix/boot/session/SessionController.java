@@ -1,6 +1,6 @@
 package com.fabflix.boot.session;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import com.fabflix.boot.admin.EmployeeIdentity;
 import com.fabflix.boot.auth.CustomerIdentity;

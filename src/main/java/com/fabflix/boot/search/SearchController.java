@@ -3,8 +3,8 @@ package com.fabflix.boot.search;
 import java.net.URI;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import com.fabflix.boot.movie.MovieSummary;
 import org.slf4j.Logger;

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import com.fabflix.boot.auth.CustomerIdentity;
 import org.springframework.http.ResponseEntity;
