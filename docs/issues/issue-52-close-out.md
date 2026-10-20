@@ -1,6 +1,7 @@
-# Step 7/7 — 收尾：架构约定、README、路线图状态与工作流日志（GitHub issue 草稿）
+# Step 7/7 — 收尾：架构约定、README、路线图状态与工作流日志（GitHub issue #52 记录）
 
-> **文档状态：🟠 已按 oracle 审查修订 / 待用户批准创建（未批准，未发布）**
+> **文档状态：🟢 已在 GitHub 存在（[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施、也不表示迁移已完成**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **远端元数据（主 agent 核验，2026-10-19）**：编号 **#52** · 标题 `[Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > `github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
 > 拆分总览：`docs/plans/issue-44-migration-steps.md`。本步骤**不改任何源码/测试/配置**，只让文档与最终实现一致，并建立本次工作流的日志。
 > **本轮修订（oracle P1-6 / P2-6 / P1-2）**：契约文档 **§11**（容器两阶段镜像 = JDK 21）**显式列入 Scope/AC**，不再只依赖 AC-3 的 drift 检查；工作流日志编号明确用 **S7 自己的 issue 编号**（epic 在日志中引用）；正文加显式 `Part of #44`。
@@ -87,14 +88,17 @@ Documentation only: reverting the pull request removes the updates but leaves th
 | 项目 | 值 |
 | --- | --- |
 | 步骤 | **S7 / 7**（拆分总览 §3、§4-S7） |
+| GitHub issue 编号 | **#52** —— https://github.com/PNZ-z/ai-powered-Fabflix/issues/52 |
+| 远端标题 | `[Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log` |
+| 远端 state | **OPEN**（2026-10-19 创建；`Part of #44` 已在正文） |
 | 来源 | #44 正文 `Scope → Docs (live documents only)`（§8/§12 + 陈旧覆盖率数字）；`docs/plans/ai-option-a-boot3-migration.md` §2.1-7、§5-A7；`AGENTS.md` §8（日志两大分区）；`docs/architecture/frontend-migration-contracts.md` §7/§8/§12（本轮只读核对：§7 确有 "~106 行" 表述、§8 确有"不得出现 `jakarta.servlet`"、§12 确有 `maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre`） |
-| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**拟转 epic，待用户批准**）；**正文已含显式 `Part of #44`（P1-2）**；本步承担 #44 的 **AC-8 的文档侧**，并在关闭时汇总 AC-1..AC-11 的证据 |
+| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**；正文 `## Steps` 列出 #46–#52）；正文含显式 `Part of #44`（P1-2），**已随创建发布**；本步承担 #44 的 **AC-8 的文档侧**，并在关闭时汇总 AC-1..AC-11 的证据 |
 | 依赖关系 | **前置 S6**（以及 S3/S4/S5 已合并） |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)（milestone 的实际关闭由主 agent / `github-operator` 决定，本步只核对状态并记录） |
 | labels | **空** |
-| 状态 | **🟠 已按 oracle 审查修订 / 待用户批准创建** |
+| 状态 | **🟢 已在 GitHub 存在（#52），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**（S7 的前置 S1–S6 全部未开始） |
 | 估算 | 0.5 天 |
 | 负责人角色 | docs-writer → oracle → 主 agent 批准 → 单一 `worker`（只改文档并跑核对命令）→ 3 reviewer（文档与代码一致性、是否改写历史记录、是否过度声称）→ `worker` 修复 → docs-writer 定稿 → 主 agent 提交/推送 → `github-operator` 建 PR；**epic/milestone 的关闭由主 agent 决定并执行** |
 | 事实来源（可核验，本轮只读） | 契约文档 §7（"~106 行" 陈旧表述）、§8（`jakarta.servlet` 禁令原文）、§12（`maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre` / CI Java 11）；`SpringBootOnlyArchitectureTest.java`（当前禁令 + `pom.xml` 三条断言）；`README.md`（无 JDK 版本要求章节，S4 补）；路线图 `docs/plans/ai-roadmap-overview.md` §12.3 / M3 行 |
 | 未确认 | ① S4 写入 README 后还剩哪些漂移（需实施时读 diff 判断）；② 路线图 §12.3 的行号/编号在实施前是否变化；③ S6 是否留下“未执行”项（决定日志与关闭口径）。**已闭合**：**P1-6** 契约文档 **§11** 已**显式列入 Scope/AC-1**（不再依赖 AC-3 的 drift 检查）；**P2-6** 日志编号用 **S7 自己的 issue 编号** |
-| 待裁定 | **已全部闭合（2026-10-19）**：**P1-6** 纳入 §11；**P2-6** 日志编号口径已明确。**仍待用户批准**：是否创建本 issue。**#44 的关闭方式与时机**仍由主 agent 裁定（本稿按“epic 保持 open 到 S7 完成、由主 agent 关闭”记录）。 |
+| 待裁定 | **已全部闭合（2026-10-19）**：**P1-6** 纳入 §11；**P2-6** 日志编号口径已明确。**是否创建本 issue → 已创建 #52（2026-10-19）**。**#44 的关闭方式与时机**仍由主 agent 裁定（本稿按“epic 保持 open 到 S7 完成、由主 agent 关闭”记录）。 |

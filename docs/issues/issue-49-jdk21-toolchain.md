@@ -1,6 +1,7 @@
-# Step 4/7 — 用机器可执行的方式强制 JDK 21 并归档镜像证据（enforcer + README）（GitHub issue 草稿）
+# Step 4/7 — 用机器可执行的方式强制 JDK 21 并归档镜像证据（enforcer + README）（GitHub issue #49 记录）
 
-> **文档状态：🟠 已按 oracle 审查修订 / 待用户批准创建（未批准，未发布）**
+> **文档状态：🟢 已在 GitHub 存在（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **远端元数据（主 agent 核验，2026-10-19）**：编号 **#49** · 标题 `[Step 4/7] Enforce JDK 21 in the build and document/verify it` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > `github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
 > 拆分总览：`docs/plans/issue-44-migration-steps.md`。**已裁定 —— C-1 = (a)**：`ci.yml` 的 JDK 升版已在 **Step 3** 完成；**B-1**：`Dockerfile` 两行 `FROM` 也已在 **Step 3** 完成。本步只负责**构建期强制（enforcer）+ README + 对镜像/容器的验证取证**，**不再改镜像**。
 > **本轮修订（oracle B-1 / P2-3 / P1-2）**：标题改为 `[Step 4/7] Enforce JDK 21 in the build and document/verify it`；删除“本步才改镜像”的表述；AC-2 明写可用**本机 JDK 27** 取证“错误 JDK → BUILD FAILURE”（删去“可能未执行”的犹豫表述）；正文加 `Part of #44`。
@@ -91,14 +92,17 @@ Revert the single pull request: the enforcer rule and the README paragraph are i
 | 项目 | 值 |
 | --- | --- |
 | 步骤 | **S4 / 7**（拆分总览 §3、§4-S4、§6-C-1） |
+| GitHub issue 编号 | **#49** —— https://github.com/PNZ-z/ai-powered-Fabflix/issues/49 |
+| 远端标题 | `[Step 4/7] Enforce JDK 21 in the build and document/verify it` |
+| 远端 state | **OPEN**（2026-10-19 创建；`Part of #44` 已在正文） |
 | 来源 | `docs/plans/ai-option-a-boot3-migration.md` §3（blocking 前置 P1-3）、§4.4、§4.5-0、§6.1 AC-A-11；#44 正文 `Scope → Toolchain`、`Scope → Docker`、`Scope → Docs (README)`、`AC-11`；oracle B-3/Y-4 裁定（`requireJavaVersion [21,22)` + README + `JAVA_HOME`） |
-| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**拟转 epic，待用户批准**）；**正文已含显式 `Part of #44`（P1-2）**；承担 #44 的 **AC-11 的 enforcer/README 部分 + 镜像取证**、与 S3 共同承担 AC-4 的回归检查 |
+| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**；正文 `## Steps` 列出 #46–#52）；正文含显式 `Part of #44`（P1-2），**已随创建发布**；承担 #44 的 **AC-11 的 enforcer/README 部分 + 镜像取证**、与 S3 共同承担 AC-4 的回归检查 |
 | 依赖关系 | **前置 S3**（必须已完成 CI 的 JDK 21 切换**与 `Dockerfile` 两阶段 JDK 21**）；**后继 S6** |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) |
 | labels | **空** |
-| 状态 | **🟠 已按 oracle 审查修订 / 待用户批准创建** |
+| 状态 | **🟢 已在 GitHub 存在（#49），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**（前置 S3 也未开始） |
 | 估算 | 1 天 |
 | 负责人角色 | docs-writer → oracle（重点审 enforcer 与 profile 执行的合并、以及"错误 JDK 失败"的可验证性）→ 主 agent 批准 → 单一 `worker` → 3 reviewer → `worker` 修复 → docs-writer 回填 → 主 agent 提交 → `github-operator` 建 PR |
 | 事实来源（可核验，本轮只读） | `pom.xml:178-186`（`<profile><id>frontend</id>`）+ `:181` 起的 `maven-enforcer-plugin:3.5.0`（**仅存在于 profile 内**）及其 `require-frontend-dist` 执行；`pom.xml:87` 起的主 `<build>`（当前无 enforcer）；`Dockerfile`（**修订后**：`Dockerfile` 的两个 `FROM` 由 **S3** 改为 JDK 21，本步只取证）；`ci.yml`（JDK 由 S3 改） |
-| 未确认 | ① `requireJavaVersion` 与该 profile 执行合并后是否完全无副作用（待实测）；② README 现有章节的最小改动位置（实施时定）；③ 本地能否 `docker compose build app`（Docker/网络）。**已闭合**：本机 Maven 默认跑 **JDK 27**（在 `[21,22)` 之外），因此 AC-2 的“错误 JDK → BUILD FAILURE”**可直接取证**（P2-3） |
-| 待裁定 | **已全部闭合（2026-10-19）**：**B-1**（镜像并入 S3）、**C-1 = (a)**（CI 在 S3）、**P2-3**（AC-2 用 JDK 27 取证）已落入正文。**仍待用户批准**：是否创建本 issue。 |
+| 未确认 | ① `requireJavaVersion` 与该 profile 执行合并后是否完全无副作用（待实测）；② README 现有章节的最小改动位置（实施时定）；③ 本地能否 `docker compose build app`（Docker/网络）。**已闭合**：本机 Maven 默认跑 **JDK 27**（在 `[21,22)` 之外），因此 AC-2 的“错误 JDK → BUILD FAILURE”**可直接取证**（P2-3）；另（主 agent 确认，2026-10-19）**JDK 21 已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），所以 AC-1/AC-3 的“JDK 21 下通过”也可本机取证 |
+| 待裁定 | **已全部闭合（2026-10-19）**：**B-1**（镜像并入 S3）、**C-1 = (a)**（CI 在 S3）、**P2-3**（AC-2 用 JDK 27 取证）已落入正文。**是否创建本 issue → 已创建 #49（2026-10-19）**。 |

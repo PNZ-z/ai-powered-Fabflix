@@ -1,8 +1,9 @@
-# Step 2/7 — 非 Spring 依赖就绪（JDBC 驱动 / jasypt）（GitHub issue 草稿）
+# Step 2/7 — 非 Spring 依赖就绪（JDBC 驱动 / jasypt）（GitHub issue #47 记录）
 
-> **文档状态：🟠 已按 oracle 审查修订 / 待用户批准创建（未批准，未发布）**
+> **文档状态：🟢 已在 GitHub 存在（[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **远端元数据（主 agent 核验，2026-10-19）**：编号 **#47** · 标题 `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > `github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
-> 拆分总览：`docs/plans/issue-44-migration-steps.md`（**已按 oracle 审查修订 / 待用户批准**）。
+> 拆分总览：`docs/plans/issue-44-migration-steps.md`（**已批准并已创建子 issue，2026-10-19**）。
 > **本轮修订（oracle P1-2 / P2-7）**：正文加显式 `Part of #44`；明确“若结论为保持 8.3.0，则 #44 AC-6 的 JDBC 分支不触发”。
 > 本文件**不声称**任何验证已运行；`mysql-connector-j` 9.x 与 Boot 2.7.18 / Java 11 的兼容性、jasypt 1.9.3 在 JDK 21 下的行为均**未在本仓库实测**。
 
@@ -87,14 +88,17 @@ Revert the single dependency version line (and the documentation). If the smoke 
 | 项目 | 值 |
 | --- | --- |
 | 步骤 | **S2 / 7**（拆分总览 §3、§4-S2；§6 无专属裁定项） |
+| GitHub issue 编号 | **#47** —— https://github.com/PNZ-z/ai-powered-Fabflix/issues/47 |
+| 远端标题 | `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` |
+| 远端 state | **OPEN**（2026-10-19 创建；`Part of #44` 已在正文） |
 | 来源 | `docs/plans/ai-option-a-boot3-migration.md` §4.3（依赖兼容性核查清单）、§6.1 AC-A-6、P2-8（驱动 9.x 的时区/`CURDATE()`/SSL 差异）；#44 正文 `Scope → Dependency compatibility check`；`docs/plans/issue-44-migration-steps.md` §1.2（拆分理由：把 JDBC 差异与 Boot 3 差异分离） |
-| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**拟转 epic，待用户批准**）；**正文已含显式 `Part of #44`（P1-2）**，发布时保留 |
+| 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**；正文 `## Steps` 列出 #46–#52）；正文含显式 `Part of #44`（P1-2），**已随创建发布** |
 | 依赖关系 | 无前置；**S3 依赖本步**（驱动定版后 S3 不再动驱动） |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) |
 | labels | **空** |
-| 状态 | **🟠 已按 oracle 审查修订 / 待用户批准创建** |
+| 状态 | **🟢 已在 GitHub 存在（#47），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始** |
 | 估算 | 1 天 |
 | 负责人角色 | docs-writer → oracle → 主 agent 批准 → 单一 `worker`（改 1 行版本 + 跑验证）→ 3 reviewer → `worker` 修复 → docs-writer 回填 → 主 agent 提交 → `github-operator` 建 PR |
 | 事实来源（可核验） | `pom.xml`：`com.mysql:mysql-connector-j` 显式 `8.3.0`、`org.jasypt:jasypt:1.9.3`（本轮只读核对）；Boot 3.5 BOM 管理 9.x 来自计划 §4.3 与 #44 正文（**未在本仓库实测**）；jasypt 仅用 `org.jasypt.util.password.*`（计划 §4.1/§4.3）；测试无 `@SpringBootTest`（契约文档 §7） |
 | 未确认 | ① 9.x 与 **Boot 2.7.18 / Java 11** 的兼容性（U-A2）；② 所选 9.x 版本的最低 JDK 要求；③ 时区/`CURDATE()`/SSL 警告是否真的出现差异（**必须实测**）；④ 本地 Docker 与 3307 端口可用性；⑤ Boot 2.7 是否能在 JDK 21 上跑（决定 jasypt 检查是否需要顺延到 S3） |
-| 待裁定 | **已闭合（2026-10-19）**：oracle 确认“保持 8.3.0 + 另立后续 issue”是**合规结论**，与 #44 AC-6 的“if the JDBC driver is upgraded to 9.x”条件表述一致（P2-7：AC-1 已补“条件不触发”的写法）。**仍待用户批准**：是否创建本 issue。 |
+| 待裁定 | **已闭合（2026-10-19）**：oracle 确认“保持 8.3.0 + 另立后续 issue”是**合规结论**，与 #44 AC-6 的“if the JDBC driver is upgraded to 9.x”条件表述一致（P2-7：AC-1 已补“条件不触发”的写法）。**是否创建本 issue → 已创建 #47（2026-10-19）**。 |

@@ -1,15 +1,17 @@
 # Option A — Spring Boot 3.x / Java 17 / Jakarta 迁移（GitHub issue **#44** 跟踪记录）
 
-> **🟠 待批准说明（2026-10-19；oracle 已审 + 主 agent 裁定「全部接受」，**待用户授权创建 7 个子 issue 与编辑本 issue**；远端仍**未改**）** —— 建议把本 issue 拆成 **7 个小的、可独立实现与验证的步骤**，并把 #44 转为 **epic / tracking issue**（正文追加步骤清单，子 issue 用 `Part of #44` 关联）。拆分方案与依赖图见 **`docs/plans/issue-44-migration-steps.md`**（**已按 oracle 审查修订 / 待用户批准**），7 份 issue 草稿为 `docs/issues/proposed-step-1-baseline.md` … `proposed-step-7-close-out.md`（均已修订）。
-> **本节不改变本 issue 已批准的范围、验收条件或 Non-goals 的实质内容**，也不表示任何步骤已实施：无代码/配置/测试改动、无 PR、未新建任何 issue。
-> **已完成的关卡**：① oracle 只读审查（`.pi/artifacts/oracle-issue-44-split-review.md`）→ ✅；② 主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受** → ✅，已落入拆分总览与 7 份草稿。
-> **待用户授权的两项**：（A）创建 7 个子 issue；（B）按下表**编辑本 issue 正文**。**在此之前远端 #44 保持原样**，下方所有已批准内容仍然有效。
+> **🟢 状态：epic（已创建 7 个子 issue，保持 OPEN）** —— 2026-10-19 用户授权后，`github-operator` ① 创建子 issue **#46–#52**（milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，labels 空，正文含 `Part of #44`，均 **OPEN**）；② 按下方 **6 项清单**编辑本 issue 正文，把 #44 转为 **epic / tracking issue**（**state 仍为 OPEN**；标题/milestone/labels 均未变）。本 issue 因此**只承载范围与总验收契约**。
+> **「立项 ≠ 完成」**：本 issue 只表示迁移工作已立项并已拆分；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），**AC-1..AC-11 一条都未取证**。
+> **子 issue（7 个，均 OPEN、milestone #3、labels 空、正文含 `Part of #44`）**：S1 [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) 基线 · S2 [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) 依赖就绪 · S3 [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) 核心升级 · S4 [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) JDK 21 强制 · S5 [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) `@MockitoBean` · S6 [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) 回归与 smoke · S7 [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) 收尾。拆分方案与依赖图见 **`docs/plans/issue-44-migration-steps.md`**（**已批准并已创建子 issue**），子 issue 文档为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`（原名 `proposed-step-*.md`）。
+> **epic 编辑不改变已批准的范围与验收**：`## Goal` / `## Background` / `## Scope` / `## Acceptance criteria` / `## Dependency` / `## Risk notes` **逐字未改**，`AC-1..AC-11` 全部保留；子 issue 的创建也不表示任何步骤已实施。
+> **已完成的关卡**：① oracle 只读审查（`.pi/artifacts/oracle-issue-44-split-review.md`）→ ✅；② 主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受** → ✅，已落入拆分总览与 7 份子 issue 文档；③ 用户授权创建子 issue + 编辑本 issue → ✅（2026-10-19）；④ `github-operator` 创建 **#46–#52** 并编辑本 issue 为 epic → ✅（2026-10-19，主 agent 已核验）；⑤ docs-writer 回填本地文档 → ✅（本轮）。
+> **授权状态与结果**：（A）创建 7 个子 issue → ✅ **已执行（#46–#52）**；（B）按下表编辑本 issue 正文 → ✅ **已执行**（结果为“2 处单行修改 + 2 个新增区块”，见下方“实际结果”）。下方所有已批准内容仍然有效。
 >
-> **拟编辑 #44 正文的 6 项清单（待批准；由 `github-operator` 执行，docs-writer 不改远端）**
+> **已执行的 #44 正文 6 项清单（2026-10-19 由 `github-operator` 完成；docs-writer 未改远端）**
 >
 > | # | 编辑动作 | 具体内容 |
 > | --- | --- | --- |
-> | 1 | 追加 `## Steps` | 7 个 checkbox（`- [ ]` + 子 issue 链接**占位**）；**写明“每个 step 一个独立 PR”** |
+> | 1 | 追加 `## Steps` | 7 个 checkbox（`- [ ]` + 子 issue 链接；**已回填为真实编号 #46–#52**）；**写明“每个 step 一个独立 PR”** |
 > | 2 | 追加 `## Step → acceptance mapping` | 拆分总览 §5.3 的表（AC-1..AC-11 → S1..S7） |
 > | 3 | 修改 `Rollback` 段（P1-1） | "single PR" → "**one pull request per step**; each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together" |
 > | 4 | 修改 `Non-goals` 的 `@MockBean` 句（P1-7 / C-2） | "The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step." |
@@ -17,12 +19,20 @@
 > | 6 | **不关闭 #44** | epic 保持 open；待 S7 完成后由主 agent 关闭（或按 milestone 口径保持 open 至 milestone 关闭） |
 >
 > **子 issue 统一规范**：标题 `[Step N/7]`；**正文**含 `Part of #44`（不是只写在 Internal tracking）；milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)；labels **空**；`Internal tracking` **不发布**；每份正文只描述本步范围。
+>
+> **实际结果（2026-10-19，`github-operator` 执行；主 agent 核验；证据 `.pi/artifacts/github-operator-issue-44-steps.md`）**
+>
+> - **新增区块 1：`## Steps`** —— 1 句“七个 step 各自一个独立 PR（one PR per step）/ 每步可独立回退”，后接 **7 个 `- [ ]` checkbox**，每项 `#<n> — [Step N/7] …`，链接逐一核对指向 **#46–#52**。
+> - **新增区块 2：`## Step → acceptance mapping`** —— 拆分总览 §5.3 的映射表（英文表述）：AC-1..AC-11 → 主责步骤 / 复核步骤 / 证据形式，含 AC-6 的条件分支（“if S2 concludes keep 8.3.0, the JDBC clause of AC-6 is not triggered”）。
+> - **正文内 2 处单行修改**：① `Non-goals` 的 `@MockBean` 句 → “**The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step.**”（原句其余文字保留）；② `Rollback` 段 → “**delivered as one pull request per step** … **Each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together.**”（末尾质量门禁句保留）。
+> - **未改动**：`## Goal`、`## Background`、`## Scope`（12 条）、`## Acceptance criteria`（AC-1..AC-11）、`## Dependency`、`## Risk notes` 逐字保持；标题、milestone #3、labels（空）、state（OPEN）均未变（编辑后核验：`44 | OPEN | milestone=3 | labels=0`）。
+> - **本文件 `## GitHub issue body` 分区的处理**：2026-10-19 按 `github-operator` 已推送到远端的正文（经其与 `gh issue view 44` 比对，仅差 GitHub 追加的尾部换行）**同步为 epic 版本**，因此本文正文**重新与远端逐字一致**（仅差末尾 1 个换行）。
 
-> **状态：🟢 已在 GitHub 存在（[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)），无需新建。** 远端 issue 已由 `github-operator` 于 **2026-10-19** 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**；`## Internal tracking` 分区**未发布**）。**注意「立项 ≠ 完成」**：本 issue 只表示**迁移工作已立项**；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR）。
+> **状态：🟢 epic（已创建 7 个子 issue #46–#52，保持 OPEN）** —— 已在 GitHub 存在（[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)），无需新建。远端 issue 已由 `github-operator` 于 **2026-10-19** 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**；`## Internal tracking` 分区**未发布**），并同日按上述 6 项清单改为 epic（**state 仍为 OPEN**）。**注意「立项 ≠ 完成」**：本 issue 只表示**迁移工作已立项并已拆分**；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），AC-1..AC-11 均未取证。
 > **修订记录（2026-10-19，oracle 只读审查 `.pi/artifacts/oracle-option-a-issue-draft.md` 后；主 agent 裁定「全部接受」）**：闭合 **B-1**（`AC-10` 去掉流程语；`Scope → Docs` 只列**活文档**并声明历史记录不追改）、**B-2**（**写死** `@MockBean` 处置 = 本 issue 不迁移、列入 Non-goals）、**B-3**（补可复现的 JDK 21 固定机制：`README.md` + `JAVA_HOME` + 采纳 enforcer `requireJavaVersion [21,22)`；`AC-11` 增字节码级证据 major version 61；CI step 名一并列为改动点）；采纳 **P1-1..P1-5** 与 **P2-1..P2-9**；回填 **Y-1/Y-3/Y-4**；**Y-2**（milestone 名）当时标为「建议、待用户确认」，**现已确认并创建为 milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)**（原「待确认」表述已失效）。
 > 本文件是 GitHub issue **#44** 的**规范来源与本地跟踪记录**（由发布草稿 `docs/issues/proposed-option-a-boot3-migration.md` 改名而来）。`github-operator` 只发布下方 `## GitHub issue body` 分区的内容（**`## Internal tracking` 分区不上 GitHub**）；正文包裹在四反引号 `markdown` 围栏内仅是**本地容器**，发布时已去掉围栏行本身，其余内容逐字使用。
 > **发布前置门禁：✅ 已全部通过（2026-10-19）** —— oracle 风险关卡（✅，B/P1/P2 已按裁定闭合）→ 主 agent 明确批准（✅）→ 用户授权创建（✅）→ `github-operator` 创建（✅，产出 [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)）。本行保留为过程记录。
-> **与拆分提案的关系（口径提示；C-2 已裁定 = (a)）**：本 issue 正文的 `Non-goals` 写死“本 issue 不做 `@MockBean` → `@MockitoBean`”，而拆分把该项列为 **Step 5**。主 agent 采纳 oracle 建议 **(a)**：S5 作为本 issue 的**子 issue**，并把正文该句**改为澄清句**（见上表第 4 项）——属对已批准契约的**澄清**，不减范围、不改行为。**该远端编辑待用户批准；本文 `## GitHub issue body` 保持与远端逐字一致，暂不预改**。
+> **与拆分提案的关系（口径提示；C-2 已裁定 = (a)）**：本 issue 正文的 `Non-goals` 写死“本 issue 不做 `@MockBean` → `@MockitoBean`”，而拆分把该项列为 **Step 5**。主 agent 采纳 oracle 建议 **(a)**：S5 作为本 issue 的**子 issue**，并把正文该句**改为澄清句**（见上表第 4 项）——属对已批准契约的**澄清**，不减范围、不改行为。**该远端编辑已于 2026-10-19 生效；本文 `## GitHub issue body` 已同步为 epic 版本（与远端仅差末尾换行）**。
 > 事实、工作量与验收条件均引用**已批准**的 `docs/plans/ai-option-a-boot3-migration.md`（方案，2026-10-19 批准）与 `docs/plans/ai-roadmap-overview.md`（路线图，§11-D1/D6、§12.3-A-1）。本文件**不声称**任何迁移已完成、任何命令已运行。
 > 与 `README.md` roadmap 的一致性：本 issue 属于 roadmap 中 **"Spring Boot"** 现代化范畴的延续（EOL 修复 + Boot 3 + Java 17 + Jakarta），**在 roadmap 中不对应任何 AI 功能项**——第 3 项 "Spring AI"、第 4 项 "Agent workflows" **均不在本 issue 范围内**；迁移完成后**仍然没有**任何 AI 功能。
 
@@ -78,7 +88,7 @@ This issue continues the roadmap's **Spring Boot** modernization work (removing 
 ## Non-goals
 
 - No Spring AI / `spring-ai-*` dependency (that is a separate, later issue).
-- **No `@MockBean` → `@MockitoBean` migration in this issue.** `@MockBean` appears in **9 test files (11 annotations)** and has been deprecated since Boot 3.4 (replacement: Spring Framework 6.2's `@MockitoBean`, semantically equivalent). The resulting deprecation warnings are **acceptable and will be recorded** in the completion log; a follow-up issue may address them. This issue must not change those annotations.
+- **The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step.** `@MockBean` appears in **9 test files (11 annotations)** and has been deprecated since Boot 3.4 (replacement: Spring Framework 6.2's `@MockitoBean`, semantically equivalent). The resulting deprecation warnings are **acceptable and will be recorded** in the completion log; a follow-up issue may address them. This issue must not change those annotations.
 - No rewriting of historical workflow logs or closed-issue plan/issue documents (see Scope → Docs).
 - No Spring Security, JWT, CSRF or authentication-model change.
 - No business-behavior change, new feature or refactor; no URL, status code, JSON shape or error-message change.
@@ -120,7 +130,35 @@ None. This issue is itself the prerequisite for the planned Spring AI work (Boot
 
 ## Rollback
 
-The migration is delivered as a single PR with no destructive operations: failure can be reverted wholesale (`git revert` / close the PR) without affecting `main`. If the migration is split into commits by step, each step is independently revertible. Relaxing any quality gate to make CI green is not an acceptable mitigation and requires explicit approval.
+The migration is **delivered as one pull request per step** with no destructive operations: failure can be reverted wholesale (`git revert` / close the PR) without affecting `main`. **Each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together.** Relaxing any quality gate to make CI green is not an acceptable mitigation and requires explicit approval.
+
+## Steps
+
+Each of the seven steps is delivered as **its own pull request** (**one PR per step**); every step is independently verifiable and independently revertible. The steps are tracked as sub-issues:
+
+- [ ] #46 — [Step 1/7] Record the pre-migration baseline and start the migration checklist
+- [ ] #47 — [Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline
+- [ ] #48 — [Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace
+- [ ] #49 — [Step 4/7] Enforce JDK 21 in the build and document/verify it
+- [ ] #50 — [Step 5/7] Replace deprecated @MockBean with @MockitoBean in the tests
+- [ ] #51 — [Step 6/7] Prove the migration with full regression and production smoke evidence
+- [ ] #52 — [Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log
+
+## Step → acceptance mapping
+
+| #44 AC | Primary step | Re-checked by | Evidence form |
+| --- | --- | --- | --- |
+| AC-1 `mvn verify` test count does not decrease | S3 | S6 | command output + comparison against the S1 baseline |
+| AC-2 coverage gate 0.85 unchanged | S3 | S6 | `All coverage checks have been met.` |
+| AC-3 jar shape (`BOOT-INF/classes/static/index.html`) | S3 | — | `unzip -l` output |
+| AC-4 missing `dist` → BUILD FAILURE | S3 | S4 (rollback check) | comparison of two build runs |
+| AC-5 frontend green and unchanged | S6 | — | the five frontend commands' output + `git diff` proving zero frontend change |
+| AC-6 production compose smoke + JDBC semantics | S6 | S2 (JDBC part only) | HTTP status/body + date consistency. **Conditional branch**: if S2 concludes "keep 8.3.0", the JDBC clause of AC-6 is not triggered |
+| AC-7 authentication/session semantics | S6 | S3 (unit-test evidence) | smoke + `mvn verify` test cases |
+| AC-8 guard test and documentation agree | S3 (code) + S7 (docs) | — | test file + contracts document §8 |
+| AC-9 no new JaCoCo excludes | S3 | S6 | `pom.xml` comparison of the 8 entries |
+| AC-10 both CI jobs green | S3 (backend job → JDK 21) | S4, S6 | the PR's CI run |
+| AC-11 JDK consistency + bytecode 61 | S3 (bytecode / `mvn -version` / both `Dockerfile` stages) + S4 (enforcer/README/image evidence) | S6 | `javap` + `mvn -version` + both stage tags |
 ````
 
 ## Internal tracking
@@ -138,14 +176,14 @@ The migration is delivered as a single PR with no destructive operations: failur
 | labels | **无（空数组）** |
 | state | **OPEN** |
 | 创建时间（createdAt） | **`2026-10-19T07:06:27Z`** |
-| 正文 | 与本文件 `## GitHub issue body` **逐字一致**（主 agent 核验）；`## Internal tracking` 分区**未发布** |
-| **当前跟踪状态** | **已立项（issue 已创建）**，实现**未开始**：无代码/配置/测试改动、无 PR；本 issue 的 Scope 与 Acceptance criteria 均**未执行** |
+| 正文 | 与本文件 `## GitHub issue body` **逐字一致**（主 agent 核验）；`## Internal tracking` 分区**未发布**。**2026-10-19 epic 编辑后**：远端正文 = 原正文 + `## Steps` + `## Step → acceptance mapping` + 2 处单行修改；本文件 body 分区已同步为该版本（与远端仅差 GitHub 追加的尾部换行） |
+| **当前跟踪状态** | **epic（已创建 7 个子 issue #46–#52，保持 OPEN）**；实现**未开始**：无代码/配置/测试改动、无 PR；本 issue 的 Scope 与 Acceptance criteria（AC-1..AC-11）**均未执行**，也未在任何子 issue 中开始（#46–#52 全部 OPEN、无 PR） |
 
 ### 本地跟踪表
 
 | 项目 | 值 |
 | --- | --- |
-| 文档状态 | **🟢 已在 GitHub 存在（#44），无需新建**（2026-10-19 由 `github-operator` 按获批草稿创建）；本文件已从 `docs/issues/proposed-option-a-boot3-migration.md` 改名为 `docs/issues/issue-44-boot3-java17-jakarta-migration.md`（**slug 说明**：选用 `boot3-java17-jakarta-migration`，含编号 **44**，与远端标题的 Boot 3.x / Java 17 / Jakarta 三项对应，并与方案文档 `docs/plans/ai-option-a-boot3-migration.md` 的命名区分开）|
+| 文档状态 | **🟢 epic（已创建 7 个子 issue #46–#52，保持 OPEN）**；本 issue 于 2026-10-19 由 `github-operator` 按获批草稿创建，同日转为 epic；本文件已从 `docs/issues/proposed-option-a-boot3-migration.md` 改名为 `docs/issues/issue-44-boot3-java17-jakarta-migration.md`（**slug 说明**：选用 `boot3-java17-jakarta-migration`，含编号 **44**，与远端标题的 Boot 3.x / Java 17 / Jakarta 三项对应，并与方案文档 `docs/plans/ai-option-a-boot3-migration.md` 的命名区分开）|
 | oracle 审查报告 | `.pi/artifacts/oracle-option-a-issue-draft.md`（只读审查，2026-10-19）：必须修 **B-1..B-3 + P1-1..P1-5**；建议修 **P2-1..P2-9**；待裁定 **Y-1..Y-4**。**裁定结果：全部接受**——B/P1/P2 已全部落入本稿；**Y-1/Y-3/Y-4 已由主 agent 裁定并回填**；**Y-2（milestone 名）仍为建议、待用户确认**（→ **2026-10-19 已闭合：milestone #3 已创建**，见下表） |
 | 来源 | ① `docs/plans/ai-roadmap-overview.md`（**已批准**路线图，2026-10-19）：Option A 为路线图首个工作流（§5.1、§11-D1）、立项授权方向（§11-D6）、§12.3-A-1；② `docs/plans/ai-option-a-boot3-migration.md`（**已批准**实施计划，2026-10-19） |
 | 关联计划 | `docs/plans/ai-option-a-boot3-migration.md`；上级文档 `docs/plans/ai-roadmap-overview.md` |
@@ -155,7 +193,7 @@ The migration is delivered as a single PR with no destructive operations: failur
 | labels（已发布） | **空**（P2-4 已裁定）：仓库既有 issue（#28–#33）均无 label，保持与现状一致；**#44 远端 labels 实测为空数组** |
 | 事实来源（可核验） | `pom.xml`（`spring-boot.version` 2.7.18、`maven.compiler.source/target` = 11、`maven-enforcer-plugin:3.5.0` 已有 `require-frontend-dist` 执行）；`.github/workflows/ci.yml`（job name `Build and test (Java 11)` @ `:20`、step `Set up Java 11` @ `:28`、`java-version: "11"` @ `:32`）；`Dockerfile`（`maven:3.9-eclipse-temurin-11`、`eclipse-temurin:11-jre`、uid/gid 1001）；`SpringBootOnlyArchitectureTest.java`；`grep -rl "javax\.servlet" src/main/java` = **11**、宽口径 `javax.` = 15、`grep -rl "@MockBean" src/test/java` = **9 个文件 / 11 处标注**（docs-writer 只读复核，2026-10-19）。**B-1 证据**：`grep -rln "Build and test (Java 11)" docs README.md .github` = **14 个文件**，其中 10 个是**历史记录**（`docs/logs/2026-10-14-issue-30-*.md`、`docs/logs/2026-10-15-issues-31-32-33-*.md`、`docs/plans/issue-30/31/32/33-*.md`、`docs/issues/issue-30/31/32/33-*.md`），需改的是**活文档**（`README.md` 不含该字面量、契约文档也不含该字面量 → 契约文档要改的是 §8/§12 的守卫与容器/版本约定） |
 | 未运行/未验证 | docs-writer **未运行** `mvn`、npm、Docker、CI；**立项后仅做只读 GitHub 核对**（`gh issue view 44` / `gh api .../milestones`，2026-10-19，用于回填上方元数据表），**未做任何 GitHub 写操作**。正文中的 127/195/12 用例数、覆盖率 0.8980 / 92.35%、10 条深链、HikariCP/Jackson/Logback/Tomcat 的版本号均**来自 oracle 报告与已批准计划文档的引用**，需实施时复跑/复核确认 |
-| 工作量 | **1.5–3 周（估算）**，引用计划 §5 里程碑表（A0–A7）。**拆分后口径（C-4 已裁定 (a)，待用户批准后才会写入远端正文）**：工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查） |
+| 工作量 | **1.5–3 周（估算）**，引用计划 §5 里程碑表（A0–A7）。**拆分后口径（C-4 已裁定 (a)）**：本文件与拆分总览记录“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”；**但远端 #44 正文的 `Risk notes → Estimate` 行仍为 “~1.5–3 weeks”，未按 C-4 改写**（见下方“剩余待确认”第 9 项） |
 
 ### 已裁定（2026-10-19，主 agent；oracle 建议 → 裁定）
 
@@ -179,10 +217,11 @@ The migration is delivered as a single PR with no destructive operations: failur
 | 2 | **目标 Boot 补丁版本** | 计划 D-A1 = Boot 3.x；建议取 **3.5.x**（与 Spring AI 1.1.x 基线一致），具体补丁版本仍标记为「实施时定」 |
 | 3 | **D-A5 依赖显式 pin** | `mockito-core`/`byte-buddy`/`junit-jupiter` 等显式 pin 是否交回 BOM 管理：计划建议「先保持、仅改必需项」，**未逐条裁定** |
 | 4 | **是否需要 oracle 复审修订稿** | **已闭合**：#44 已由 `github-operator` 按本文件 `## GitHub issue body` 创建（正文逐字一致，主 agent 核验），发布前**未再引入新的架构/风险选择**；本轮不再需要复审。**注意**：`@MockBean` 明确不迁移、`requireJavaVersion [21,22)` 等收窄口径**仅写入本 issue**，**尚未回填** `docs/plans/ai-option-a-boot3-migration.md`（见「内部备注」末条） |
-| 5 | **是否创建 7 个子 issue**（拆分提案） | 草稿已按 oracle 修订完成（B-1/P1/P2/C 全部落入）；**待用户授权**。未授权前 `github-operator` 不得创建 |
-| 6 | **是否编辑 #44 为 epic**（上述 6 项清单） | **待用户授权**；未授权前远端 #44 保持原样（本文件 `## GitHub issue body` 仍与远端逐字一致） |
-| 7 | **是否授权安装 JDK 21** | S1/S3/S4 的 blocking 前置（当前本机 Maven 跑 JDK 27）。**安装属环境动作，超出当前“安装 Ollama/模型”的授权范围**（P1-5） |
+| 5 | ~~**是否创建 7 个子 issue**（拆分提案）~~ | **已闭合（2026-10-19）**：`github-operator` 已创建 **#46–#52**（milestone #3、labels 空、`Part of #44`、均 OPEN）。 |
+| 6 | ~~**是否编辑 #44 为 epic**（上述 6 项清单）~~ | **已闭合（2026-10-19）**：已执行并核验；#44 **保持 OPEN**（标题/milestone/labels/state 未变）。 |
+| 7 | ~~**是否授权安装 JDK 21**~~ | **已闭合（2026-10-19）**：JDK 21 **已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`，主 agent 确认）；Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，未跑 `mvn verify`）。 |
 | 8 | **PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 是否先合并** | 本文件与拆分文档均在该分支（`codex/ai-roadmap-planning`，state=OPEN）；未合并前这些修订不在 `main` |
+| 9 | **C-4 的 epic 正文改写未落远端**（**新发现，未确认是否有意**） | 拆分总览 §7 / 元数据要求把 epic 正文的工期口径改为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，但 `github-operator` 的 6 项清单（§5.1）**不包含**这一项：2026-10-19 核对远端正文的 `Estimate` 行仍为“~1.5–3 weeks”。**本轮 docs-writer 未修改远端**；如需补改，需主 agent 授权 `github-operator` 单独编辑。 |
 
 ### 发布前置（go/no-go）——**已全部完成**
 
@@ -194,7 +233,8 @@ The migration is delivered as a single PR with no destructive operations: failur
 
 ### 内部备注
 
-- **拆分提案（2026-10-19）**：`docs/plans/issue-44-migration-steps.md` + 7 份 `docs/issues/proposed-step-*.md` 已按 oracle 审查（`.pi/artifacts/oracle-issue-44-split-review.md`）修订完毕；主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受**。**本文件正文未改、远端未动**：正文编辑（6 项）与子 issue 创建均待用户批准。
+- **拆分提案（2026-10-19）**：`docs/plans/issue-44-migration-steps.md` + 7 份子 issue 文档（现为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`）已按 oracle 审查（`.pi/artifacts/oracle-issue-44-split-review.md`）修订，主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受**。**2026-10-19 用户授权后**：子 issue 已创建、本 issue 已转 epic；**本文件 body 分区已同步为 epic 版本**（与远端仅差末尾换行）。
+- **epic 转换的记录位置**：远端变更由 `github-operator` 执行并留有证据 `.pi/artifacts/github-operator-issue-44-steps.md`；本地回填见本文件顶部“实际结果”与 `docs/plans/issue-44-migration-steps.md` §5.1。**docs-writer 本轮未做任何 GitHub 写操作**，也未修改任何历史日志。
 - 本 issue **不包含任何代码改动**；issue 本身已于 **2026-10-19** 创建（**#44**），对应总览 §12.3-A-1 的**已完成项**。**立项不等于实施**：Scope/Acceptance criteria 全部未执行。
 - **后续待执行（不在本次文档任务范围）**：迁移实施的 worker 指派、`docs/logs/` 工作流日志（完成后建立）、以及总览 §12.3 的提交/推送/PR（A-3/A-4）。**本 issue 关闭前不应把任何 Scope 条目标记为已完成**。
 - 计划文档 `ai-option-a-boot3-migration.md` 中 `@MockBean` 记作「**9 处**」（按**文件**计），本轮 grep 实测为 **9 个文件 / 11 处标注**；草稿正文采用实测口径，**与计划的差异已在 §事实来源 记录，不视为计划错误**。

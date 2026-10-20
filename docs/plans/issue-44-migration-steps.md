@@ -1,8 +1,9 @@
 # Issue #44 拆分总览 — Option A 迁移的 7 个可独立实现/验证的步骤
 
-> **文档状态：🟠 已按 oracle 审查修订 / 待用户批准创建（未批准，未发布）**
-> 本文只是**粒度细化提案**：把已批准的 Option A 迁移（`docs/plans/ai-option-a-boot3-migration.md`，2026-10-19 批准；issue [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)，milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)）拆成 7 个可独立实现、独立验证的小步骤。**它不改变已批准的范围、验收条件或决策**（见 §10），也**不表示任何步骤已实施**：无源码/配置/测试改动、无 PR、未新建任何 GitHub issue。
-> **审批门禁**：① oracle 只读审查本文 + 7 份草稿 → ✅ **已完成（2026-10-19，`.pi/artifacts/oracle-issue-44-split-review.md`）**；② 主 agent 裁定建议 → ✅ **已完成，裁定「全部接受」**（B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4）；③ 用户授权创建 7 个 issue + 授权把 #44 转为 epic → **🔴 待办**；④ `github-operator` 按草稿创建 / 编辑远端。**未走完 ③ 之前，任何人不得把草稿内容当作实施许可，也不得创建/编辑任何 GitHub issue。**
+> **文档状态：🟢 已批准并已创建子 issue（2026-10-19）** —— 7 个子 issue **[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)–[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)** 已由 `github-operator` 按批准草稿创建（milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，labels 空，正文含 `Part of #44`），#44 **已转为 epic 并保持 OPEN**。**但本文件仍不表示任何步骤已实施**：无源码/配置/测试改动、无 PR，S1–S7 的 Scope / AC 全部未执行。
+> **创建与回填结果（2026-10-19，事实记录）**：① 7 份草稿已改名为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`，正文与远端**逐字一致**（仅 GitHub 追加一个尾部换行），`Internal tracking` 未发布；② #44 正文已追加 `## Steps`（7 个带链接的 checkbox + “每步一个 PR”）与 `## Step → acceptance mapping`，Non-goals 的 `@MockBean` 句与 Rollback 的 "single PR" 句**各改 1 行**，`Scope` / `AC-1..AC-11` 未改，标题/milestone/labels/state 未变；③ **JDK 21 已安装**：`/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，**未跑 `mvn verify`**，也未跑 npm/Docker/CI）。
+> 本文只是**粒度细化提案**：把已批准的 Option A 迁移（`docs/plans/ai-option-a-boot3-migration.md`，2026-10-19 批准；issue [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)，milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)）拆成 7 个可独立实现、独立验证的小步骤。**它不改变已批准的范围、验收条件或决策**（见 §10），也**不表示任何步骤已实施**：7 个子 issue 已创建（#46–#52）、#44 已转 epic，但**无源码/配置/测试改动、无 PR**，S1–S7 全部未执行。
+> **审批门禁**：① oracle 只读审查本文 + 7 份草稿 → ✅ **已完成（2026-10-19，`.pi/artifacts/oracle-issue-44-split-review.md`）**；② 主 agent 裁定建议 → ✅ **已完成，裁定「全部接受」**（B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4）；③ 用户授权创建 7 个 issue + 授权把 #44 转为 epic → ✅ **已完成（2026-10-19）**；④ `github-operator` 按草稿创建 / 编辑远端 → ✅ **已完成（2026-10-19，产出 #46–#52；#44 已转 epic）**。**但 7 个子 issue 的存在不等于实施许可**：每个 step 仍需各自走 oracle 预审 → 主 agent 批准 → 单一 worker → 3 reviewer 的流程；**任何未经主 agent 批准的实施、提交或远端变更仍然禁止**。**
 > 起草日期：**2026-10-19**（仓库基线 `main` @ `70fcddb`，当前分支 `codex/ai-roadmap-planning`，对应已开出的 PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45)）。所有数字均**引用既有记录**（`docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`、`docs/architecture/frontend-migration-contracts.md`）或本文件的**只读 grep 复核**；**本轮未运行 `mvn` / npm / Docker / CI**。
 >
 > **修订记录（2026-10-19，按 oracle 只读审查；主 agent 裁定「全部接受」）**
@@ -12,17 +13,18 @@
 > - **P2-1..P2-8（全部采纳）**：S6 列出 10 条深链具体路径；S5 给弃用警告 grep 模式；S4 AC-2 用本机 JDK 27 取证“错误 JDK → BUILD FAILURE”；S1 AC-4 补跨 JDK 对比规则；§3 加“每步自有计划文档与完成日志”；S7 日志用 **S7 自己的 issue 编号**；§5.3 的 AC-6 行注明条件分支；S3 正文把 `jakarta.servlet-api` 断言写为“expected to stay absent”。
 > - **C-1/C-2/C-3/C-4 均采纳 (a)**：`ci.yml` 的 `java-version: "21"` + job/step 改名并入 **S3**（S4 不再改 CI）；S5 为 epic 子 issue；S3 只跑 `npm ci && npm run build`（全量前端/e2e 归 S6）；epic 工期改为“**工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）**”。
 > - **未变**：§1.1 的原子性论证、§2 的顺序硬约束（除 S3/S4 边界外）、§5.3/§5.4 的验收映射、§7 的估算表均保持；本次修订**未运行**任何 `mvn` / npm / Docker / CI。
+> - **创建结果（2026-10-19，本次回填新增）**：子 issue 编号 **S1→#46、S2→#47、S3→#48、S4→#49、S5→#50、S6→#51、S7→#52**（均 **OPEN**、milestone #3、labels 空）；#44 转为 **epic（OPEN）**。证据：`.pi/artifacts/github-operator-issue-44-steps.md`、`docs/issues/issue-44-boot3-java17-jakarta-migration.md`。本次回填**仍未运行**任何 `mvn` / npm / Docker / CI。
 
 ## 元数据
 
 | 项目 | 值 |
 | --- | --- |
-| 文档类型 | 拆分/跟踪总览（issue #44 epic 的步骤规划）——**已按 oracle 审查修订 / 待用户批准创建** |
+| 文档类型 | 拆分/跟踪总览（issue #44 epic 的步骤规划）——**已批准并已创建子 issue（2026-10-19）** |
 | 事实来源 | 已批准计划 `docs/plans/ai-option-a-boot3-migration.md`（§1.3/§4.3/§5/§6/§7.1）；路线图 `docs/plans/ai-roadmap-overview.md`（§6 M3、§12.3）；`docs/issues/issue-44-boot3-java17-jakarta-migration.md`（已发布的 Scope / Non-goals / AC-1..AC-11）；`docs/architecture/frontend-migration-contracts.md`（§7/§8/§9/§11/§12）；`docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`（基线数字）；仓库只读核对：`pom.xml`、`.github/workflows/ci.yml`、`Dockerfile`、`src/test/java/com/fabflix/boot/SpringBootOnlyArchitectureTest.java`、`grep`（2026-10-19） |
-| 关联 GitHub issue | **[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)**（OPEN，milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，labels 空）。**建议**：把 #44 转为 **epic/tracking issue**（见 §5）；此转换**未获授权**，远端未改 |
-| 关联草稿 | `docs/issues/proposed-step-1-baseline.md` … `proposed-step-7-close-out.md`（7 份，均已按 oracle 审查修订，**待用户批准创建**） |
-| 估算 | 工作量合计 **≈ 6.5–7.5 人日**；日历口径（含每步 oracle 预审 + 3 路 reviewer + 修复 + PR/CI 循环）**≈ 5–7.5 周**（每周 >10 小时）。**C-4 已裁定 (a)**：epic 正文改写为“**工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）**”，与已批准计划的“1.5–3 周”同口径 |
-| 状态 | **🟠 已按 oracle 审查修订 / 待用户批准创建**：B-1 + P1-1..P1-8 + P2-1..P2-8 + C-1..C-4 已全部落入本文件与 7 份草稿（依据 `.pi/artifacts/oracle-issue-44-split-review.md`，主 agent 裁定「全部接受」）。**仍待用户决策**：① 是否创建 7 个子 issue；② 是否编辑 #44 为 epic（§5.1 的 6 项清单）；③ 是否授权安装 JDK 21（S1/S3/S4 的 blocking 前置）；④ PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 的合并时机 |
+| 关联 GitHub issue | **[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44) —— epic，state OPEN**（milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，labels 空；正文 `## Steps` 列出 7 个子 issue）。**子 issue（均已创建、OPEN、milestone #3、labels 空）**：S1 [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)、S2 [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)、S3 [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)、S4 [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)、S5 [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50)、S6 [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51)、S7 [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) |
+| 关联子 issue 文档 | `docs/issues/issue-46-baseline.md`、`issue-47-dependency-readiness.md`、`issue-48-core-boot3-jakarta.md`、`issue-49-jdk21-toolchain.md`、`issue-50-mockito-annotation-cleanup.md`、`issue-51-regression-proof.md`、`issue-52-close-out.md`（原名 `proposed-step-1..7-*.md`，issue 创建后按真实编号改名；每份均记录远端编号/URL/state 与“正文逐字一致”） |
+| 估算 | 工作量合计 **≈ 6.5–7.5 人日**；日历口径（含每步 oracle 预审 + 3 路 reviewer + 修复 + PR/CI 循环）**≈ 5–7.5 周**（每周 >10 小时）。**C-4 已裁定 (a)**：epic 正文改写为“**工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）**”，与已批准计划的“1.5–3 周”同口径。**注（2026-10-19 核对）**：远端 #44 正文的 `Estimate` 行**仍为“~1.5–3 weeks”，该改写未落远端**（不在 §5.1 的 6 项内），已记入 `docs/issues/issue-44-boot3-java17-jakarta-migration.md` 的“剩余待确认”第 9 项 |
+| 状态 | **🟢 已批准并已创建子 issue（2026-10-19）**：B-1 + P1-1..P1-8 + P2-1..P2-8 + C-1..C-4 已落入本文件与 7 份 issue 文档；7 个子 issue（#46–#52）与 #44 的 epic 转换**均已执行并核验**。**剩余待办**：① PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 的合并时机（未合并前这些文档不在 `main`）；② **S1（#46）开工**（其余步骤均未完，也未获得实施授权）；③ **C-4 的 epic `Estimate` 行改写未落远端**（待主 agent 决定是否补改）。**已完成**：④ 安装 JDK 21；⑤ 创建子 issue；⑥ #44 转 epic |
 
 ---
 
@@ -100,15 +102,17 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 | # | 标题（issue 前缀） | 目标（一句话） | 主要改动面 | 依赖 | 估算 | 验证要点 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **S1** | `[Step 1/7] Record the pre-migration baseline and migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出 |
-| **S2** | `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` | 在 Boot 2.7 + Java 11 上单独定版并验证 `mysql-connector-j`（及 jasypt 的 JDK 21 检查），把 JDBC 差异与 Boot 3 差异分离 | `pom.xml`（1 个依赖版本）；可能 1 处配置文件 | 无（可与 S1 并行） | **1 天** | `mvn verify` 全绿 + 真 MySQL compose smoke 的日期/时区语义 |
-| **S3** | `[Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace` | 唯一一次原子升级：BOM 3.5.x + `release=17` + 11 文件 jakarta + 守卫白名单 + CI JDK 21 + **两阶段镜像 JDK 21** | `pom.xml`、11 个 `src/main/java` 文件、`SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、**`Dockerfile`（两行 `FROM`，B-1）** | S1、S2 | **2–3 天** | `mvn verify`（127 用例/0.8980 不下降，JDK 21 环境下）、守卫集合相等断言 == 11、jar 形态、dist 缺失仍失败、`major version: 61`、PR CI 双 job 绿、**`docker compose build app` 成功 + 容器 health 200** |
-| **S4** | `[Step 4/7] Enforce JDK 21 in the build and document/verify it` | 用机器可执行的方式强制 JDK 21 并归档证据：enforcer `requireJavaVersion [21,22)` + README；**只验证不改镜像**（Dockerfile 已在 S3） | `pom.xml`（主 `<build>` 新增 enforcer 执行）、`README.md` | S3 | **1 天** | 错 JDK → BUILD FAILURE（可用本机 JDK 27 取证）；JDK 21 → 通过；两 stage 镜像为 21 + `docker compose build app` 成功（证据）；`-Pfrontend` 打包与 dist 守卫不回退 |
-| **S5** | `[Step 5/7] Replace deprecated @MockBean with @MockitoBean` | 消除 Boot 3.4+ 的 `@MockBean` 弃用警告（9 文件 / 11 处） | 9 个测试文件（仅 import + 注解） | S3 | **0.5 天** | `mvn verify` 全绿且用例数不变；弃用警告计数归零；无任何测试语义改动 |
-| **S6** | `[Step 6/7] Prove the migration with full regression and production smoke evidence` | 对最终形态跑全量门禁 + HTTP 语义 + 顾客/员工流程 + 提交版 compose smoke，产出可核验证据 | 仅 `docs/`（证据记录）；**不改源码** | S3、S4、S5 | **1 天** | #44 的 AC-1..AC-7/AC-9/AC-11 逐条取证；环境不足则**显式标注未执行** |
-| **S7** | `[Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log` | 收尾：架构约定 **§8/§12/§11**（+§7 陈旧数字）与 README、路线图状态、里程碑与 #44 关闭口径、工作流日志 | `docs/architecture/frontend-migration-contracts.md`、`README.md`、`docs/plans/ai-roadmap-overview.md`、`docs/logs/`、#44 记录 | S6 | **0.5 天** | 文档与实现的守卫/版本描述一致（含 **§11** 容器两阶段 = JDK 21）；路线图与里程碑状态与实际一致；日志含两类总结 |
+| **S1**（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)） | `[Step 1/7] Record the pre-migration baseline and start the migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出 |
+| **S2**（[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)） | `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` | 在 Boot 2.7 + Java 11 上单独定版并验证 `mysql-connector-j`（及 jasypt 的 JDK 21 检查），把 JDBC 差异与 Boot 3 差异分离 | `pom.xml`（1 个依赖版本）；可能 1 处配置文件 | 无（可与 S1 并行） | **1 天** | `mvn verify` 全绿 + 真 MySQL compose smoke 的日期/时区语义 |
+| **S3**（[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)） | `[Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace` | 唯一一次原子升级：BOM 3.5.x + `release=17` + 11 文件 jakarta + 守卫白名单 + CI JDK 21 + **两阶段镜像 JDK 21** | `pom.xml`、11 个 `src/main/java` 文件、`SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、**`Dockerfile`（两行 `FROM`，B-1）** | S1、S2 | **2–3 天** | `mvn verify`（127 用例/0.8980 不下降，JDK 21 环境下）、守卫集合相等断言 == 11、jar 形态、dist 缺失仍失败、`major version: 61`、PR CI 双 job 绿、**`docker compose build app` 成功 + 容器 health 200** |
+| **S4**（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)） | `[Step 4/7] Enforce JDK 21 in the build and document/verify it` | 用机器可执行的方式强制 JDK 21 并归档证据：enforcer `requireJavaVersion [21,22)` + README；**只验证不改镜像**（Dockerfile 已在 S3） | `pom.xml`（主 `<build>` 新增 enforcer 执行）、`README.md` | S3 | **1 天** | 错 JDK → BUILD FAILURE（可用本机 JDK 27 取证）；JDK 21 → 通过；两 stage 镜像为 21 + `docker compose build app` 成功（证据）；`-Pfrontend` 打包与 dist 守卫不回退 |
+| **S5**（[#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50)） | `[Step 5/7] Replace deprecated @MockBean with @MockitoBean in the tests` | 消除 Boot 3.4+ 的 `@MockBean` 弃用警告（9 文件 / 11 处） | 9 个测试文件（仅 import + 注解） | S3 | **0.5 天** | `mvn verify` 全绿且用例数不变；弃用警告计数归零；无任何测试语义改动 |
+| **S6**（[#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51)） | `[Step 6/7] Prove the migration with full regression and production smoke evidence` | 对最终形态跑全量门禁 + HTTP 语义 + 顾客/员工流程 + 提交版 compose smoke，产出可核验证据 | 仅 `docs/`（证据记录）；**不改源码** | S3、S4、S5 | **1 天** | #44 的 AC-1..AC-7/AC-9/AC-11 逐条取证；环境不足则**显式标注未执行** |
+| **S7**（[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)） | `[Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log` | 收尾：架构约定 **§8/§12/§11**（+§7 陈旧数字）与 README、路线图状态、里程碑与 #44 关闭口径、工作流日志 | `docs/architecture/frontend-migration-contracts.md`、`README.md`、`docs/plans/ai-roadmap-overview.md`、`docs/logs/`、#44 记录 | S6 | **0.5 天** | 文档与实现的守卫/版本描述一致（含 **§11** 容器两阶段 = JDK 21）；路线图与里程碑状态与实际一致；日志含两类总结 |
 
 **合计工作量**：0.5 + 1 + (2–3) + 1 + 0.5 + 1 + 0.5 = **6.5–7.5 人日**（S1∥S2 可压缩 0.5–1 天）。
+
+> **环境更新（2026-10-19，主 agent 确认）**：**JDK 21 已安装**于 `/opt/homebrew/opt/openjdk@21`（`java version 21.0.12.1`），且 Maven 在该 `JAVA_HOME` 下**编译现有 Boot 2.7 代码成功**（仅编译，**未跑 `mvn verify`**）。因此 S1 的“额外在 JDK 21 上复跑”从“可能不可用”转为**可执行**；按 S1 的跨 JDK 对比规则（P2-4），**建议 S1 基线在 JDK 21 下复跑**，使 S3/S6 的“数量不下降”与后续步骤在**同一 JDK** 上对比、避免 cross-JDK caveat；Boot 2.7.18 能否在 JDK 21 上跑完 `mvn verify` 仍**未实测**。
 
 > **每个 step 都是完整工作流**：按 `AGENTS.md` §2/§8，每个 step 建立**自己的** `docs/plans/issue-<n>-<slug>.md` 与完成日志 `docs/logs/YYYY-MM-DD-issue-<n>-<slug>.md`（可按需精简，但必须有）；`<n>` 用**该 step 自己的 issue 编号**，epic #44 在文档/日志中引用而非替代（P2-5/P2-6）。
 
@@ -161,7 +165,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 - **DoD**：9 个测试文件、11 处 `@MockBean` → `@MockitoBean`（import 由 `org.springframework.boot.test.mock.mockito.MockBean` 改为 `org.springframework.test.context.bean.override.mockito.MockitoBean`）；`mvn verify` 全绿且用例数/覆盖率不变；迁移前后的**弃用警告计数**对比记录（`mvn verify 2>&1 | grep -ci deprecat`，只作证据，不作闸门）；`git diff` 只含 import + 注解行。
 - **非目标**：不改任何断言/测试逻辑/被测代码；不引入新测试依赖。
 - **回退点**：单 PR revert。
-- **⚠️ 边界已裁定（C-2 = (a)，P1-7）**：#44 正文 Non-goals 原本写死“本 issue 不做 `@MockBean`→`@MockitoBean`”。主 agent 采纳 oracle 建议 **(a)**：S5 作为 **epic 子 issue**（正文含 `Part of #44`），并同步把 epic Non-goals 改为澄清句："The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step."（属对已批准契约的澄清，不缩减范围；远端编辑待用户批准，见 §5.1）。
+- **⚠️ 边界已裁定（C-2 = (a)，P1-7）**：#44 正文 Non-goals 原本写死“本 issue 不做 `@MockBean`→`@MockitoBean`”。主 agent 采纳 oracle 建议 **(a)**：S5 作为 **epic 子 issue**（正文含 `Part of #44`），并同步把 epic Non-goals 改为澄清句："The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step."（属对已批准契约的澄清，不缩减范围；**远端编辑已于 2026-10-19 生效**，见 §5.1）。
 
 ### S6 — 回归与生产验证
 
@@ -196,14 +200,16 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 3. **保留审计链**：立项（2026-10-19）→ 拆分（本文件）→ 7 步实施 → 关闭，每条 GitHub 记录都指向同一个 epic。
 4. **"立项 ≠ 实施"的口径不用重写**：epic 正文可原样保留 Scope/AC，只加"步骤清单 + 每步映射"。
 
-**需要的远端改动（**未授权，暂不做**；采纳 oracle 方案 A）**：由 `github-operator` 在**用户批准后**执行以下 **6 项**，docs-writer 不改远端：
+**需要的远端改动（✅ 已于 2026-10-19 执行完成；采纳 oracle 方案 A）**：由 `github-operator` 在用户批准后执行以下 **6 项**（docs-writer 不改远端）：
 
-1. **追加 `## Steps`**：7 个 checkbox（每项 `- [ ]` + 子 issue 链接**占位**），并**写明“每个 step 一个独立 PR”**；
+1. **追加 `## Steps`**：7 个 checkbox（每项 `- [ ]` + 子 issue 链接；**创建后已回填为真实编号 #46–#52**），并**写明“每个 step 一个独立 PR”**；
 2. **追加 `## Step → acceptance mapping`**（即 §5.3 的表）；
 3. **修改 Rollback 段的 "single PR" 表述（P1-1）** → "delivered as **one pull request per step**; each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together"；
 4. **修改 Non-goals 的 `@MockBean` 句（P1-7 / C-2）** → "The core upgrade step (S3) does not migrate `@MockBean`; step 5 (S5) does it as a follow-up step."；
 5. **保留原 Scope / AC-1..AC-11 不动**（作为总契约，不改数字与验收）；
 6. **不关闭 #44**：epic 保持 open，待 S7 完成后由主 agent 关闭（或按 milestone 口径保持 open 至 milestone 关闭）。
+
+**实际执行结果（2026-10-19，`github-operator`；证据 `.pi/artifacts/github-operator-issue-44-steps.md`，主 agent 已核验）**：① ✅ `## Steps` 已追加（1 句“one PR per step / 每步可独立回退” + 7 个 checkbox 链接 **#46–#52**，链接逐一核对）；② ✅ `## Step → acceptance mapping` 已追加（AC-1..AC-11 → 主责/复核步骤/证据形式，含 AC-6 条件分支）；③ ✅ Rollback 段已改为 “**delivered as one pull request per step** … **Each step is independently revertible; the Jakarta rewrite and guard-test rewrite are reverted together.**”（**仅此 1 行变化**，原质量门禁句保留）；④ ✅ Non-goals 的 `@MockBean` 句已改为澄清句（**仅此 1 行变化**）；⑤ ✅ `## Goal` / `## Background` / `## Scope` / `## Acceptance criteria` / `## Dependency` / `## Risk notes` **逐字未改**，AC-1..AC-11 全部保留；⑥ ✅ #44 **保持 OPEN**（编辑后核验：`44 | OPEN | milestone=3 | labels=0`），标题/milestone/labels/state 均未变。**上述只是立项/拆分层面的远端变更，S1–S7 一律未开工。**
 
 **子 issue 统一规范**：标题带 `[Step N/7]`；**正文**含 `Part of #44`（不是只写在 Internal tracking）；milestone **#3**；labels **空**；`Internal tracking` 分区**不发布**；每份正文**只描述本步范围**（非目标与依赖写死）。
 
@@ -213,19 +219,19 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 ### 5.3 #44 验收条件 → 步骤映射（推荐方案 A 下写进 epic 正文）
 
-| #44 AC | 主责步骤 | 复核步骤 | 证据形式 |
-| --- | --- | --- | --- |
-| AC-1 `mvn verify` 用例数不下降 | S3 | S6 | 命令输出 + 与 S1 基线对比 |
-| AC-2 覆盖率闸门 0.85 不变 | S3 | S6 | `All coverage checks have been met.` |
-| AC-3 jar 形态（`BOOT-INF/classes/static/index.html`） | S3 | — | `unzip -l` 输出 |
-| AC-4 dist 缺失 → BUILD FAILURE | S3 | S4（回退检查） | 两次构建结果对比 |
-| AC-5 前端全绿且不变 | S6 | — | 前端 5 条命令输出 + `git diff` 证明前端零改动 |
-| AC-6 生产 compose smoke + JDBC 语义 | S6 | S2（仅 JDBC 部分） | HTTP 状态/响应体 + 日期一致性。**条件分支（P2-7）**：若 S2 结论为保持 8.3.0，则 AC-6 的 JDBC 分支不触发 |
-| AC-7 认证/会话语义 | S6 | S3（单测证据） | smoke + `mvn verify` 用例 |
-| AC-8 守卫测试与文档一致 | S3（代码）+ S7（文档） | — | 测试文件 + 契约文档 §8 |
-| AC-9 无新增 JaCoCo exclude | S3 | S6 | `pom.xml` 8 项对照 |
-| AC-10 CI 双 job 绿 | S3（后端 job 切 JDK 21） | S4、S6 | PR 的 CI 运行 |
-| AC-11 JDK 一致性 + 字节码 61 | S3（字节码/`mvn -version`/`Dockerfile` 两阶段）+ S4（enforcer/README/镜像取证） | S6 | `javap` + `mvn -version` + 两个 stage 标签 |
+| #44 AC | 子 issue（主责 / 复核） | 主责步骤 | 复核步骤 | 证据形式 |
+| --- | --- | --- | --- | --- |
+| AC-1 `mvn verify` 用例数不下降 | #48 / #51 | S3 | S6 | 命令输出 + 与 S1 基线对比 |
+| AC-2 覆盖率闸门 0.85 不变 | #48 / #51 | S3 | S6 | `All coverage checks have been met.` |
+| AC-3 jar 形态（`BOOT-INF/classes/static/index.html`） | #48 / — | S3 | — | `unzip -l` 输出 |
+| AC-4 dist 缺失 → BUILD FAILURE | #48 / #49 | S3 | S4（回退检查） | 两次构建结果对比 |
+| AC-5 前端全绿且不变 | #51 / — | S6 | — | 前端 5 条命令输出 + `git diff` 证明前端零改动 |
+| AC-6 生产 compose smoke + JDBC 语义 | #51 / #47 | S6 | S2（仅 JDBC 部分） | HTTP 状态/响应体 + 日期一致性。**条件分支（P2-7）**：若 S2 结论为保持 8.3.0，则 AC-6 的 JDBC 分支不触发 |
+| AC-7 认证/会话语义 | #51 / #48 | S6 | S3（单测证据） | smoke + `mvn verify` 用例 |
+| AC-8 守卫测试与文档一致 | #48 + #52 / — | S3（代码）+ S7（文档） | — | 测试文件 + 契约文档 §8 |
+| AC-9 无新增 JaCoCo exclude | #48 / #51 | S3 | S6 | `pom.xml` 8 项对照 |
+| AC-10 CI 双 job 绿 | #48 / #49, #51 | S3（后端 job 切 JDK 21） | S4、S6 | PR 的 CI 运行 |
+| AC-11 JDK 一致性 + 字节码 61 | #48 + #49 / #51 | S3（字节码/`mvn -version`/`Dockerfile` 两阶段）+ S4（enforcer/README/镜像取证） | S6 | `javap` + `mvn -version` + 两个 stage 标签 |
 
 ### 5.4 #44 Scope → 步骤映射
 
@@ -271,7 +277,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 | --- | --- | --- |
 | **工作量（人日）** | **6.5–7.5**（S1 0.5 ∥ S2 1 → 关键路径 ≈ 6.5） | 不含审查往返；含每步跑验证命令的时间 |
 | **日历（含审查/修复/PR/CI）** | **≈ 5–7.5 周** @ 每周 >10 小时 | 建议值：S1+S2 并行 ≈ 1–1.5 周；S3–S7 ≈ 4–6 周。**7 轮 ×（oracle 预审 + 3 reviewer + 修复 + CI）是主要成本** |
-| 与已批准计划对照 | 计划 §5 给 "**1.5–3 周**"（A0–A7） | 口径不同（纯工作量 vs 含审查日历）。**C-4 已裁定 (a)**：epic 正文改写为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，两口径同时写明，避免被读成违约 |
+| 与已批准计划对照 | 计划 §5 给 "**1.5–3 周**"（A0–A7） | 口径不同（纯工作量 vs 含审查日历）。**C-4 已裁定 (a)**：epic 正文改写为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，两口径同时写明，避免被读成违约。**注**：远端 `Estimate` 行仍为“~1.5–3 weeks”，该改写**未落远端**（见元数据表“估算”行与 #44 文档“剩余待确认”第 9 项） |
 
 **估算假设**：单开发者；现有测试兜底（127/195/12）；**未含** jasypt 必须替换、Boot 3 行为差异导致大范围重写、本地 Docker 不可用导致 S6 顺延等情形。
 
@@ -323,26 +329,28 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 ## 11. 交付物与下一步
 
-**本轮产出（均为草稿，已按 oracle 审查修订，未发布）**
+**本轮产出（均已发布/定稿）**
 
 | 文件 | 内容 | 状态 |
 | --- | --- | --- |
-| `docs/plans/issue-44-migration-steps.md` | 本文件（拆分总览） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-1-baseline.md` | S1 issue 草稿（P1-5 / P2-4 / `Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-2-dependency-readiness.md` | S2 issue 草稿（`Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-3-core-boot3-jakarta.md` | S3 issue 草稿（B-1 / P1-3 / P1-4 / P1-8 / P2-8 / C-1 / C-3 / `Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-4-jdk21-toolchain-docker.md` | S4 issue 草稿（缩窄为 enforcer + README + 镜像取证；P2-3 / `Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-5-mockito-annotation-cleanup.md` | S5 issue 草稿（C-2 = (a)，epic 子 issue + `Part of #44`；P2-2） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-6-regression-proof.md` | S6 issue 草稿（P2-1 的 10 条深链 / `Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/proposed-step-7-close-out.md` | S7 issue 草稿（P1-6 的 §11 / P2-6 的日志编号 / `Part of #44`） | 已修订，待用户批准 |
-| `docs/issues/issue-44-boot3-java17-jakarta-migration.md` | 顶部**待批准说明**（拟转 epic + 6 项编辑清单 + 4 项待用户决策；**正文**未改，远端未动） | 已修订，待用户批准 |
+| `docs/plans/issue-44-migration-steps.md` | 本文件（拆分总览） | **已批准，子 issue 已创建（2026-10-19）** |
+| `docs/issues/issue-46-baseline.md` | S1 = **[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)**（P1-5 / P2-4 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-47-dependency-readiness.md` | S2 = **[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)**（`Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-48-core-boot3-jakarta.md` | S3 = **[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)**（B-1 / P1-3 / P1-4 / P1-8 / P2-8 / C-1 / C-3 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-49-jdk21-toolchain.md` | S4 = **[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)**（缩窄为 enforcer + README + 镜像取证；P2-3 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-50-mockito-annotation-cleanup.md` | S5 = **[#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50)**（C-2 = (a)；P2-2 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-51-regression-proof.md` | S6 = **[#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51)**（P2-1 的 10 条深链 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-52-close-out.md` | S7 = **[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)**（P1-6 的 §11 / P2-6 的日志编号 / `Part of #44`） | **已创建（OPEN）** |
+| `docs/issues/issue-44-boot3-java17-jakarta-migration.md` | #44 = **epic（OPEN）**：已记录 7 个子 issue、epic 正文的 2 处修改与 2 个新增区块 | **已回填（2026-10-19）** |
+
+> 上表的 7 份 issue 文档原名均为 `docs/issues/proposed-step-*.md`，issue 创建后按真实编号改名（文件未跟踪 → 直接 `mv`，无内容丢失）；除顶部元数据与 `Internal tracking` 外，`## GitHub issue body` 与远端**逐字一致**。
 
 **下一步（按顺序，缺一不可）**
 
 1. ✅ `oracle` 只读审查本文件 + 7 份草稿 → 已完成（结论：修完 B-1 + P1 后可交用户批准）；
 2. ✅ 主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4**（全部接受）→ 已完成；
 3. ✅ docs-writer 按裁定更新本文件与 7 份草稿（不改远端）→ 已完成（本轮）；
-4. 🔴 **用户授权**：① 创建 7 个 issue；② 编辑 #44 为 epic（§5.1 的 6 项）；③ 安装 JDK 21（如需）；④ PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 是否先合并（未合并前这些文档不在 `main`）；
-5. `github-operator` 按草稿创建 issue（只用 `## GitHub issue body` 分区，**保留 `Part of #44`**），主 agent 回传真实编号；
-6. docs-writer 把草稿改名为 `docs/issues/issue-<编号>-<slug>.md`；**同时**回填 #44 的 `## Steps`（7 个带链接的 checkbox）与 `## Step → acceptance mapping`（此时才把链接占位替换为真实编号）；
-7. 之后每个步骤**各自走完整工作流**（`docs/plans/issue-<编号>-<slug>.md` 计划 → oracle → 单一 worker → 3 reviewer → 修复 → 日志 → PR）。
+4. ✅ **用户授权**：① 创建 7 个 issue → 已授权；② 编辑 #44 为 epic → 已授权；③ 安装 JDK 21 → **已安装**（`/opt/homebrew/opt/openjdk@21`，2026-10-19）；④ PR [#45](https://github.com/PNZ-z/ai-powered-Fabflix/pull/45) 是否先合并 → **仍待定**（未合并前这些文档不在 `main`）；
+5. ✅ `github-operator` 已按草稿创建 issue（只用 `## GitHub issue body` 分区，**保留 `Part of #44`**），真实编号 **#46–#52**（主 agent 已回传）；
+6. ✅ docs-writer 已把草稿改名为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`，并回填 #44 的**本地记录**（`## Steps` 与 `## Step → acceptance mapping` 已在创建时由 operator 写入真实链接）；
+7. 🔵 **下一步**：**S1（#46）开工**——先建 `docs/plans/issue-46-baseline.md`（若需要）→ oracle → 单一 worker 跑基线命令 → 3 reviewer → 日志；之后 S2…S7 各自走完整工作流（每步计划 `docs/plans/issue-<编号>-<slug>.md`、日志 `docs/logs/YYYY-MM-DD-issue-<编号>-<slug>.md`）。**S1–S7 目前全部未开始。**
