@@ -9,7 +9,7 @@
 > - **迁移前基线（所有“不下降”判据的唯一基准）**：`docs/logs/2026-10-20-issue-46-baseline.md`
 >
 > **状态图例**：`未开始` / `基线已测量（待 PR 合并后标记完成）` / `已实施（待 PR 合并）` / `实施中` / `已完成（PR #n 已合并 @ <sha>）` / `阻塞（原因）`。
-> **本文件不表示任何步骤已完成**：**2026-10-20 事实** —— S1 基线已测量、**S2 已实施**（`pom.xml` 一行驱动版本 + 文档），两者**均未提交 / 未推送 / 未建 PR**；**S3–S7 的 Scope / AC 仍未执行**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。
+> **本文件不表示任何步骤已完成**：**2026-10-20 事实** —— S1 基线已测量、**S2 已实施**（`pom.xml` 一行驱动版本 + 文档）、**S3 已实施**（18 文件：`pom.xml` 两处 + 11 个 `src/main/java` import + 守卫测试 + 3 个测试 import + `ci.yml` 3 行 + `Dockerfile` 2 行），三者**均未提交 / 未推送 / 未建 PR**；**S4–S7 的 Scope / AC 仍未执行**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。
 
 ## 状态总表
 
@@ -17,7 +17,7 @@
 | --- | --- | --- | --- | --- |
 | **S1** 迁移前基线 + checklist | [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) | **基线已测量（待 PR 合并后标记完成）** | `codex/issue-46-baseline`（基于 `main` @ `fff314f88455216122912f07c26706f70dd63b62`）；**未提交/未推送** | `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件 |
 | **S2** 非 Spring 依赖就绪 | [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-47-dependency-readiness`（**尚未创建/提交**；工作区仍在 `main`，基线 `9eea664`） | `docs/logs/2026-10-20-issue-47-dependency-readiness.md`（AC-1..AC-5 回填见 `docs/issues/issue-47-dependency-readiness.md`） |
-| **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **未开始** | `（待填：codex/issue-48-…）` | `（待填）` |
+| **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79`；**未提交/未推送/无 PR**，commit SHA 待提交后回填） | `docs/logs/2026-10-20-issue-48-core-upgrade.md`（AC-1..AC-9 回填见 `docs/issues/issue-48-core-boot3-jakarta.md`）；行为差异与未证明项见该日志 §1.3 |
 | **S4** JDK 21 强制与镜像取证 | [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) | **未开始** | `（待填：codex/issue-49-…）` | `（待填）` |
 | **S5** `@MockBean` → `@MockitoBean` | [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) | **未开始** | `（待填：codex/issue-50-…）` | `（待填）` |
 | **S6** 回归与生产验证 | [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) | **未开始** | `（待填：codex/issue-51-…）` | `（待填）` |
@@ -185,7 +185,25 @@ docker compose rm -sf app
 
 **(c) 回退点**：**单 PR 整体 revert**（回到 Boot 2.7 + `javax`，`main` 仍绿，因为 S1/S2 未改变行为）。**禁止**用降阈值、扩 `excludes`、跳过 e2e 让 CI 变绿。
 
-**(d) 完成分支 / commit**：`（待填）`
+**(d) 完成分支 / commit**：`codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79` = `Merge pull request #55`）；**未提交、未推送、无 PR**；commit SHA 待提交后回填。证据 = `docs/logs/2026-10-20-issue-48-core-upgrade.md`。
+
+**实际执行结果（2026-10-20，worker 执行 + 主 agent 终验与容器 smoke；证据 `docs/logs/2026-10-20-issue-48-core-upgrade.md`）**
+
+| 项 | 结果 |
+| --- | --- |
+| 版本 / 工具链 | `spring-boot.version` **2.7.18 → 3.5.15**；`maven.compiler.source/target=11` → **`maven.compiler.release=17`**；全部命令在 `JAVA_HOME=/opt/homebrew/opt/openjdk@21`（**Java 21.0.12.1**）下运行 |
+| 门禁 | `mvn --batch-mode --no-transfer-progress clean verify` → **BUILD SUCCESS**；**134 tests / 0 failures / 0 errors / 0 skipped**；`All coverage checks have been met.`；JaCoCo **988/1078 = 0.9165**（门槛 0.90，**分母未变**）；`<exclude>` 仍 **8** 项 |
+| Jakarta 边界 | `grep -rl jakarta.servlet src/main/java` 得到 **恰好 11 个文件**（路径与守卫白名单逐条一致）；`grep -rn javax.servlet src/main/java` **0 命中**；`javax.sql` / `javax.xml` 的 **4 个文件未动**（`AdminRepository` + 3 个 XML parser） |
+| 守卫 | 白名单**集合相等**（恰好 11 路径）通过；保留 `@WebServlet` / `extends HttpServlet` / `jakarta.servlet.annotation.WebServlet` 禁令；**主 agent 终验后补强 2 行**（源码禁 `javax.servlet`、pom 禁 `javax.servlet-api`），仍为 **2 个 `@Test`**、用例总数仍 134 |
+| 字节码 | `major version: 61`（另以字节头 `cafe babe 0000 003d` 复核）。**注意**：本 checklist 与 issue #48 原文写的类名 `FablixApplication` 是**笔误**，实际类为 `com.fabflix.boot.FabflixApplication`；照抄原文会得到「类找不到」 |
+| 打包 | `cd frontend && npm ci && npm run build` 成功；`mvn -Pfrontend -DskipTests clean package` → jar 含 `BOOT-INF/classes/static/index.html` + assets；移走 `frontend/dist` 后**同一命令 BUILD FAILURE**（`require-frontend-dist`）；默认 `mvn verify`（**无** `-Pfrontend`）在 dist 缺失时仍 **BUILD SUCCESS**（后端门禁不依赖 dist） |
+| CI | `ci.yml` 3 行：job 名 `Build and test (Java 21)`、step 名 `Set up Java 21`、`java-version: "21"`。**PR CI 尚未发生 → S3 的 AC-6（双 job 绿）未取证**，须在 PR 后由主 agent 回填 |
+| 镜像 / 容器 | `Dockerfile`：build `maven:3.9-eclipse-temurin-21`、runtime `eclipse-temurin:21-jre`；`uid/gid 1001` 非 root、`EXPOSE`、`ENTRYPOINT` 未动。`docker compose build app` 成功；容器内 **JDK 21**（`openjdk version "21.0.12.1"`）、`id fabflix` = `uid=1001 gid=1001`；health **200** |
+| 容器 smoke（提交版镜像，主 agent 亲自跑） | `/` 含 `id="root"`；**10 条深链全 200 `text/html`**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → 404；顾客登录 → 加购 → token → **支付成功**（`order_date=2026-10-20`，`sales.id=13566`、`sale_date=2026-10-20`）；员工登录 → `/dashboard/session` 200 → `?action=metadata` 200；容器日志无 warn/error/deprecat |
+| 依赖解析 | `mysql-connector-j` **9.7.0**（显式 pin 生效，未被 BOM 覆盖；且 Boot 3.5.15 BOM 的值同为 9.7.0，**无漂移风险**）；Tomcat **10.1.55**、Jackson **2.21.4**、HikariCP **6.3.3**、Logback **1.5.34**；`junit-jupiter 5.11.4`（聚合）vs `junit-jupiter-engine 5.12.2`（BOM）、`mockito-core 5.23.0` vs `mockito-junit-jupiter 5.17.0`（BOM；无 `MockitoExtension` 使用 → 惰性） |
+| **已知项（不得视为已验证）** | ① `@MockBean` 11 条弃用警告 → **S5**；② HikariCP 4→6 的**池语义/并发**未专门验证（「未观察到差异」只限 HTTP 状态码/JSON 形状/启动日志）→ **S6**；③ 生产 `GoogleRecaptchaVerifier`（`@Profile("!local")`，0/17 覆盖）无测试/Boot 3 运行证据，且有 Boot 3 新弃用（`RestTemplateBuilder.setConnectTimeout` / `setReadTimeout`）→ **S6 风险 / 可选后续修复**；④ 静态深链**尾斜杠**未测量 → **S6**；⑤ `/api/boot/health/` 的 **401 是既有行为**（`CustomerAuthenticationFilter` 精确匹配 + filter 先于 MVC；升级前基点树 `55f8d79` 实测同样 401），**不是 Boot 3 差异**；⑥ dev 库新增 `sales.id=13566`（连 S2 共 13562–13566） |
+
+> **给 S4 的输入**：Boot 3 + `release=17` + Jakarta + CI JDK 21 + 两阶段镜像**均已就绪且已核验**（上表）。S4 因此**只需**加 enforcer `requireJavaVersion [21,22)`、写 README 的 JDK 21 / `JAVA_HOME` 说明，并对镜像与 `docker compose build app` **取证**（**不**再用 `mv frontend/dist` 验证 dist 守卫，那是 S3 已完成的回退检查，S4 只需确认不回退）。**不要**再改 `Dockerfile` / `ci.yml`；若发现镜像仍为 JDK 11 → 停下回主 agent（说明 S3 未完成）。注意：S4 生效后本机默认 JDK 27 的构建会**按预期失败**（P1-3）。
 
 ---
 

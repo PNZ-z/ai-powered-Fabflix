@@ -1,7 +1,7 @@
 package com.fabflix.boot.admin;
 
 import static org.junit.jupiter.api.Assertions.*;
-import javax.servlet.FilterChain;
+import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
