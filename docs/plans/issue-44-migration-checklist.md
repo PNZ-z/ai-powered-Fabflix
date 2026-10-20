@@ -8,15 +8,15 @@
 > - 已批准计划：`docs/plans/ai-option-a-boot3-migration.md`；约束：`docs/architecture/frontend-migration-contracts.md`
 > - **迁移前基线（所有“不下降”判据的唯一基准）**：`docs/logs/2026-10-20-issue-46-baseline.md`
 >
-> **状态图例**：`未开始` / `基线已测量（待 PR 合并后标记完成）` / `实施中` / `已完成（PR #n 已合并 @ <sha>）` / `阻塞（原因）`。
-> **本文件不表示任何步骤已完成**：除 S1 的基线测量外，S2–S7 的 Scope / AC **全部未执行**；每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。
+> **状态图例**：`未开始` / `基线已测量（待 PR 合并后标记完成）` / `已实施（待 PR 合并）` / `实施中` / `已完成（PR #n 已合并 @ <sha>）` / `阻塞（原因）`。
+> **本文件不表示任何步骤已完成**：**2026-10-20 事实** —— S1 基线已测量、**S2 已实施**（`pom.xml` 一行驱动版本 + 文档），两者**均未提交 / 未推送 / 未建 PR**；**S3–S7 的 Scope / AC 仍未执行**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。
 
 ## 状态总表
 
 | 步骤 | Issue | 状态 | 完成分支 / commit | 证据 / 记录 |
 | --- | --- | --- | --- | --- |
 | **S1** 迁移前基线 + checklist | [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) | **基线已测量（待 PR 合并后标记完成）** | `codex/issue-46-baseline`（基于 `main` @ `fff314f88455216122912f07c26706f70dd63b62`）；**未提交/未推送** | `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件 |
-| **S2** 非 Spring 依赖就绪 | [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) | **未开始** | `（待填：codex/issue-47-…）` | `（待填）` |
+| **S2** 非 Spring 依赖就绪 | [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-47-dependency-readiness`（**尚未创建/提交**；工作区仍在 `main`，基线 `9eea664`） | `docs/logs/2026-10-20-issue-47-dependency-readiness.md`（AC-1..AC-5 回填见 `docs/issues/issue-47-dependency-readiness.md`） |
 | **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **未开始** | `（待填：codex/issue-48-…）` | `（待填）` |
 | **S4** JDK 21 强制与镜像取证 | [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) | **未开始** | `（待填：codex/issue-49-…）` | `（待填）` |
 | **S5** `@MockBean` → `@MockitoBean` | [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) | **未开始** | `（待填：codex/issue-50-…）` | `（待填）` |
@@ -119,9 +119,25 @@ docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT CU
 docker compose down        # 保留数据卷；如需彻底清理再 -v（会丢数据，须主 agent 批准）
 ```
 
-**(c) 回退点**：单个依赖版本号 → revert 一行即可。若 9.x 在 Boot 2.7 基线上暴露行为差异，**保持 `8.3.0` 并记录**即为合规回退（不阻塞 S3；此时 AC-6 的 JDBC 分支按 P2-7 不触发）。
+**(c) 回退点**：单个依赖版本号 → revert 一行即可。若 9.x 在 Boot 2.7 基线上暴露行为差异，**保持 `8.3.0` 并记录**即为合规回退（不阻塞 S3；此时 AC-6 的 JDBC 分支按 P2-7 不触发）。**本步未采用此回退**（见下方实际结果）。
 
-**(d) 完成分支 / commit**：`（待填）`
+**(d) 完成分支 / commit**：`codex/issue-47-dependency-readiness`（**尚未创建、未提交、未推送、无 PR**）；基线 commit `9eea6645a4f14004e994848f0daf8741f2909c34`（`Merge PR #54`）。commit SHA 待提交后回填。
+
+**实际执行结果（2026-10-20，worker 执行 + 主 agent 核验；证据 `docs/logs/2026-10-20-issue-47-dependency-readiness.md`）**
+
+| 项 | 结果 |
+| --- | --- |
+| 定版 | **`com.mysql:mysql-connector-j` 8.3.0 → 9.7.0**（1 行）。理由：9.7.0 = **目标 Boot 3.5.15 BOM 的 `mysql.version`**（使 S3 不再动驱动，P1-8）。备选方案（保持 8.3.0）**未采用** |
+| 兼容性证据 | Maven Central jar/pom **200**（SHA-256 `0353648e…`）；`Driver.class` = **major 52（Java 8）**，全 jar 1066 个 `.class` 无 > 52，无 `module-info.class`；上游 `build.xml`/`README` “Java 8 required”。**真实 Java 11.0.31 运行时 smoke 通过**（另经主 agent 在 18086 重跑闭合） |
+| 门禁（JDK 21） | `mvn --batch-mode --no-transfer-progress verify` → **BUILD SUCCESS**；**134 tests / 0 failures / 0 errors / 0 skipped**；JaCoCo **988/1078 = 0.9165**（门槛 0.90） |
+| 真库 smoke | ✅ **已执行**：9.7.0（8081）下单 → `sales.id=13562, sale_date=2026-10-20` == 响应 `order_date=2026-10-20`；员工 metadata 200（10 表含 `sales`，`sale_date DATE(10)`）；日志无 SSL/连接告警。**A/B 对照 8.3.0**（18084，`id=13563`）三维度一致 |
+| jasypt on JDK 21 | ✅ 通过：`-Dtest=JasyptPasswordVerifierTest` → 1 test / BUILD SUCCESS，无 `IllegalAccessError` / `InaccessibleObjectException`；**未替换 jasypt** |
+| diff 范围 | `git diff` = `pom.xml` 1 行 + 本步 `docs/`；无 `src/**`、无测试、无 CI、无 `Dockerfile`、无其他依赖 |
+| **未验证（顺延 S6）** | 驱动 `DATE`→Java 的**读取**映射（`src/main` **无** `SELECT … FROM sales`，唯一 `sales` 用法是 `PaymentRepository:19` 的 `INSERT … CURDATE()`）；跨日/TZ 边界；连接池/并发；TLS 实际协商状态（无 `sslMode`，默认 `PREFERRED`） |
+| 环境副作用 | dev 库 `sales` 新增 4 行：**`13562`（9.7.0）/ `13563`（8.3.0）/ `13564`（Java 11 @18085）/ `13565`（Java 11 @18086）**，`customer_id=900001`。清理：`DELETE FROM sales WHERE id IN (13562,13563,13564,13565);`（`database/dev-seed.sql` 只在数据卷首次初始化时执行）。**未执行 `docker compose down`**（MySQL 原已 `Up 7 days (healthy)`，保持原状） |
+| 引用更正 | worker 报告把 134 / 0.9165 称为“S1 基线”属**引用错误**：S1 快照为 **127 / 0.8980**（门槛 0.85）；**134 / 0.9165 是 2026-10-20 门槛收紧后的新比较基线**（见上方门槛表）。本步实际对齐的是后者 |
+
+> **对 S3 的直接影响**：驱动已定版 `9.7.0`，S3 **必须保留该显式 `<version>`**（不得被 Boot 3.5 BOM 覆盖），并在 PR 里用 `mvn dependency:tree` 贴出 `mysql-connector-j` 实际解析行作为复核证据（本步只能在 Maven Central 的 pom 文本层面核对 3.5.15 BOM —— 本地 `.m2` 仅有 `2.7.18`）。
 
 ---
 

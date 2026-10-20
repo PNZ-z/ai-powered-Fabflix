@@ -2,6 +2,7 @@
 
 > **🟢 状态：epic（已创建 7 个子 issue，保持 OPEN）** —— 2026-10-19 用户授权后，`github-operator` ① 创建子 issue **#46–#52**（milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，labels 空，正文含 `Part of #44`，均 **OPEN**）；② 按下方 **6 项清单**编辑本 issue 正文，把 #44 转为 **epic / tracking issue**（**state 仍为 OPEN**；标题/milestone/labels 均未变）。本 issue 因此**只承载范围与总验收契约**。
 > **「立项 ≠ 完成」**：本 issue 只表示迁移工作已立项并已拆分；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），**AC-1..AC-11 一条都未取证**。
+> **实施进展（2026-10-20，本节部分取代上一句）**：**S1（#46）基线已测量**、**S2（#47）已实施** —— `pom.xml` 的 `com.mysql:mysql-connector-j` **8.3.0 → 9.7.0**（1 行）另加 `docs/`；两者**均未提交 / 未推送 / 未建 PR**（分支尚未创建）。**S3–S7 未开工**。因此上面「全部尚未开始 / AC-1..AC-11 一条都未取证」**仅对 S3 起的范围成立**：**AC-6 的 JDBC 条件子句已因驱动升至 9.x 而触发**，其证据由 S2 承担（见下方「AC-6 的 JDBC 条件子句：已触发」）；AC-6 的生产 compose smoke 与其余 AC 仍待 S3/S6 取证。
 > **子 issue（7 个，均 OPEN、milestone #3、labels 空、正文含 `Part of #44`）**：S1 [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) 基线 · S2 [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) 依赖就绪 · S3 [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) 核心升级 · S4 [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) JDK 21 强制 · S5 [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) `@MockitoBean` · S6 [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) 回归与 smoke · S7 [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) 收尾。拆分方案与依赖图见 **`docs/plans/issue-44-migration-steps.md`**（**已批准并已创建子 issue**），子 issue 文档为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`（原名 `proposed-step-*.md`）。
 > **epic 编辑不改变已批准的范围与验收**：`## Goal` / `## Background` / `## Scope` / `## Acceptance criteria` / `## Dependency` / `## Risk notes` **逐字未改**，`AC-1..AC-11` 全部保留；子 issue 的创建也不表示任何步骤已实施。
 > **已完成的关卡**：① oracle 只读审查（`.pi/artifacts/oracle-issue-44-split-review.md`）→ ✅；② 主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受** → ✅，已落入拆分总览与 7 份子 issue 文档；③ 用户授权创建子 issue + 编辑本 issue → ✅（2026-10-19）；④ `github-operator` 创建 **#46–#52** 并编辑本 issue 为 epic → ✅（2026-10-19，主 agent 已核验）；⑤ docs-writer 回填本地文档 → ✅（本轮）。
@@ -28,7 +29,7 @@
 > - **未改动**：`## Goal`、`## Background`、`## Scope`（12 条）、`## Acceptance criteria`（AC-1..AC-11）、`## Dependency`、`## Risk notes` 逐字保持；标题、milestone #3、labels（空）、state（OPEN）均未变（编辑后核验：`44 | OPEN | milestone=3 | labels=0`）。
 > - **本文件 `## GitHub issue body` 分区的处理**：2026-10-19 按 `github-operator` 已推送到远端的正文（经其与 `gh issue view 44` 比对，仅差 GitHub 追加的尾部换行）**同步为 epic 版本**，因此本文正文**重新与远端逐字一致**（仅差末尾 1 个换行）。**⚠️ 2026-10-20 例外**：本轮把覆盖率门槛口径改为 **0.90 / 90**（用户已批准，独立 PR），而**远端正文仍是 0.85 / 88**（docs-writer 不做 GitHub 写操作）→ **本文件 body 与远端暂时不一致**，待主 agent 授权 `github-operator` 编辑后恢复；详见 `## Internal tracking` → 「剩余待确认」第 10 项。
 
-> **状态：🟢 epic（已创建 7 个子 issue #46–#52，保持 OPEN）** —— 已在 GitHub 存在（[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)），无需新建。远端 issue 已由 `github-operator` 于 **2026-10-19** 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**；`## Internal tracking` 分区**未发布**），并同日按上述 6 项清单改为 epic（**state 仍为 OPEN**）。**注意「立项 ≠ 完成」**：本 issue 只表示**迁移工作已立项并已拆分**；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），AC-1..AC-11 均未取证。
+> **状态：🟢 epic（已创建 7 个子 issue #46–#52，保持 OPEN）** —— 已在 GitHub 存在（[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)），无需新建。远端 issue 已由 `github-operator` 于 **2026-10-19** 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**；`## Internal tracking` 分区**未发布**），并同日按上述 6 项清单改为 epic（**state 仍为 OPEN**）。**注意「立项 ≠ 完成」**：本 issue 只表示**迁移工作已立项并已拆分**；Boot 3.x / Java 17 / Jakarta 的**代码与配置改动、测试与验证全部尚未开始**（无源码/配置/测试改动，无 PR），AC-1..AC-11 均未取证。**（2026-10-20 更新：S1 基线已测量、S2 已实施 —— `pom.xml` 一行驱动 8.3.0 → 9.7.0，均未提交/未推送/未建 PR；**AC-6 的 JDBC 条件子句已触发**（证据由 S2 承担），其余 AC 仍未取证——见下方专节。）**
 > **修订记录（2026-10-19，oracle 只读审查 `.pi/artifacts/oracle-option-a-issue-draft.md` 后；主 agent 裁定「全部接受」）**：闭合 **B-1**（`AC-10` 去掉流程语；`Scope → Docs` 只列**活文档**并声明历史记录不追改）、**B-2**（**写死** `@MockBean` 处置 = 本 issue 不迁移、列入 Non-goals）、**B-3**（补可复现的 JDK 21 固定机制：`README.md` + `JAVA_HOME` + 采纳 enforcer `requireJavaVersion [21,22)`；`AC-11` 增字节码级证据 major version 61；CI step 名一并列为改动点）；采纳 **P1-1..P1-5** 与 **P2-1..P2-9**；回填 **Y-1/Y-3/Y-4**；**Y-2**（milestone 名）当时标为「建议、待用户确认」，**现已确认并创建为 milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)**（原「待确认」表述已失效）。
 > 本文件是 GitHub issue **#44** 的**规范来源与本地跟踪记录**（由发布草稿 `docs/issues/proposed-option-a-boot3-migration.md` 改名而来）。`github-operator` 只发布下方 `## GitHub issue body` 分区的内容（**`## Internal tracking` 分区不上 GitHub**）；正文包裹在四反引号 `markdown` 围栏内仅是**本地容器**，发布时已去掉围栏行本身，其余内容逐字使用。
 > **发布前置门禁：✅ 已全部通过（2026-10-19）** —— oracle 风险关卡（✅，B/P1/P2 已按裁定闭合）→ 主 agent 明确批准（✅）→ 用户授权创建（✅）→ `github-operator` 创建（✅，产出 [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)）。本行保留为过程记录。
@@ -177,7 +178,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 | state | **OPEN** |
 | 创建时间（createdAt） | **`2026-10-19T07:06:27Z`** |
 | 正文 | 与本文件 `## GitHub issue body` **逐字一致**（主 agent 核验）；`## Internal tracking` 分区**未发布**。**2026-10-19 epic 编辑后**：远端正文 = 原正文 + `## Steps` + `## Step → acceptance mapping` + 2 处单行修改；本文件 body 分区已同步为该版本（与远端仅差 GitHub 追加的尾部换行）。**2026-10-20 起不再逐字一致**：本地 body 已把覆盖率门槛改为 0.90 / 90，远端仍为 0.85 / 88（只读核对 `gh issue view 44`；见「剩余待确认」第 10 项） |
-| **当前跟踪状态** | **epic（已创建 7 个子 issue #46–#52，保持 OPEN）**；实现**未开始**：无代码/配置/测试改动、无 PR；本 issue 的 Scope 与 Acceptance criteria（AC-1..AC-11）**均未执行**，也未在任何子 issue 中开始（#46–#52 全部 OPEN、无 PR） |
+| **当前跟踪状态** | **epic（已创建 7 个子 issue #46–#52，保持 OPEN）**。**实现进度（2026-10-20）**：S1 基线已测量、**S2 已实施**（`pom.xml` 一行：驱动 8.3.0 → **9.7.0**），但两者**均未提交/未推送/未建 PR**（#46–#52 全部 **OPEN**、无 PR）；**S3–S7 未开工**。本 issue 的验收（AC-1..AC-11）仍未执行，**除 AC-6 的 JDBC 条件子句已触发**（证据由 S2 提供，见下方专节） |
 
 ### 本地跟踪表
 
@@ -224,6 +225,18 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 | 9 | **C-4 的 epic 正文改写未落远端**（**新发现，未确认是否有意**） | 拆分总览 §7 / 元数据要求把 epic 正文的工期口径改为“工作量 ≈ 1.5 周 / 日历 ≈ 5–7.5 周（含 7 轮审查）”，但 `github-operator` 的 6 项清单（§5.1）**不包含**这一项：2026-10-19 核对远端正文的 `Estimate` 行仍为“~1.5–3 weeks”。**本轮 docs-writer 未修改远端**；如需补改，需主 agent 授权 `github-operator` 单独编辑。 |
 | 10 | **远端 #44 正文尚未同步“门槛已收紧为 0.90 / 90”的口径**（**2026-10-20 新发现，待授权**） | 2026-10-20 经**用户批准**，后端 JaCoCo 门槛 0.85 → **0.90**、前端 `thresholds.lines` 88 → **90**（分支 `codex/coverage-threshold-90`，独立 PR，未合并）。本轮已把本文件 `## GitHub issue body` 的 **Background 的门禁句、AC-2、AC-5、Scope→Docs、Non-goals、Risk notes（覆盖率预算）、`## Step → acceptance mapping` 的 AC-2 行**改为收紧后的口径；但 **docs-writer 不做 GitHub 写操作**，所以**远端正文仍写着 `>= 0.85` / `lines >= 88`**（2026-10-20 只读核对 `gh issue view 44` 确认）。**结论：本文件 body 与远端暂时不一致**，需主 agent 授权 `github-operator` 编辑 #44 后才能恢复“逐字一致”。 |
 
+### AC-6 的 JDBC 条件子句：**已触发**（2026-10-20）
+
+> 本小节**不发布到 GitHub**。
+
+- **AC-6 的末句是条件式**（`## Acceptance criteria` → AC-6）：“**If the JDBC driver is upgraded to 9.x**, also verify order/sale dates match `sales.sale_date` (no timezone offset / `CURDATE()` drift) and that SSL connection warnings do not become fatal.”
+- **触发结论**：S2（[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)）已于 **2026-10-20** 把 `com.mysql:mysql-connector-j` 从 `8.3.0` 升到 **`9.7.0`**（= 目标 Boot 3.5.15 BOM 的 `mysql.version`）→ **该条件子句已生效**，不再是“未触发的条件分支”。因此 S6 **不得**用“驱动未变，无 JDBC 差异可验”结案。
+- **S2 已提供的证据**（真 MySQL，9.7.0 / JDK 21 / 8081）：顾客结算写入 `sales.sale_date = 2026-10-20` 与响应 `order.order_date = 2026-10-20` 一致（无时区偏移）；员工 `metadata` 200（10 表含 `sales`，`sale_date DATE(10)`）；应用日志**无**新增 SSL/连接告警（唯一 WARN 是故意的鉴权失败）。附加对照：**8.3.0 A/B**（`sales.id=13563`）与 **Java 11.0.31 运行时**（`id=13564/13565`）在“日志警告面 / 日期语义 / metadata 输出”三维度一致。
+- **仍缺（S6 必须补）**：驱动 `DATE`→Java 的**读取**映射（`src/main` **无** `SELECT … FROM sales`，唯一 `sales` 用法是 `PaymentRepository:19` 的 `INSERT … CURDATE()`）、跨日/TZ 边界、连接池/并发、TLS 实际协商状态（无 `sslMode`，默认 `PREFERRED`，未查 `Ssl_version`）。S2 已将这些显式记为“未验证/顺延 S6”。
+- 证据：`docs/logs/2026-10-20-issue-47-dependency-readiness.md`（E4–E8、§1.3 第 1–4 条）、`docs/issues/issue-47-dependency-readiness.md`（AC-1/AC-3 回填）。
+- **本文件的 `## GitHub issue body` 围栏文本未改**：AC-6 仍是条件式表述，**仍然正确**；把“已触发”写在本地跟踪区，是为了不制造**第三处**「本地与远端不一致」（已有：门槛 0.90/90、以及本条若写入正文）。若需把“已触发”写进远端正文，须主 agent 授权 `github-operator` 编辑，**建议与「剩余待确认」第 10 项的 0.90/90 同步一并处理**。
+- **对其他 AC 的影响**：无。AC-1..AC-5、AC-7..AC-11 的文字与责任步骤**不变**（AC-6 的“生产 compose smoke”部分仍归 S6）。
+
 ### 发布前置（go/no-go）——**已全部完成**
 
 1. oracle 只读审查本草稿 → ✅ **已完成**（2026-10-19；B/P1/P2 已按裁定闭合）；
@@ -237,7 +250,7 @@ Each of the seven steps is delivered as **its own pull request** (**one PR per s
 - **2026-10-20 覆盖率门槛收紧（0.90 / 90）对本 issue 的影响**：门槛收紧是**独立 PR（分支 `codex/coverage-threshold-90`，未提交/未推送）**、**迁移前的变更**，**不属于** #44 或 #46–#52 任一步的范围；本 epic 的验收**改用收紧后的门槛**（后端 `BUNDLE/LINE >= 0.90`，实测 988/1078 = 0.9165 / `Tests run: 134`；前端 `lines >= 90`，实测 92.35% / 195 tests），并保留“**不得放松任何质量门**”的原有约束。收紧后**后端仅剩 N ≤ 19 行**新增未覆盖代码的余量。证据：`docs/logs/2026-10-20-coverage-threshold-90.md`；比较基线：`docs/plans/issue-44-migration-checklist.md` 的「2026-10-20 覆盖率门槛收紧（0.90 / 90）与新的比较基线」。**远端未同步**（见“剩余待确认”第 10 项）。
 - **拆分提案（2026-10-19）**：`docs/plans/issue-44-migration-steps.md` + 7 份子 issue 文档（现为 `docs/issues/issue-46-baseline.md` … `issue-52-close-out.md`）已按 oracle 审查（`.pi/artifacts/oracle-issue-44-split-review.md`）修订，主 agent 裁定 **B-1、P1-1..P1-8、P2-1..P2-8、C-1..C-4 全部接受**。**2026-10-19 用户授权后**：子 issue 已创建、本 issue 已转 epic；**本文件 body 分区已同步为 epic 版本**（与远端仅差末尾换行）。
 - **epic 转换的记录位置**：远端变更由 `github-operator` 执行并留有证据 `.pi/artifacts/github-operator-issue-44-steps.md`；本地回填见本文件顶部“实际结果”与 `docs/plans/issue-44-migration-steps.md` §5.1。**docs-writer 本轮未做任何 GitHub 写操作**，也未修改任何历史日志。
-- 本 issue **不包含任何代码改动**；issue 本身已于 **2026-10-19** 创建（**#44**），对应总览 §12.3-A-1 的**已完成项**。**立项不等于实施**：Scope/Acceptance criteria 全部未执行。
+- 本 issue **不包含任何代码改动**；issue 本身已于 **2026-10-19** 创建（**#44**），对应总览 §12.3-A-1 的**已完成项**。~~**立项不等于实施**：Scope/Acceptance criteria 全部未执行。~~ → **2026-10-20 更新**：Scope 的 `Dependency compatibility check` 一项已由 **#47** 执行（驱动定版 9.7.0），**AC-6 的 JDBC 子句已触发**；其余 Scope/AC 仍待 S3–S6。**本步改动未提交/无 PR**。
 - **后续待执行（不在本次文档任务范围）**：迁移实施的 worker 指派、`docs/logs/` 工作流日志（完成后建立）、以及总览 §12.3 的提交/推送/PR（A-3/A-4）。**本 issue 关闭前不应把任何 Scope 条目标记为已完成**。
 - 计划文档 `ai-option-a-boot3-migration.md` 中 `@MockBean` 记作「**9 处**」（按**文件**计），本轮 grep 实测为 **9 个文件 / 11 处标注**；草稿正文采用实测口径，**与计划的差异已在 §事实来源 记录，不视为计划错误**。
 - 计划文档 §1.2 把 `maven.compiler.source/target` 记为 `pom.xml:14-15`，实测为 `pom.xml` 顶部 properties 第 13–14 行；草稿正文**不使用该行号**，避免引入未经确认的引用。
