@@ -33,11 +33,11 @@ Four places are known to be stale after the migration:
 1. `docs/architecture/frontend-migration-contracts.md` **§8** describes the architecture guard test as *forbidding* `jakarta.servlet` in `src/main/java`. After the migration the guard is a **controlled allow-list of exactly 11 file paths** (set equality), while the `@WebServlet` / `extends HttpServlet` bans and the `pom.xml` assertions (`jar`, `repackage`, no `jakarta.servlet-api` literal) remain.
 2. The same document's **§12** states the container/CI versions (`maven:3.9-eclipse-temurin-11`, `eclipse-temurin:11-jre`, CI Java 11). After the migration: both Docker stages and CI use **JDK 21**, with `release=17` as the bytecode level.
 3. The same document's **§11** (production static resources and SPA fallback conventions) also names the JDK 11 container images. After the migration the two-stage image is **JDK 21** in both stages; this section is **explicitly in scope** here, not merely "drift found by AC-3".
-4. The same document's **§7** carries a stale coverage-margin sentence ("~106 lines remaining"). The correct statement is: **110 lines are currently uncovered; the 0.85 gate allows at most ≈60 additional uncovered lines**.
+4. The same document's **§7** previously carried a stale coverage-margin sentence ("~106 lines remaining"). It was already updated on 2026-10-20 together with the threshold tightening, so the current statement is: **90 lines are currently uncovered and the 0.90 gate allows at most ≈19 additional uncovered lines** (`988/(1078+N) >= 0.90 ⇒ N <= 19`); the backend gate is **0.90** and the frontend `lines` threshold is **90**. This step **re-checks** that wording against the delivered tree (and recomputes the margin if the test suite changed) — it must not lower or bypass the tightened thresholds.
 
 ## Scope
 
-- [ ] Update `docs/architecture/frontend-migration-contracts.md`: **§8** (guard = 11-path allow-list with set equality; what is still banned), **§12** (CI/Docker JDK 21, `release=17`, bytecode major version 61), **§11** (two-stage image = JDK 21, SPA fallback conventions unchanged), **§7** (coverage-margin figure corrected as above). Keep the document's existing structure and labelling conventions.
+- [ ] Update `docs/architecture/frontend-migration-contracts.md`: **§8** (guard = 11-path allow-list with set equality; what is still banned), **§12** (CI/Docker JDK 21, `release=17`, bytecode major version 61), **§11** (two-stage image = JDK 21, SPA fallback conventions unchanged), **§7** (coverage margin re-checked against the tightened 0.90 gate as above). Keep the document's existing structure and labelling conventions.
 - [ ] Verify/extend `README.md` so that the JDK 21 requirement, `JAVA_HOME`, build/run commands and the mirror/compose instructions match the delivered build (step 4 already wrote the JDK paragraph — this step checks it against the code and fixes drift only).
 - [ ] Update `docs/plans/ai-roadmap-overview.md`: the execution-status section for Option A (the `§12.3` action table and the M3 milestone row) so it reflects what was actually delivered, and keep earlier entries as history rather than rewriting them.
 - [ ] Update the #44 tracking record in `docs/issues/`: record the delivered scope, any approved deviation, the residual risks, and the links to the step issues. **Do not edit GitHub directly** — remote issue/milestone edits are performed by the parent agent / GitHub operator after approval.
@@ -53,7 +53,7 @@ Four places are known to be stale after the migration:
 - No rewriting of historical records: past workflow logs (`docs/logs/2026-*`) and the closed-issue plan/issue documents are history and stay as they are, even where they still mention `Build and test (Java 11)`.
 - No GitHub write operations: creating/editing/closing issues, changing milestones, commenting and opening pull requests are the parent agent's / GitHub operator's job.
 - No new architecture decision: this step documents decisions already approved; if a new cross-issue convention would be needed, raise it instead of writing it.
-- No coverage-threshold or `excludes` change; no `@MockBean` leftovers cleanup (that was step 5); no rename of the `ai-*.md` plan files (separately decided).
+- No coverage-threshold lowering or bypassing (the gates are the threshold values approved on 2026-10-20: backend JaCoCo 0.90, frontend `lines` 90) and no `excludes` change; no `@MockBean` leftovers cleanup (that was step 5); no rename of the `ai-*.md` plan files (separately decided).
 
 ## Dependency
 

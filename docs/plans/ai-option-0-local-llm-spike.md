@@ -53,8 +53,8 @@ Option 0 是在**不升级 Spring Boot、不引入 Spring AI、不改任何既�
 | Ollama 默认服务 `http://localhost:11434`，提供 **OpenAI 兼容** `POST /v1/chat/completions`（及 `/v1/embeddings`） | scout §C13 |
 | 4-bit GGUF 大致权重：3B≈2GB、7B/8B≈4.5–5GB、13B≈8GB（**估算**） | scout §C13 |
 | 项目为 **Java 11 + Boot 2.7.18 + `javax.servlet`**，且守卫测试**禁止** `jakarta.servlet` | `pom.xml:14-15`、`pom.xml:23`；`SpringBootOnlyArchitectureTest.java:20-42` |
-| AI 新增后端代码**默认计入 JaCoCo 85% 闸门**（扩 exclude 与政策冲突） | `pom.xml:163`；`README.md` 覆盖率节 |
-| 前端 lines 88 阈值、e2e 在 CI，API 全 mock | `frontend/vitest.config.js`；契约文档 §7 |
+| AI 新增后端代码**默认计入 JaCoCo 闸门（2026-10-20 起为 0.90）**（扩 exclude 与政策冲突） | `pom.xml:163`；`README.md` 覆盖率节 |
+| 前端 lines **90** 阈值（2026-10-20 由 88 收紧）、e2e 在 CI，API 全 mock | `frontend/vitest.config.js`；契约文档 §7 |
 | `/playground` 是现成公共页（静态演示数据），是最低成本的 AI 挂载点 | scout §A6 |
 | 后端→前端响应约定：业务失败 = HTTP 200 + `{status:"fail",message}`；校验 400 `{errorMessage}`；未认证 401 `{errorMessage}` | 契约文档 §6 |
 
@@ -159,7 +159,7 @@ Ollama (本机原生进程, Metal 加速)
 - 复用 `apiClient.apiRequest`（契约文档 §5），页面挂 `/playground`（公共路由已存在，scout §A6）或首页。
 - 状态机沿用既有页面模式：`loading/success/error` + `retry`（契约文档 §4）。
 - 错误展示：`role="alert"`、不回显敏感内容（沿用 #30 安全展示先例）。
-- **新增页面必须**：在 `AppRoutes.jsx` 注册、（如进入 `App.test.jsx` 渲染路径）扩展 `responseBody(url)` 按 URL 分派（契约文档 §3 的 N13 规则）、页面级测试 + 覆盖率（阈值 88）。
+- **新增页面必须**：在 `AppRoutes.jsx` 注册、（如进入 `App.test.jsx` 渲染路径）扩展 `responseBody(url)` 按 URL 分派（契约文档 §3 的 N13 规则）、页面级测试 + 覆盖率（阈值 **90**，2026-10-20 由 88 收紧）。
 - **不引入任何新前端依赖**（避免锁文件变动与闸门风险）。
 
 ### 4.5 被否决的候选（保留以免重复讨论）
@@ -211,7 +211,7 @@ Ollama (本机原生进程, Metal 加速)
 
 1. `GET /api/boot/ai/health` 在模型可用时返回成功，在模型不可用时返回明确失败（可测）。
 2. `POST /api/boot/ai/ask` 在模型可用时返回答案 JSON；超时/连接失败时返回约定形状的错误且**不崩溃**。
-3. `fabflix.ai.enabled=false` 时端点返回"未启用"，且既有 127 后端测试 / 195 前端测试 / JaCoCo 85% / 前端 88% 闸门**不受影响**。
+3. `fabflix.ai.enabled=false` 时端点返回"未启用"，且既有 **134** 后端测试 / 195 前端测试 / JaCoCo **0.90** / 前端 **90** 闸门**不受影响**（门槛已于 2026-10-20 由 0.85/88 收紧；余量只有 ≈19 行未覆盖代码）。
 4. 前端入口在 loading/error/empty 三态下都有可测表现（含 axe 断言）。
 5. spike 报告逐项填满（§6 表 + §7 决策建议）。
 

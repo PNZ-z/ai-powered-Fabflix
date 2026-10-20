@@ -90,7 +90,7 @@
   - 因此：前端不能把「登出」统一写成同一个调用；员工登出复用顾客 `LogoutButton` 会**误杀顾客会话**。
 - JSON 字段命名混用约定：cart 相关用 snake_case（`movie_id`/`movie_title`，`CartItem` 上显式 `@JsonProperty`），其他多数用 camelCase。**新增字段命名需与所属端点既有风格一致。**
 
-## 7. 前端测试设施与 CI 现状【测试强制 / 事实】（2026-10-15，#32/#33 实施后重写）
+## 7. 前端测试设施与 CI 现状【测试强制 / 事实】（2026-10-15，#32/#33 实施后重写；**2026-10-20 覆盖率门槛收紧后更新**）
 
 - 测试运行器：vitest（`npm test` = `vitest run`），环境 jsdom，`setupFiles: './src/test/setup.js'`（jest-dom + `afterEach(cleanup)`）。当前规模：**30 个测试文件 / 195 个用例**。
 - 页面测试模式：`render(<MemoryRouter initialEntries={[...]}><Routes>…</Routes></MemoryRouter>)` + `vi.stubGlobal('fetch', vi.fn(...))` 返回 `new Response(JSON.stringify(body), {status, headers})`；`afterEach` 里 `vi.unstubAllGlobals()` 与 `window.sessionStorage.clear()`。
@@ -98,11 +98,11 @@
 - **e2e：【已具备】Playwright（仅 chromium）**（#32 D-32-1）：`frontend/playwright.config.js` + `frontend/e2e/*.spec.js`（login/browsing/cart/employee，共 6 个用例 × 2 个 viewport = 12 次执行）；**API 全用 `page.route` mock，不依赖后端/MySQL**；`webServer` 用 `npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort`。命令 `npm run test:e2e`。
 - **vitest 与 Playwright 必须隔离【测试强制】**：`frontend/vitest.config.js` 的 `test.exclude` 显式包含 `**/e2e/**` 并**重述 vitest 默认排除项**（覆写 `exclude` 会替换默认值）；否则 `vitest run` 会收集 `e2e/*.spec.js` 并在 `import { test } from '@playwright/test'` 处失败。新增 spec 目录时**必须同步** `exclude`/`playwright.config.js` 的 `testDir`。
 - **a11y：【已具备】`axe-core` 直连 + 自建 helper**（#32 Q-1，**不引入 `vitest-axe`**）：`frontend/src/test/axe.js` 导出两个 helper —— `expectNoA11yViolations(container)`（页面级；因页面在测试中单独渲染、没有 `AppShell` 的 `<main>`，**禁用 `region` 规则**）与 `expectNoShellA11yViolations(container)`（包含自身 landmark 的 shell 渲染树，**启用 `region`**）。两个 helper **均禁用 `color-contrast`**：jsdom 无布局/无颜色计算，**对比度必须人工在浏览器确认**（不得声称已自动覆盖）。
-- **覆盖率【测试强制】**：`@vitest/coverage-v8`；`frontend/vitest.config.js` 的 `coverage.include = ['src/**/*.{js,jsx}']`、`exclude = ['src/main.jsx','src/test/**','**/*.test.*']`、**`thresholds.lines = 88`**（仅 lines 有阈值）。命令 `npm run test:coverage`；实施终验实测 **Lines 92.35%（846/916）**。**不得扩大 exclude 以人为抬分**；未被测试导入的源文件（如 `src/App.jsx`）**计入分母**。
+- **覆盖率【测试强制】**：`@vitest/coverage-v8`；`frontend/vitest.config.js` 的 `coverage.include = ['src/**/*.{js,jsx}']`、`exclude = ['src/main.jsx','src/test/**','**/*.test.*']`、**`thresholds.lines = 90`**（仅 lines 有阈值；**2026-10-20 经用户批准由 88 收紧到 90**）。命令 `npm run test:coverage`；2026-10-20 实测 **Lines 92.35%（846/916）**（距门槛 **2.35pp**）。**不得扩大 exclude 以人为抬分**；未被测试导入的源文件（如 `src/App.jsx`）**计入分母**。
 - 后端测试模式：surefire + MockMvc（全仓库无 `@SpringBootTest`）。既有两套写法：`@WebMvcTest(SomeController.class)` + `@MockBean`（如 commerce/auth/search 包），以及 **`MockMvcBuilders.standaloneSetup(controller)`**（`admin` 包，如 `AdminControllerTest`/`EmployeeControllerTest`）；表单通过 `.param(...)`，会话通过 `.session(...)`/`.sessionAttr(...)`。
 - **standalone MockMvc 不注册 filter 的陷阱【测试强制】（#31 B6）**：`standaloneSetup(controller)` **默认没有任何 filter**：需要验证 401/鉴权时必须显式 `.addFilters(new EmployeeAuthenticationFilter())` 等，否则请求会直达 controller（得到 200/404 而非 401）。示例：`EmployeeControllerTest.employeeMvc()`。
 - **`@WebMvcTest` 的跨请求 session 语义（#30 R2-B2，重要陷阱）**：`.sessionAttr(...)` 每次 `perform` 都会在该请求自己的 `getSession()` 上写属性，**每个请求得到新的 `MockHttpSession`**；只有 `.session(sharedMockHttpSession)` 才复用同一 session。**任何需要跨请求保持状态的断言（如 token 签发→提交→重放、或「登出只移除 employee 而保留 user」）必须先把属性写入一个 `MockHttpSession` 实例，再对请求 `.session(shared)`**；`.sessionAttr(...)` 只适用于单一请求用例（如 401）。
-- **CI 与后端覆盖率闸门【测试强制】**（`.github/workflows/ci.yml`）：后端 job 的唯一构建步骤是 `mvn --batch-mode --no-transfer-progress verify`；`pom.xml` 的 JaCoCo 插件在 `verify` 阶段强制 `BUNDLE / LINE / COVEREDRATIO ≥ 0.85`（含 `excludes` 白名单）。**任何新增/修改的后端类都必须配测试**，否则 PR 的 CI 会变红。**#31/#32/#33 实施后实测（2026-10-15）：968 covered / 110 missed / 1078 total = 0.8980**（未覆盖余量约 **~106 行**，但不要把余量当作“可以不写测试”）；`Tests run: 127`。
+- **CI 与后端覆盖率闸门【测试强制】**（`.github/workflows/ci.yml`）：后端 job 的唯一构建步骤是 `mvn --batch-mode --no-transfer-progress verify`；`pom.xml` 的 JaCoCo 插件在 `verify` 阶段强制 `BUNDLE / LINE / COVEREDRATIO ≥ 0.90`（含 `excludes` 白名单；**门槛于 2026-10-20 经用户批准由 0.85 收紧到 0.90**）。**任何新增/修改的后端类都必须配测试**，否则 PR 的 CI 会变红。**2026-10-20 收紧门槛后实测（JDK 21）：988 covered / 90 missed / 1078 total = 0.9165**、`Tests run: 134`；按 0.90 门槛，**新增未覆盖代码的余量只有 N ≤ 19 行**（`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`），因此**新增生产代码必须同时新增测试**，且**不得扩 `excludes`**（仍为 8 项）。历史数字（2026-10-15 的 `968/1078 = 0.8980`、`Tests run: 127`，对应 0.85 门槛）**只作历史证据**，见 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`、`docs/logs/2026-10-20-issue-46-baseline.md` 与 `docs/logs/2026-10-20-coverage-threshold-90.md`。
 - **CI 前端 job【已新增，#32 D-32-1/D-32-2/Q-2】**：`ci.yml` 现在有一个独立的 `frontend` job（`timeout-minutes: 20`、`actions/setup-node@v4` + `node-version: 22` + npm 缓存指 `frontend/package-lock.json`、`working-directory: frontend`），步骤 `npm ci → lint → test → test:coverage → build → npx playwright install --with-deps chromium → test:e2e`，全部阻塞。**后端 job 与 `timeout-minutes: 15` 未变**。命令详情见附录 §12。
 
 ## 8. 架构守卫与退役守卫测试【测试强制】
@@ -168,10 +168,10 @@
 | `npm ci` | 按 lock 安装 | 成功（CI 的 `frontend` job 第一步） |
 | `npm run lint` | `oxlint src` | exit 0、无 warning；**注意：不覆盖 `e2e/`**（不得声称 e2e 已 lint） |
 | `npm test` | `vitest run`（**不收集 `e2e/**`**） | 30 files / 195 passed |
-| `npm run test:coverage` | vitest + v8 coverage | Lines 92.35%（846/916），阈值 `lines: 88` |
+| `npm run test:coverage` | vitest + v8 coverage | Lines 92.35%（846/916），阈值 `lines: 90`（2026-10-20 起） |
 | `npm run build` | `vite build` → `frontend/dist` | 成功（产物由 `-Pfrontend` 打包消费） |
 | `npx playwright install --with-deps chromium` | 安装浏览器 | 仅 chromium |
 | `npm run test:e2e` | `playwright test`（360/1440 两个 project） | 12 passed |
 
-- **后端命令**：`mvn --batch-mode --no-transfer-progress verify`（含 JaCoCo 85% 闸门）；`mvn -Pfrontend -DskipTests clean package`（生产打包）。
+- **后端命令**：`mvn --batch-mode --no-transfer-progress verify`（含 JaCoCo `BUNDLE/LINE ≥ 0.90` 闸门，2026-10-20 起）；`mvn -Pfrontend -DskipTests clean package`（生产打包）。
 - **仓库/CI 卫生**：`frontend/dist`、`coverage`、`test-results`、`playwright-report` 均**被 git 忽略、不得提交**；Playwright 用例的 API 一律用 `page.route` mock（不依赖真实后端/MySQL）。

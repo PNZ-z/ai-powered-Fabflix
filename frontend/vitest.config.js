@@ -22,7 +22,7 @@ export default defineConfig({
       include: ['src/**/*.{js,jsx}'],
       exclude: ['src/main.jsx', 'src/test/**', '**/*.test.*'],
       thresholds: {
-        lines: 88,
+        lines: 90,
       },
     },
   },

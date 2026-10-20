@@ -28,7 +28,7 @@
 
 ## 总结
 
-Spring AI 1.x 实测基线是 **Spring Boot 3.5.15**（`spring-ai-starter-model-openai:1.1.8` 的 pom 显式依赖，scout `curl` 证据），而本项目是 **Spring Boot 2.7.18（EOL）+ Java 11 + `javax.servlet`**，且架构守卫测试**主动禁止** `jakarta.servlet`（源码断言 + `pom.xml` 断言双保险）。因此"装个 Spring AI 依赖"不可行，必须做一次大版本迁移：Boot 2.7→3.x、**Java 11 → 编译 `release=17`（工具链 JDK 21）**、`javax.servlet`→`jakarta.servlet`（**11 个文件**），并同步升级 CI 的 Java 版本（11 → 21）与 Docker 运行镜像（现为 `eclipse-temurin:11-jre` → JDK 21 系）。**做什么**：一次性、**不改变业务行为**的技术迁移，验收就是"现有 127 个后端测试 + 195 个前端测试 + 12 次 e2e 全绿、JaCoCo 85% 闸门不变、生产 compose smoke 的 HTTP 语义不变"。**工作量**：约 1.5–3 周（估算）；jakarta 包名替换本身是机械的（11 个文件），真正的不确定性来自 **Boot 3 行为差异**（trailing-slash 匹配、`@MockBean` 弃用、Tomcat 10、依赖版本对齐）与 **JDK 版本矩阵**（本地 Maven 现跑 **JDK 27 —— 不受 Spring Boot 3.5 支持**，必须固定 **JDK 21**；CI 由 Java 11 → **21**；统一表述为"编译 `release=17`，工具链/CI/镜像统一 JDK 21"）。**风险**：中等（改动广但每处小、有测试兜底、可整体回退）。**适合谁**：所有想做 Spring AI 的人（**没有例外**）；也适合只想要"现代化"简历分、暂不做 AI 的人。**明确一句**：A 是**所有 Spring AI 方案的前置**，但**单独也有现代化价值**。
+Spring AI 1.x 实测基线是 **Spring Boot 3.5.15**（`spring-ai-starter-model-openai:1.1.8` 的 pom 显式依赖，scout `curl` 证据），而本项目是 **Spring Boot 2.7.18（EOL）+ Java 11 + `javax.servlet`**，且架构守卫测试**主动禁止** `jakarta.servlet`（源码断言 + `pom.xml` 断言双保险）。因此"装个 Spring AI 依赖"不可行，必须做一次大版本迁移：Boot 2.7→3.x、**Java 11 → 编译 `release=17`（工具链 JDK 21）**、`javax.servlet`→`jakarta.servlet`（**11 个文件**），并同步升级 CI 的 Java 版本（11 → 21）与 Docker 运行镜像（现为 `eclipse-temurin:11-jre` → JDK 21 系）。**做什么**：一次性、**不改变业务行为**的技术迁移，验收就是"现有 134 个后端测试 + 195 个前端测试 + 12 次 e2e 全绿、JaCoCo 0.90 闸门不变、生产 compose smoke 的 HTTP 语义不变"。**工作量**：约 1.5–3 周（估算）；jakarta 包名替换本身是机械的（11 个文件），真正的不确定性来自 **Boot 3 行为差异**（trailing-slash 匹配、`@MockBean` 弃用、Tomcat 10、依赖版本对齐）与 **JDK 版本矩阵**（本地 Maven 现跑 **JDK 27 —— 不受 Spring Boot 3.5 支持**，必须固定 **JDK 21**；CI 由 Java 11 → **21**；统一表述为"编译 `release=17`，工具链/CI/镜像统一 JDK 21"）。**风险**：中等（改动广但每处小、有测试兜底、可整体回退）。**适合谁**：所有想做 Spring AI 的人（**没有例外**）；也适合只想要"现代化"简历分、暂不做 AI 的人。**明确一句**：A 是**所有 Spring AI 方案的前置**，但**单独也有现代化价值**。
 
 ---
 
@@ -38,7 +38,7 @@ Spring AI 1.x 实测基线是 **Spring Boot 3.5.15**（`spring-ai-starter-model-
 
 1. 把项目升级到 **Spring Boot 3.x（建议 3.5.x，与 Spring AI 1.1.x 基线一致）**；**编译目标 `release=17`，工具链/CI/镜像统一 JDK 21**；Servlet API 全面切到 `jakarta.servlet`（**11 个文件必须迁移**）。
 2. **不改变任何业务行为**：URL、HTTP 状态码、JSON 形状、认证/会话语义、SPA fallback 真值表、错误文案全部保持。
-3. 保持**所有质量闸门**：后端 JaCoCo `BUNDLE/LINE ≥ 0.85`、前端 `lines ≥ 88`、Playwright e2e。
+3. 保持**所有质量闸门**：后端 JaCoCo `BUNDLE/LINE ≥ 0.90`（**门槛于 2026-10-20 经用户批准由 0.85 收紧**，独立 PR，属迁移前置变更）、前端 `lines ≥ 90`（同日由 88 收紧）、Playwright e2e。
 4. 同步更新 **CI（Java 版本 → 21）**、**Dockerfile（构建与运行镜像 → JDK 21 系）**、**本地 JDK（固定 21 + 写入 README）**、**架构守卫测试**与**架构文档**。
 5. 为 Option B/C 扫清依赖与运行环境前提。
 
@@ -49,7 +49,7 @@ Spring AI 1.x 实测基线是 **Spring Boot 3.5.15**（`spring-ai-starter-model-
 | `<spring-boot.version>2.7.18</spring-boot.version>`，通过 `spring-boot-dependencies` BOM import，**无 `<parent>`** | `pom.xml:23`、`pom.xml:26-33` |
 | `maven.compiler.source/target = 11` | `pom.xml:14-15` |
 | 依赖：`spring-boot-starter-web`、`-jdbc`、`mysql-connector-j:8.3.0`、`jasypt:1.9.3`；测试 `junit-jupiter:5.11.4`、`mockito-core:5.23.0`、`byte-buddy:1.17.7`、`spring-boot-starter-test` | `pom.xml:37-81` |
-| 插件：`maven-surefire-plugin:3.5.2`、`spring-boot-maven-plugin:${spring-boot.version}`（`repackage` + `mainClass=com.fabflix.boot.FabflixApplication`）、`jacoco-maven-plugin:0.8.15`（`excludes` + `verify` 阶段 `check` 0.85） | `pom.xml:88-171` |
+| 插件：`maven-surefire-plugin:3.5.2`、`spring-boot-maven-plugin:${spring-boot.version}`（`repackage` + `mainClass=com.fabflix.boot.FabflixApplication`）、`jacoco-maven-plugin:0.8.15`（`excludes` + `verify` 阶段 `check` **0.90**，2026-10-20 由 0.85 收紧） | `pom.xml:88-171` |
 | `frontend` profile：enforcer `require-frontend-dist`（`validate`）+ resources `copy-frontend-dist`（`process-resources`） | `pom.xml:186-266` |
 | 守卫测试：源码不得含 `jakarta.servlet`、`@WebServlet`、`extends HttpServlet`；`pom.xml` 必须 `jar` + `repackage`，且**不得含 `jakarta.servlet-api`** | `SpringBootOnlyArchitectureTest.java:20-42` |
 | CI 后端 job：name `Build and test (Java 11)`、temurin **11**、`mvn --batch-mode --no-transfer-progress verify`、`actions/checkout@v7`、`setup-java@v5`、`upload-artifact@v7` | `.github/workflows/ci.yml` |
@@ -249,11 +249,11 @@ assertFalse(pom.contains("jakarta.servlet-api"));  // ← 语义需重新确认
 
 | # | 验收条件 | 验证方式 | 通过判据 |
 | --- | --- | --- | --- |
-| AC-A-1 | 后端测试全绿且数量不下降 | `mvn --batch-mode --no-transfer-progress verify` | BUILD SUCCESS；`Tests run: 127, Failures: 0, Errors: 0, Skipped: 0`（迁移后**不得减少**；增加必须解释） |
-| AC-A-2 | 后端覆盖率闸门不变 | 同上（JaCoCo `verify` 阶段 check） | `All coverage checks have been met.`；LINE 比率 ≥ 0.85（基线 0.8980） |
+| AC-A-1 | 后端测试全绿且数量不下降 | `mvn --batch-mode --no-transfer-progress verify` | BUILD SUCCESS；`Tests run: 134, Failures: 0, Errors: 0, Skipped: 0`（**2026-10-20 收紧覆盖率门槛后的基线**；收紧前为 127；迁移后**不得减少**，增加必须解释） |
+| AC-A-2 | 后端覆盖率闸门不变 | 同上（JaCoCo `verify` 阶段 check） | `All coverage checks have been met.`；LINE 比率 ≥ **0.90**（**2026-10-20 经用户批准由 0.85 收紧**；收紧后基线 **988/1078 = 0.9165**；收紧前快照 0.8980） |
 | AC-A-3 | 构建产物形态不变 | `mvn -Pfrontend -DskipTests clean package` + `unzip -l target/fablix.jar` | 成功；jar 内含 `BOOT-INF/classes/static/index.html` 等条目（契约文档 §11） |
 | AC-A-4 | dist 缺失守卫仍生效 | 临时移走 `frontend/dist` 后 `mvn -Pfrontend -DskipTests package` | **BUILD FAILURE**（enforcer `require-frontend-dist`） |
-| AC-A-5 | 前端不变且全绿 | `npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e` | 干净；195 用例通过；Lines ≥ 88（基线 92.35%）；12 次 e2e 通过 |
+| AC-A-5 | 前端不变且全绿 | `npm ci && npm run lint && npm test && npm run test:coverage && npm run build && npm run test:e2e` | 干净；195 用例通过；Lines ≥ **90**（**2026-10-20 由 88 收紧**；基线 92.35%）；12 次 e2e 通过 |
 | AC-A-6 | HTTP 语义不变 + **JDBC 行为差异**（若驱动升 9.x） | 生产 compose smoke（`docker compose build app` + `up -d --no-deps app`） | health **200**；`/` 含 `id="root"`；10 条深链 **200 text/html**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → **404**；顾客登录→session/cart 200；员工登录→dashboard 元数据 `status:success`；**JDBC 回归（P2-8）**：下单/销售的日期与 `sales.sale_date` 一致（无时区偏移/CURDATE 偏差）、无新增 SSL 连接警告致命化 |
 | AC-A-7 | 认证/会话语义不变 | 同上 smoke + 后端测试 | `changeSessionId()`、401 body 形状、员工登出 204 + 保留 `user` 属性 |
 | AC-A-8 | 守卫测试与文档一致 | 读测试文件 + 契约文档 §8 | 白名单/禁令描述与实际代码一致 |
@@ -301,7 +301,7 @@ assertFalse(pom.contains("jakarta.servlet-api"));  // ← 语义需重新确认
 | "把 EOL 的 Spring Boot 2.7 / Java 11 应用迁移到 Boot 3.5（**`release=17` + JDK 21 工具链**），零行为变更" | 迁移 PR diff（pom / **11 个文件** / CI / Dockerfile / 本地 JDK 固定）、**迁移前后相同的测试与覆盖率数字**、smoke 结果 |
 | "Jakarta 命名空间迁移 + 架构守卫测试重构（白名单化）" | 守卫测试前后代码 + 测试断言清单 |
 | "统一 CI/本地/容器 JDK 版本，消除环境漂移" | CI 配置、Dockerfile、`release` 属性 |
-| "在迁移中保持质量门禁不放水（覆盖率/闸门不变）" | `pom.xml` excludes 未变、阈值未变、CI 记录 |
+| "在迁移中保持质量门禁不放水（覆盖率/闸门不变）" | `pom.xml` excludes 未变、阈值保持 **0.90 / 90**（2026-10-20 收紧后的值，本迁移**既不降也不升**）、CI 记录 |
 
 **结论**：A 单独即是一条合格的简历条目（"现代化/EOL 修复"是招聘常见硬要求），且是 B/C 的必要条件。
 

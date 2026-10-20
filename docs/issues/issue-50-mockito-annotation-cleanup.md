@@ -43,7 +43,7 @@ Current usage — **9 test files, 11 annotation occurrences** (verified by grep 
 - `src/test/java/com/fabflix/boot/search/SearchControllerTest.java`
 - `src/test/java/com/fabflix/boot/star/StarDetailControllerTest.java`
 
-The suite is `@WebMvcTest`-based plus `MockMvcBuilders.standaloneSetup` in the admin package (no `@SpringBootTest`), and it is covered by the JaCoCo `BUNDLE/LINE >= 0.85` gate.
+The suite is `@WebMvcTest`-based plus `MockMvcBuilders.standaloneSetup` in the admin package (no `@SpringBootTest`), and it is covered by the JaCoCo `BUNDLE/LINE >= 0.90` gate (tightened from 0.85 on 2026-10-20 before the migration; this step must neither lower nor bypass it).
 
 ## Scope
 
@@ -103,6 +103,6 @@ Single pull request, mechanically revertible: reverting restores `@MockBean` and
 | 状态 | **🟢 已在 GitHub 存在（#50），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**（C-2 已裁定，无剩余阻塞） |
 | 估算 | 0.5 天 |
 | 负责人角色 | docs-writer → oracle → 主 agent 批准（含 C-2 裁定）→ 单一 `worker` → 3 reviewer（重点：diff 是否真的只含注解/import、用例数与覆盖率是否不变）→ `worker` 修复 → docs-writer 回填 → 主 agent 提交 → `github-operator` 建 PR |
-| 事实来源（可核验，本轮只读 grep 2026-10-19） | `grep -rln "@MockBean" src/test/java` = **9 个文件**、`grep -rn "@MockBean" src/test/java \| wc -l` = **11 处**；文件清单与正文逐条一致；测试模式（`@WebMvcTest` + `standaloneSetup`、无 `@SpringBootTest`）见契约文档 §7；JaCoCo 0.85 闸门见 `pom.xml` |
+| 事实来源（可核验，本轮只读 grep 2026-10-19） | `grep -rln "@MockBean" src/test/java` = **9 个文件**、`grep -rn "@MockBean" src/test/java \| wc -l` = **11 处**；文件清单与正文逐条一致；测试模式（`@WebMvcTest` + `standaloneSetup`、无 `@SpringBootTest`）见契约文档 §7；JaCoCo 闸门 **0.90**（2026-10-20 收紧）见 `pom.xml` |
 | 未确认 | ① `@MockitoBean` 在本仓库的 `@WebMvcTest` 用例下是否**完全**等价（U-A3：`@MockBean` 在 Boot 3.5 是 deprecated 还是已不可用 —— 计划标注"未在本仓库实测"）；② 迁移前后的弃用警告计数（需实测）；③ 9 文件/11 处是否在 S3 之后发生变化（S3 不改测试，预期不变，但需实施时复查） |
 | 待裁定 | **已闭合（2026-10-19）**：**C-2 = (a)** —— 作为 epic 子 issue，正文含 `Part of #44`；epic Non-goals 改为澄清句（不缩减范围）。**是否创建本 issue → 已创建 #50（2026-10-19）**。另：若 `@MockitoBean` 在某个用例上无法等价替换，草稿的 Risk notes 允许“该文件保留 `@MockBean` 并上报”——该回退口径保持不变（需主 agent 在实施时确认）。 |

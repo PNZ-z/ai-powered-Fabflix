@@ -41,7 +41,7 @@ This is **step 3 of 7** in the migration tracked by #44, planned in `docs/plans/
 - `src/test/java/com/fabflix/boot/SpringBootOnlyArchitectureTest.java` asserts `src/main/java` contains no `jakarta.servlet`, and that `pom.xml` keeps `jar` + `repackage` and contains no `jakarta.servlet-api` literal.
 - `.github/workflows/ci.yml` builds the backend with `java-version: "11"`. **Spring Boot 3.5 requires Java 17+**, so the CI JDK bump must land in the same change as the BOM bump: otherwise the pull request's own CI job — and `main` after merge — fails immediately.
 - `Dockerfile` uses `maven:3.9-eclipse-temurin-11` for the build stage and `eclipse-temurin:11-jre` for the runtime stage. **Both `FROM` lines must change in this same step**: a JDK 11 `javac` cannot compile with `--release 17`, and a JRE 11 cannot load class file 61, so leaving the images behind would break the documented production path (`docker compose build app`) while CI — which does not build Docker — would still look green.
-- Quality gates that must not regress: `Tests run: 127` (recorded 2026-10-15), the JaCoCo `BUNDLE/LINE >= 0.85` gate with `968/1078 = 0.8980` behind it, and the 8-entry `excludes` list.
+- Quality gates that must not regress: `Tests run: 134` and the JaCoCo `BUNDLE/LINE >= 0.90` gate with `988/1078 = 0.9165` behind it (both measured on 2026-10-20 **after** the coverage threshold was tightened from 0.85 to 0.90 by user approval in a separate PR — the pre-tightening snapshot was `Tests run: 127` / `968/1078 = 0.8980` against 0.85), plus the 8-entry `excludes` list.
 
 ## Scope
 
@@ -65,7 +65,7 @@ This is **step 3 of 7** in the migration tracked by #44, planned in `docs/plans/
 - **No JDBC driver change** (step 2 already decided it); no other dependency upgrades beyond what the Boot 3.5 BOM/upgrade requires.
 - No source refactor, no new feature, no behaviour change: URLs, HTTP status codes, JSON shapes, error messages, authentication/session semantics, the SPA fallback truth table and the database schema stay identical.
 - No frontend source change (the frontend does not take part in the Boot build chain). `npm ci && npm run build` is run only because `-Pfrontend` packaging consumes `frontend/dist`.
-- No coverage-threshold change, no new JaCoCo `exclude`, no skipped tests, no `compose.yaml` change.
+- **The coverage threshold was already tightened to 0.90 (backend JaCoCo) / 90 (frontend `lines`) before the migration; this step must neither lower nor bypass it.** No new JaCoCo `exclude`, no skipped tests, no `compose.yaml` change. The tightening leaves room for only **~19 additional uncovered lines** (`988/(1078+N) >= 0.90 ⇒ N <= 19`), so any production code this step has to touch needs a test.
 - No moving the explicit dependency pins to BOM management unless required to compile/test (that decision is still open upstream).
 
 ## Dependency
@@ -80,7 +80,7 @@ This is **step 3 of 7** in the migration tracked by #44, planned in `docs/plans/
 - [ ] **AC-4** Missing-`frontend/dist` guard still fails the build: with `frontend/dist` moved aside, `mvn -Pfrontend -DskipTests package` → **BUILD FAILURE** from `require-frontend-dist`.
 - [ ] **AC-5** Bytecode and toolchain: every command was run with `JAVA_HOME` pointing at **JDK 21** — `mvn -version` reports **JDK 21** and the evidence records the `JAVA_HOME` path used — and `javap -verbose -cp target/classes com.fabflix.boot.FablixApplication | grep 'major version'` reports **61**.
 - [ ] **AC-6** The pull request's CI is green on **both** jobs, and the backend job's name reflects the new JDK version.
-- [ ] **AC-7** Every Boot 3 behaviour difference encountered is documented in the pull request description (with the handling), and **no quality gate was relaxed** to reach green (no threshold change, no new `exclude`, no skipped test, no disabled assertion).
+- [ ] **AC-7** Every Boot 3 behaviour difference encountered is documented in the pull request description (with the handling), and **no quality gate was relaxed** to reach green (no lowering of the 0.90 / 90 thresholds, no new `exclude`, no skipped test, no disabled assertion).
 - [ ] **AC-8** This step did not touch: `src/test` `@MockBean` annotations, `README.md`, `compose.yaml`, `frontend/src/**`, the JaCoCo `excludes` list, or any dependency unrelated to the upgrade; the explicit `mysql-connector-j` version is still the one step 2 decided.
 - [ ] **AC-9** Container path: `Dockerfile` has `maven:3.9-eclipse-temurin-21` (build) and `eclipse-temurin:21-jre` (runtime) with the `uid/gid 1001` non-root setup intact; `docker compose build app` succeeds; `docker compose up -d --no-deps app` serves the health endpoint with **200** (or: recorded as **not executed** with the concrete reason).
 

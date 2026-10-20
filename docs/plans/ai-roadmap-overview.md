@@ -3,7 +3,7 @@
 > **文档状态：✅ 已批准（用户，2026-10-19）。**
 > 用户**整体批准**本路线图（5 个版本 + 1 份本地部署专项），并在 §11 逐条裁定决策（决定见该表「用户决定（2026-10-19）」列）。**实施按 A → B → C 推进**（C 可裁剪；B 用本地默认 + 外部 API 兜底）；**首个工作流 = Option A 迁移**（已批准；**GitHub issue 已完成立项：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)，milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)**，2026-10-19 创建，见 §12）。批准前的状态为「已按 oracle 审查修订 / 待用户审批」。
 > 批准的是**方案方向与决策**，不等于任何代码已改、依赖已装、issue 已建：具体实施仍须按 `docs/plans/` 计划走 `worker` 实现 + 三路 review，且 **D7/D8 等数值项已由用户于 2026-10-19 确认默认值**（见 §11 与 §12.1；原「待用户给数」条目移入 §12.2 保留历史说明）。
-> **修订记录（2026-10-18，oracle 只读审查后；主 agent 裁定「全部接受」）**：事实口径修正 **B1**（`javax.servlet` = **11 个文件必须迁移**；宽口径 `javax.` = 15）、**B2**（`@SpringBootTest` 全仓库 **0 处使用**）、**B3**（覆盖率口径 → 不放宽闸门时**最多还能新增 ≈60 行未覆盖代码**）、**B4**（语料 = **11 个 md / 38,755 词**；含本路线图 6 份文档则 17 个 md / 54,696 词）；论证补强 **P1-1**（多语言 embedding = 头号技术风险）、**P1-2**（电影目录语义检索升为等价交付物 **B-①**）、**P1-3**（本地固定 **JDK 21** 作 blocking 前置）、**P1-4**（macOS 容器无 Apple GPU/Metal 直通）；并按 **P2-1..P2-22** 逐条写入；跨文档不一致按 oracle **X-1..X-8** 表收敛。审查报告：`.pi/artifacts/oracle-ai-roadmap-review.md`。
+> **修订记录(2026-10-18,oracle 只读审查后;主 agent 裁定「全部接受」)**:事实口径修正 **B1**(`javax.servlet` = **11 个文件必须迁移**;宽口径 `javax.` = 15)、**B2**(`@SpringBootTest` 全仓库 **0 处使用**)、**B3**（覆盖率口径 → 不放宽闸门时**最多还能新增 ≈60 行未覆盖代码**；**该数字已于 2026-10-20 随门槛收紧（0.85→0.90）更新为 ≈19 行，见 §2.5**）、**B4**(语料 = **11 个 md / 38,755 词**;含本路线图 6 份文档则 17 个 md / 54,696 词);论证补强 **P1-1**(多语言 embedding = 头号技术风险)、**P1-2**(电影目录语义检索升为等价交付物 **B-1**)、**P1-3**(本地固定 **JDK 21** 作 blocking 前置)、**P1-4**(macOS 容器无 Apple GPU/Metal 直通);并按 **P2-1..P2-22** 逐条写入;跨文档不一致按 oracle **X-1..X-8** 表收敛。审查报告:`.pi/artifacts/oracle-ai-roadmap-review.md`。
 > **批准记录（2026-10-19，用户经主 agent 转达）**：用户**整体批准** 6 份文档；**D-时间** = 每周可投入 **>10 小时** → 目标路线 **A → B → C**；**D1** 接受 Boot 3 + `release=17`/JDK 21 + jakarta（Option A 为硬前置）；**D2 / D-API 优先 / D7** 按建议（本地原生 Ollama 默认 + 外部 API 作**显式开关**兜底）；**D3 / D-embedding / D-语料构成** 按建议（语料 = 既有 `docs/` 11 md + `README.md` + 电影结构化卡片，**不含** `ai-*.md`；必须用多语言 embedding 并先实测中→中/中→英）；**D4 / D5** 按建议（`SimpleVectorStore`；首个交付 = B-① 电影目录语义检索 + B-② 文档 RAG）；**D6** 按建议（先建 Option A 迁移 issue，由主 agent/`github-operator` 执行）→ **已于 2026-10-19 执行：issue [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44) + milestone #3**；**D-L1** 授权实施阶段安装 Ollama 并下载模型（本次仍不安装）；**D9** 接受模型磁盘占用；**P-2** 批准修改 `README.md` roadmap 第 3 项措辞（由 `worker` 执行）；**审计日志字段（P2-17）** 默认**不记录**用户问题原文（仅长度/哈希）。**D7/D8/D10/D-AI 端点登录/D-语料指纹 的默认值已于 2026-10-19 由用户确认**（详见下方「决策默认值回填」与 §11、§12.1）。
 > **决策默认值回填（2026-10-19，用户经主 agent 转达；docs-writer 同步写入 6 份文档）**：**D7** 外部 API 上限 = **默认关闭**；启用时默认**每日 $2 且 ≤200k tokens**（可调）。**D8** 质量下限 = 目录语义检索 **top-5 命中率 ≥80%**、RAG **引用正确率 ≥95%**、NL→JSON **schema 合规率 ≥95%**、**p95 延迟先实测后定**（首版以「可演示」为准）。**D10** 夜间评测 job = **要**（**非阻塞**，M4.2 后接入）。**D-AI 端点登录** = **要求登录**（沿用 `CustomerAuthenticationFilter` 对 `/api/boot/**` 的默认保护，**零行为变更**）。**D-语料指纹** = **要**（记录**文档数/块数/构建时间/哈希**；响应或日志携带指纹，保证评测可复现）。
 > **确认不消除风险（重申）**：这些是**已确认的默认值/阈值**，不是**已达标的实测结果**；D8 各项仍须在实施时给出实测证据，**p95 延迟目标仍待实测后再定**，D7 的 $2/日 与 200k tokens 仍**可调**，语料指纹的具体字段仍需实施时落地。**本次回填未删除任何风险项与未实测项**（见 §13）。
@@ -56,7 +56,7 @@
 
 - 有一个**可演示**的自然语言入口（NL 搜索或问答），带**评测数据**（命中率/正确性/延迟）；
 - 有一条**明确标注**的本地推理路径（模型、量化、内存上限、实测 tokens/s）；
-- 所有 AI 新增代码**不破坏**既有质量闸门（后端 JaCoCo 85%、前端 lines 88、Playwright e2e 在 CI）；
+- 所有 AI 新增代码**不破坏**既有质量闸门（后端 JaCoCo **0.90**（2026-10-20 由 0.85 收紧）、前端 lines **90**（同日由 88 收紧）、Playwright e2e 在 CI）；
 - 有一份可写进简历的**架构图 + 数字**（评测、闸门、本地部署）。
 
 ---
@@ -111,9 +111,9 @@
 
 ### 2.5 测试与质量闸门（AI 代码会被闸门计入）
 
-- 后端：JaCoCo `BUNDLE / LINE / COVEREDRATIO ≥ 0.85`（`pom.xml:158-163`，`verify` 阶段）；当前 **LINE 968/1078 = 0.8980**（**未覆盖 110 行**）、`Tests run: 127`；excludes 仅限离线工具（`pom.xml:122-131`）。
-  - **覆盖率预算口径（已按 B3 订正）**：在**不放宽闸门**的前提下，**最多还能新增 ≈60 行未覆盖代码**（`968/(1078+N) ≥ 0.85 ⇒ N ≤ 60.8`；等价地"闸门允许未覆盖 ≈162 行，现有 110 行"）。此前写的"余量约 52 行"是把 `968 − 1078×0.85` 误当成"还能新增多少未覆盖行"，**口径错误，已删除**。该口径用于推算"新增 AI 类必须配测试"的紧迫程度。
-- 前端：`vitest.config.js` `thresholds.lines = 88`，当前 **Lines 92.35%（846/916）**、30 文件 / 195 用例；Playwright **12 passed**（360/1440 两 viewport，API 全 `page.route` mock）。
+- 后端：JaCoCo `BUNDLE / LINE / COVEREDRATIO ≥ 0.90`（`pom.xml:158-163`，`verify` 阶段；**门槛于 2026-10-20 经用户批准由 0.85 收紧**，独立 PR，属迁移前置变更）；当前 **LINE 988/1078 = 0.9165**（**未覆盖 90 行**）、`Tests run: 134`（2026-10-20 实测）；excludes 仅限离线工具（`pom.xml:122-131`）。
+  - **覆盖率预算口径（已按 B3 订正，并又于 2026-10-20 按新门槛 0.90 重算）**：在**不放宽闸门**的前提下，**最多还能新增 ≈19 行未覆盖代码**（`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`；等价地“闸门允许未覆盖 ≈108 行，现有 90 行”）。**历史口径（均失效，保留仅为对照）**：B3 的“≈60 行”（旧 0.85 门槛：`968/(1078+N) ≥ 0.85 ⇒ N ≤ 60.8`）；更早写的“余量约 52 行”是把 `968 − 1078×0.85` 误当成“还能新增多少未覆盖行”，**口径错误，已删除**。该口径用于推算“新增 AI 类必须配测试”的紧迫程度。
+- 前端：`vitest.config.js` `thresholds.lines = 90`（**2026-10-20 由 88 收紧**），当前 **Lines 92.35%（846/916）**（距门槛 2.35pp）、30 文件 / 195 用例；Playwright **12 passed**（360/1440 两 viewport，API 全 `page.route` mock）。
 - 测试模式：全仓库 **0 处使用 `@SpringBootTest`**（唯一命中是 `src/test/java/com/fabflix/boot/web/SpaFallbackTest.java:32` 的**注释**："…asserted without starting a Spring context (no @SpringBootTest anywhere)."）→ **契约文档 §7 的表述正确**，原 U-8 未确认项**已删除**；10 个 `@WebMvcTest`、9 处 `@MockBean`、40 个测试文件；admin 包用 `MockMvcBuilders.standaloneSetup`。
   - **含义**：本仓库**没有 Spring Context 测试基座**，AI 集成测试只能走切片测试（`@WebMvcTest`）或自建独立上下文；这是 Option B §6.3 测试分层的事实前提。
 - **政策**：扩 `excludes` 与"excludes 仅限离线工具"冲突（`README.md` "Tests and coverage" 节）；**AI 新增代码默认计入闸门**。
@@ -169,7 +169,7 @@
 
 ### C-5 质量闸门约束
 
-- 后端 85%（**不放宽闸门时最多还能新增 ≈60 行未覆盖代码**）、前端 lines 88（余量 4.35pp）、Playwright e2e 均**在 CI 阻塞**。
+- 后端 **0.90**（2026-10-20 收紧；**不放宽闸门时最多还能新增 ≈19 行未覆盖代码**）、前端 lines **90**（同日收紧，余量 2.35pp）、Playwright e2e 均**在 CI 阻塞**。
 - AI 代码**非确定性**：不能直接放进 e2e 做真实模型调用；需 mock/stub + 可选真实调用通道（见 §7）。
 - 扩 JaCoCo excludes 与既有政策冲突 → 新增 AI 类**必须写测试**。
 
@@ -324,7 +324,7 @@ Option C   Agent 平台（6–10 周，可裁剪，分阶段）
 
 | 里程碑 | 内容 | 前置 | 验收标准（草案） | 完成定义（DoD） |
 | --- | --- | --- | --- | --- |
-| **M3**（Option A） | Boot 2.7.18→3.5.x、`release=17`、**本地固定 JDK 21**、jakarta 迁移（11 个文件）、守卫测试改写、CI/镜像/JDK 升级、依赖兼容性核查 | 无（但**本地 JDK 21 固定**为 blocking 前置） | `mvn --batch-mode verify` 全绿（`Tests run` 不下降）、前端 `lint/test/coverage/build/e2e` 全绿、JaCoCo ≥0.85 不变、生产 compose smoke 通过（health/深链/401/404 语义不变）、`mvn -version` 显示 JDK 21 | 无行为变更的迁移 PR 合并；`docs/architecture/` 更新守卫与 Java 版本约定 |
+| **M3**（Option A） | Boot 2.7.18→3.5.x、`release=17`、**本地固定 JDK 21**、jakarta 迁移（11 个文件）、守卫测试改写、CI/镜像/JDK 升级、依赖兼容性核查 | 无（但**本地 JDK 21 固定**为 blocking 前置） | `mvn --batch-mode verify` 全绿（`Tests run` 不下降）、前端 `lint/test/coverage/build/e2e` 全绿、JaCoCo `BUNDLE/LINE ≥ 0.90` 不变（2026-10-20 收紧后的门槛）、生产 compose smoke 通过（health/深链/401/404 语义不变）、`mvn -version` 显示 JDK 21 | 无行为变更的迁移 PR 合并；`docs/architecture/` 更新守卫与 Java 版本约定 |
 | **M4.1**（Option B-①） | **电影目录语义检索**：结构化卡片构造（title/year/director/genres/stars/rating）→ embedding → 语义 top-k → 复用现有电影列表/详情 UI | M3 + chat 与 embedding 模型可用（**embedding 中文能力先实测**） | 端点契约测试（mock embedding/chat）通过；前端页面测试 + 覆盖率不影响闸门；golden set 跑出目录问题的**检索命中率**；embedding 构建**耗时实测**记录 | 可演示（"有没有类似《X》的电影"）+ 有评测数字 + embedding 构建耗时/内存实测记录 |
 | **M4.2**（Option B-②） | 文档 RAG 问答（`docs/` 11 md / 38,755 词 + README 语料、带引用来源） | M4.1（共用管道） | 引用来源正确性抽检通过；回答**必带来源**；`SimpleVectorStore` 重建流程可复现 + **语料指纹**记录 | 可演示 + 评测报告（命中率/引用正确性/延迟）+ 语料更新流程文档化 |
 | **M4.3**（Option B-③，条件性） | NL 搜索（NL → 结构化条件 + 严格白名单校验 + 映射现有查询） | M4.1/B0 实测确认小模型 JSON 合规率可接受 | 格式合规率与条件命中率达标（**阈值 = D8 已确认：NL→JSON schema 合规率 ≥95%**）；不达标则**由 M4.1 的语义检索承担同一直入口**并明确记录 | 可演示，或如实记录"退化为语义检索" |
@@ -578,8 +578,8 @@ D-时间（每周可投入多少小时 / 目标期限）  → 用户答：>10 �
 | movies 无语料 / 21087 行 | `createtable.sql:5-10`；scout §B7 只读 SQL 计数 |
 | `docs/` 语料：既有 **11 个 md / 38,755 词**；6 份 `ai-*.md` = **15,941 词**；含二者的 **17 个 md = 54,696 词** | 本轮复核：`find docs -name '*.md' -not -name 'ai-*.md' \| wc -w` = 38,755（11 个文件）；`cat docs/plans/ai-*.md \| wc -w` = 15,941；全部 17 个 md = 54,696（B4；scout §B9 为宽口径 `docs/`） |
 | `@SpringBootTest` **全仓库 0 处使用**（唯一命中为 `SpaFallbackTest.java:32` 的**注释**） | 本轮复核 `grep -rn "@SpringBootTest" src/test/java`（B2）；契约文档 §7 |
-| JaCoCo 85% / **968/1078 = 0.8980（未覆盖 110 行）** / 127 tests；**不放宽闸门时最多还能新增 ≈60 行未覆盖代码**（`968/(1078+N) ≥ 0.85 ⇒ N ≤ 60.8`） | `pom.xml:158-159`（阈值）、`pom.xml:163`（check）；scout §A3；契约文档 §7；**B3（口径订正）** |
-| 前端 thresholds.lines=88 / 92.35%（846/916）/ 195 tests / 12 e2e | `frontend/vitest.config.js`；契约文档 §7/§12 |
+| JaCoCo **0.90**（2026-10-20 收紧） / **988/1078 = 0.9165（未覆盖 90 行）** / 134 tests；**不放宽闸门时最多还能新增 ≈19 行未覆盖代码**（`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`）。旧口径 0.85 / 968/1078 = 0.8980 / 127 tests / ≈60 行为收紧前快照 | `pom.xml:158-159`（阈值）、`pom.xml:163`（check）；契约文档 §7；**B3（口径订正）**；**2026-10-20 门槛收紧**（`docs/logs/2026-10-20-coverage-threshold-90.md`） |
+| 前端 thresholds.lines=**90**（2026-10-20 收紧；旧值 88） / 92.35%（846/916）/ 195 tests / 12 e2e | `frontend/vitest.config.js`；契约文档 §7/§12 |
 | 无 GitHub issue/milestone（**2026-10-18 调查时点**） | scout §D20（`gh issue list`、`gh api .../milestones`）；**2026-10-19 已变更为：open issue #44 + milestone #3**（见 §2.6） |
 | `compose.yaml` = `mysql` + `app` 两个服务 | `compose.yaml:2,26`；`ai-option-c-agent-platform.md` §1.2（P2-1） |
 | AD-1 / AD-2 | `docs/architecture/frontend-migration-contracts.md` §10 |

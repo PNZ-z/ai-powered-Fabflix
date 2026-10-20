@@ -58,7 +58,7 @@ Option B 是在 Option A 之上引入 **Spring AI 1.1.x**（`spring-ai-bom`）�
 | 现有搜索：全文索引**仅 title 列**、BOOLEAN MODE 前缀匹配、autocomplete ≥3 字符 | `CreateFullTextIndex.java:24`、`FullTextQueryBuilder.java:1-22`、`SearchService` |
 | 响应约定：业务失败 200 + `{status:"fail",message}`；400 `{errorMessage}`；401 `{errorMessage}` | 契约文档 §6 |
 | `apiClient` 契约：`apiRequest(path)`、`credentials: 'include'`、204 → `null` | 契约文档 §5 |
-| 覆盖率闸门：后端 JaCoCo LINE ≥ 0.85（现 0.8980，`Tests run: 127`）；前端 lines ≥ 88（现 92.35%，195 用例） | `pom.xml:163`；契约文档 §7 |
+| 覆盖率闸门：后端 JaCoCo LINE ≥ **0.90**（2026-10-20 由 0.85 收紧；现 **0.9165**，`Tests run: 134`）；前端 lines ≥ **90**（同日由 88 收紧；现 92.35%，195 用例） | `pom.xml:163`；契约文档 §7 |
 | **AI 新增代码默认计入闸门**；扩 exclude 与既有政策冲突 | `README.md` 覆盖率节 |
 | e2e 现状：Playwright，API 全 `page.route` mock，12 次执行 | 契约文档 §7 |
 | `/playground` 是现成公共页，是最低成本挂载点 | scout §A6 |
@@ -267,7 +267,7 @@ fabflix.ai.corpus.paths=README.md,docs/**   # 语料构成见总览 D-语料构�
 | 无障碍 | 答案区 `role="status"`；错误 `role="alert"`；来源列表用语义化列表；**页面级 axe 断言**（契约文档 §7） |
 | 安全展示 | **不回显 prompt 内部结构**；来源 path 相对化（不泄露服务器绝对路径） |
 | 测试联动 | 若页面进入 `App.test.jsx` 渲染路径 → 必须扩展 `responseBody(url)` 按 URL 分派（契约文档 §3 N13，**最具体优先**） |
-| 覆盖率 | 新页面必须满足 lines 88 阈值（计入分母） |
+| 覆盖率 | 新页面必须满足 lines **90** 阈值（计入分母；2026-10-20 由 88 收紧） |
 | e2e | 新增 spec 时 API 全 `page.route` mock（**不调用真实模型**）；须同步 `vitest.config.js` 的 `exclude` 与 `playwright.config.js` 的 `testDir`（契约文档 §7 陷阱） |
 
 ### 4.6 被否决的候选
@@ -309,7 +309,7 @@ fabflix.ai.corpus.paths=README.md,docs/**   # 语料构成见总览 D-语料构�
 
 | # | 验收条件 | 验证方式 | 判据 |
 | --- | --- | --- | --- |
-| AC-B-1 | 既有功能零回归 | `mvn verify` + 前端全套 + e2e | 后端 `Tests run` 不下降、覆盖 ≥0.85、前端 lines ≥88、e2e 全绿 |
+| AC-B-1 | 既有功能零回归 | `mvn verify` + 前端全套 + e2e | 后端 `Tests run` 不下降（≥134）、覆盖 ≥**0.90**、前端 lines ≥**90**、e2e 全绿（门槛均于 2026-10-20 收紧，**不得降低或绕过**） |
 | AC-B-2 | AI 开关关闭时零影响 | 配置 `fabflix.ai.enabled=false` | 既有测试全绿；AI 端点返回明确"未启用"失败 |
 | AC-B-3 | 问答返回**可核验来源** | 契约测试 + 人工抽检 | 每条源于语料的回答至少 1 个真实存在的来源 path |
 | AC-B-4 | 无语料依据时明确拒绝 | golden set 的"应拒绝"用例 | 不编造（判据：不得出现语料外事实断言） |
@@ -353,7 +353,7 @@ fabflix.ai.corpus.paths=README.md,docs/**   # 语料构成见总览 D-语料构�
 **覆盖率预算**：
 
 - 后端新增类（controller/service/prompt/解析）**必须有测试**；不扩 exclude。
-- 前端新页面/组件计入 lines 88 阈值。
+- 前端新页面/组件计入 lines **90** 阈值（2026-10-20 由 88 收紧）。
 - **风险**：AI 分支多（超时/解析失败/无结果）→ 分支覆盖虽无阈值但行覆盖需全绿；建议用**接口注入**让所有分支可 mock 触达。
 
 ### 6.4 可观测性
