@@ -28,6 +28,23 @@ Services and JDBC repositories
         MySQL
 ```
 
+## Java toolchain
+
+Building the backend — every `mvn` command, including `mvn spring-boot:run` — requires **JDK 21**, and `JAVA_HOME` must point at a JDK 21 installation: Maven runs on the JDK that `JAVA_HOME` selects, and a `requireJavaVersion [21,22)` rule in `pom.xml` fails the build at the `validate` phase for any other version. The error message names the requirement and points back here.
+
+Check the toolchain before building:
+
+```shell
+mvn -version   # must report "Java version: 21.x"
+export JAVA_HOME=/path/to/jdk-21   # the JDK 21 installation directory
+```
+
+IDE-embedded Maven uses the IDE's project JDK, so set that to 21 as well.
+
+The compiler still targets Java 17 (`maven.compiler.release=17` in `pom.xml`), so the produced bytecode is class file major version 61 and the packaged jar runs on a Java 17+ runtime. **JDK 21 is the build toolchain, not the language level.** CI builds on Java 21 too, and the `Dockerfile` uses JDK 21 in both JDK stages (`maven:3.9-eclipse-temurin-21` for the build, `eclipse-temurin:21-jre` for the runtime), so local builds, CI, and the container image all use the same JDK.
+
+The Compose commands below build and run inside those images, so they do not depend on the host JDK; the `mvn` commands run on the host and do.
+
 ## Local database
 
 Requirements: Docker with Compose support.

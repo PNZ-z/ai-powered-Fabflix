@@ -9,16 +9,16 @@
 > - **迁移前基线（所有“不下降”判据的唯一基准）**：`docs/logs/2026-10-20-issue-46-baseline.md`
 >
 > **状态图例**：`未开始` / `基线已测量（待 PR 合并后标记完成）` / `已实施（待 PR 合并）` / `实施中` / `已完成（PR #n 已合并 @ <sha>）` / `阻塞（原因）`。
-> **本文件不表示任何步骤已完成**：**2026-10-20 事实** —— S1 基线已测量、**S2 已实施**（`pom.xml` 一行驱动版本 + 文档）、**S3 已实施**（18 文件：`pom.xml` 两处 + 11 个 `src/main/java` import + 守卫测试 + 3 个测试 import + `ci.yml` 3 行 + `Dockerfile` 2 行），三者**均未提交 / 未推送 / 未建 PR**；**S4–S7 的 Scope / AC 仍未执行**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。
+> **本文件不表示整轮迁移已完成**：**2026-10-20 事实** —— **S1 已合并**（PR [#53](https://github.com/PNZ-z/ai-powered-Fabflix/pull/53)，merge `9696848`）、**S2 已合并**（PR [#55](https://github.com/PNZ-z/ai-powered-Fabflix/pull/55)，merge `55f8d79`）、**S3 已合并**（PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56)，merge `70fb78b`；#48 已 CLOSED；18 文件：`pom.xml` 两处 + 11 个 `src/main/java` import + 守卫测试 + 3 个测试 import + `ci.yml` 3 行 + `Dockerfile` 2 行）；**S4 已实施（`pom.xml` enforcer + `README.md`），未提交 / 未推送 / 未建 PR**；**S5–S7 的 Scope / AC 仍未执行**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。**合并事实取自 `git log --merges`（本轮只读复核）；S1/S2 的 PR CI 结果本轮未单独核验**，S3 的 PR CI 双 job 结果由主 agent 核验后回填（见 §S3）。
 
 ## 状态总表
 
 | 步骤 | Issue | 状态 | 完成分支 / commit | 证据 / 记录 |
 | --- | --- | --- | --- | --- |
-| **S1** 迁移前基线 + checklist | [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) | **基线已测量（待 PR 合并后标记完成）** | `codex/issue-46-baseline`（基于 `main` @ `fff314f88455216122912f07c26706f70dd63b62`）；**未提交/未推送** | `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件 |
-| **S2** 非 Spring 依赖就绪 | [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-47-dependency-readiness`（**尚未创建/提交**；工作区仍在 `main`，基线 `9eea664`） | `docs/logs/2026-10-20-issue-47-dependency-readiness.md`（AC-1..AC-5 回填见 `docs/issues/issue-47-dependency-readiness.md`） |
-| **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79`；**未提交/未推送/无 PR**，commit SHA 待提交后回填） | `docs/logs/2026-10-20-issue-48-core-upgrade.md`（AC-1..AC-9 回填见 `docs/issues/issue-48-core-boot3-jakarta.md`）；行为差异与未证明项见该日志 §1.3 |
-| **S4** JDK 21 强制与镜像取证 | [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) | **未开始** | `（待填：codex/issue-49-…）` | `（待填）` |
+| **S1** 迁移前基线 + checklist | [#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46) | **已完成（PR [#53](https://github.com/PNZ-z/ai-powered-Fabflix/pull/53) 已合并 @ `9696848`）** | `codex/issue-46-baseline`（基于 `main` @ `fff314f88455216122912f07c26706f70dd63b62`）；merge commit `9696848` | `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件 |
+| **S2** 非 Spring 依赖就绪 | [#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47) | **已完成（PR [#55](https://github.com/PNZ-z/ai-powered-Fabflix/pull/55) 已合并 @ `55f8d79`）** | `codex/issue-47-dependency-readiness`（基于 `main` @ `9eea664`）；merge commit `55f8d79` | `docs/logs/2026-10-20-issue-47-dependency-readiness.md`（AC-1..AC-5 回填见 `docs/issues/issue-47-dependency-readiness.md`） |
+| **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **已完成（PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56) 已合并 @ `70fb78b`）**；#48 已 **CLOSED** | `codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79`）；merge commit `70fb78b` | `docs/logs/2026-10-20-issue-48-core-upgrade.md`（AC-1..AC-9 回填见 `docs/issues/issue-48-core-boot3-jakarta.md`，**AC-6 已 ✅**）；行为差异与未证明项见该日志 §1.3 |
+| **S4** JDK 21 强制与镜像取证 | [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) | **已实施（2026-10-20），待 PR 合并** | `codex/issue-49-jdk21-toolchain`（基于 `70fb78b`；**未提交/未推送/无 PR**，commit SHA 待提交后回填） | `docs/logs/2026-10-20-issue-49-jdk21-toolchain.md`（AC-1..AC-6 回填见 `docs/issues/issue-49-jdk21-toolchain.md`） |
 | **S5** `@MockBean` → `@MockitoBean` | [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) | **未开始** | `（待填：codex/issue-50-…）` | `（待填）` |
 | **S6** 回归与生产验证 | [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) | **未开始** | `（待填：codex/issue-51-…）` | `（待填）` |
 | **S7** 收尾（文档/状态/日志） | [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) | **未开始** | `（待填：codex/issue-52-…）` | `（待填）` |
@@ -90,7 +90,7 @@ cd .. && git status --short   # 必须仍只有与源码无关的未跟踪条目
 
 **(c) 回退点**：纯文档 → 删除本 PR 的 4 个 `docs/` 文件即回退，**不影响任何构建/运行/CI**。
 
-**(d) 完成分支 / commit**：分支 `codex/issue-46-baseline`（基于 `main` @ `fff314f`）；**当前未提交/未推送**，commit SHA 待提交后回填；证据 = `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件。
+**(d) 完成分支 / commit**：分支 `codex/issue-46-baseline`（基于 `main` @ `fff314f`）；**已随 PR [#53](https://github.com/PNZ-z/ai-powered-Fabflix/pull/53) 合并，merge commit `9696848`**；证据 = `docs/logs/2026-10-20-issue-46-baseline.md` + 本文件。
 
 ---
 
@@ -121,7 +121,7 @@ docker compose down        # 保留数据卷；如需彻底清理再 -v（会丢
 
 **(c) 回退点**：单个依赖版本号 → revert 一行即可。若 9.x 在 Boot 2.7 基线上暴露行为差异，**保持 `8.3.0` 并记录**即为合规回退（不阻塞 S3；此时 AC-6 的 JDBC 分支按 P2-7 不触发）。**本步未采用此回退**（见下方实际结果）。
 
-**(d) 完成分支 / commit**：`codex/issue-47-dependency-readiness`（**尚未创建、未提交、未推送、无 PR**）；基线 commit `9eea6645a4f14004e994848f0daf8741f2909c34`（`Merge PR #54`）。commit SHA 待提交后回填。
+**(d) 完成分支 / commit**：`codex/issue-47-dependency-readiness`；基线 commit `9eea6645a4f14004e994848f0daf8741f2909c34`（`Merge PR #54`）；**已随 PR [#55](https://github.com/PNZ-z/ai-powered-Fabflix/pull/55) 合并，merge commit `55f8d79`**。
 
 **实际执行结果（2026-10-20，worker 执行 + 主 agent 核验；证据 `docs/logs/2026-10-20-issue-47-dependency-readiness.md`）**
 
@@ -185,7 +185,7 @@ docker compose rm -sf app
 
 **(c) 回退点**：**单 PR 整体 revert**（回到 Boot 2.7 + `javax`，`main` 仍绿，因为 S1/S2 未改变行为）。**禁止**用降阈值、扩 `excludes`、跳过 e2e 让 CI 变绿。
 
-**(d) 完成分支 / commit**：`codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79` = `Merge pull request #55`）；**未提交、未推送、无 PR**；commit SHA 待提交后回填。证据 = `docs/logs/2026-10-20-issue-48-core-upgrade.md`。
+**(d) 完成分支 / commit**：`codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79` = `Merge pull request #55`）；**已随 PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56) 合并，merge commit `70fb78b`**（#48 已 **CLOSED**；CI 双 job **SUCCESS**，见上方 CI 行）。证据 = `docs/logs/2026-10-20-issue-48-core-upgrade.md`。
 
 **实际执行结果（2026-10-20，worker 执行 + 主 agent 终验与容器 smoke；证据 `docs/logs/2026-10-20-issue-48-core-upgrade.md`）**
 
@@ -197,7 +197,7 @@ docker compose rm -sf app
 | 守卫 | 白名单**集合相等**（恰好 11 路径）通过；保留 `@WebServlet` / `extends HttpServlet` / `jakarta.servlet.annotation.WebServlet` 禁令；**主 agent 终验后补强 2 行**（源码禁 `javax.servlet`、pom 禁 `javax.servlet-api`），仍为 **2 个 `@Test`**、用例总数仍 134 |
 | 字节码 | `major version: 61`（另以字节头 `cafe babe 0000 003d` 复核）。**注意**：本 checklist 与 issue #48 原文写的类名 `FablixApplication` 是**笔误**，实际类为 `com.fabflix.boot.FabflixApplication`；照抄原文会得到「类找不到」 |
 | 打包 | `cd frontend && npm ci && npm run build` 成功；`mvn -Pfrontend -DskipTests clean package` → jar 含 `BOOT-INF/classes/static/index.html` + assets；移走 `frontend/dist` 后**同一命令 BUILD FAILURE**（`require-frontend-dist`）；默认 `mvn verify`（**无** `-Pfrontend`）在 dist 缺失时仍 **BUILD SUCCESS**（后端门禁不依赖 dist） |
-| CI | `ci.yml` 3 行：job 名 `Build and test (Java 21)`、step 名 `Set up Java 21`、`java-version: "21"`。**PR CI 尚未发生 → S3 的 AC-6（双 job 绿）未取证**，须在 PR 后由主 agent 回填 |
+| CI | ✅ **PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56) 已合并（merge `70fb78b`），S3 的 AC-6 已取证**：CI 双 job 均 **SUCCESS** —— 后端 `Build and test (Java 21)` + 前端 `Frontend (lint, test, coverage, build, e2e)`（结果由主 agent 核验，2026-10-20）；`ci.yml` 3 行改动为 job 名 `Build and test (Java 21)`、step 名 `Set up Java 21`、`java-version: "21"`；#48 已 **CLOSED** |
 | 镜像 / 容器 | `Dockerfile`：build `maven:3.9-eclipse-temurin-21`、runtime `eclipse-temurin:21-jre`；`uid/gid 1001` 非 root、`EXPOSE`、`ENTRYPOINT` 未动。`docker compose build app` 成功；容器内 **JDK 21**（`openjdk version "21.0.12.1"`）、`id fabflix` = `uid=1001 gid=1001`；health **200** |
 | 容器 smoke（提交版镜像，主 agent 亲自跑） | `/` 含 `id="root"`；**10 条深链全 200 `text/html`**；未认证 `/api/boot/cart` → **401 JSON**；`/API/boot/cart` → **404 JSON**；`/assets/missing.js` → 404；顾客登录 → 加购 → token → **支付成功**（`order_date=2026-10-20`，`sales.id=13566`、`sale_date=2026-10-20`）；员工登录 → `/dashboard/session` 200 → `?action=metadata` 200；容器日志无 warn/error/deprecat |
 | 依赖解析 | `mysql-connector-j` **9.7.0**（显式 pin 生效，未被 BOM 覆盖；且 Boot 3.5.15 BOM 的值同为 9.7.0，**无漂移风险**）；Tomcat **10.1.55**、Jackson **2.21.4**、HikariCP **6.3.3**、Logback **1.5.34**；`junit-jupiter 5.11.4`（聚合）vs `junit-jupiter-engine 5.12.2`（BOM）、`mockito-core 5.23.0` vs `mockito-junit-jupiter 5.17.0`（BOM；无 `MockitoExtension` 使用 → 惰性） |
@@ -237,7 +237,23 @@ docker compose build app
 
 **(c) 回退点**：revert 本 PR（enforcer 与 README 相互独立，可只回退 enforcer）。注意 `requireJavaVersion` 会让 JDK 27 本地构建**直接失败**——这是计划内行为（P1-3），README 必须写清。
 
-**(d) 完成分支 / commit**：`（待填）`
+**(d) 完成分支 / commit**：`codex/issue-49-jdk21-toolchain`（基于 `70fb78b` = `Merge pull request #56`）；**未提交、未推送、无 PR**；commit SHA 待提交后回填。证据 = `docs/logs/2026-10-20-issue-49-jdk21-toolchain.md`（AC-1..AC-6 回填见 `docs/issues/issue-49-jdk21-toolchain.md`）。
+
+**实际执行结果（2026-10-20，主 agent 终验 + worker 执行；证据 `docs/logs/2026-10-20-issue-49-jdk21-toolchain.md`）**
+
+| 项 | 结果 |
+| --- | --- |
+| 工具链 / diff | 全部 `mvn` 命令在 `JAVA_HOME=/opt/homebrew/opt/openjdk@21`（**Java 21.0.12.1**）下运行；`git diff --stat` = **2 files changed, +40 −0**（`pom.xml` +23、`README.md` +17）；无 `src/**`、无 `Dockerfile`、无 `ci.yml`、无 `compose.yaml` 改动 |
+| 门禁实现 | 主 `<build>` 新增 `maven-enforcer-plugin:3.5.0` execution **`require-jdk-21`**（`validate` / `fail=true` / `requireJavaVersion [21,22)` / 消息指回 README）；`frontend` profile 的 `require-frontend-dist` **原样保留**，`-Pfrontend` 下**两条 execution 都执行**（日志逐条可见） |
+| 正向 / 负向 | JDK 21 `mvn validate` → `Rule 0: … RequireJavaVersion passed` + **BUILD SUCCESS**；**JDK 27**（`/opt/homebrew/opt/openjdk`，本机 Maven 默认）同命令 → **BUILD FAILURE**，消息 = `Fabflix pins the build and Maven-run to JDK 21 (bytecode release=17; Boot 3.5 runs on 17-24, but this project is verified on 21 only); set JAVA_HOME to a JDK 21 installation - see README`（**预期行为**，P1-3） |
+| 门禁不回归 | JDK 21 `mvn verify` → **BUILD SUCCESS**；**134 tests / 0 failures / 0 errors / 0 skipped**；`All coverage checks have been met.`；JaCoCo **988/1078 = 0.9165**（阈值仍 0.90、`excludes` 仍 8）；字节码 **major 61**（`release=17` 未变） |
+| 打包 / dist 守卫 | `mvn -Pfrontend -DskipTests clean package` 成功且 jar 含 **6 个 `static` 条目**（含 `BOOT-INF/classes/static/index.html`）；移走 `frontend/dist` 后同命令 **BUILD FAILURE**（`require-frontend-dist`：`frontend/dist/index.html is missing …`），**随后已恢复** |
+| 容器（**只验证未改**） | `Dockerfile` 两阶段仍为 `maven:3.9-eclipse-temurin-21` / `eclipse-temurin:21-jre`（S3 产物，**零改动**）；`docker compose build app` 成功 → `up` 后 health **200**；容器内 `java -version` = **21.0.12.1**；运行用户 **uid/gid 1001**（非 root）；`docker compose rm -sf app`，**未 `down` mysql** |
+| README | 新增 `## Java toolchain`：**构建（所有 `mvn` 命令，含 `spring-boot:run`）需 JDK 21** 且 `JAVA_HOME` 指向 JDK 21；自检 `mvn -version` 须报 **`21.x`** + `export JAVA_HOME=/path/to/jdk-21`；**IDE 内嵌 Maven 需同样设为 21**；`release=17` → major 61 → **打包后的 jar 可在 Java 17+ 运行**（「JDK 21 是构建工具链，不是语言级别」）；CI 与 `Dockerfile` **both JDK stages** 为 21；Compose 在镜像内运行、**不依赖宿主 JDK** |
+| 三路 review | **无 Blocker**；采纳并已修正 **5 项文案**：enforcer 消息对 JDK 22–24 的歧义、README 首句「building and running」过宽、`"Java version: 21"` → `21.x`、补 `export JAVA_HOME` 与 IDE 提示、`both stages` → `both JDK stages` |
+| **未取证 / 登记后续** | **本步的 PR 与其 CI**（尚无 PR，故不得写「已合并」）；JDK 17 未单独复跑（规则语义已由 JDK 27 取证）；前端 lint/test/e2e（本步不涉及）。**登记到后续（本步不改代码）**：`frontend/README.md` 的 `mvn -Pfrontend` 说明需提 JDK 21（**S7 docs 清单**）；`SpringBootOnlyArchitectureTest` 可加 enforcer 规则守卫（**S6/S7 评估**）；enforcer 版本字面量在主 build 与 profile **两处重复**（可选清理）；`docs/architecture/frontend-migration-contracts.md` §11/§8 的旧 JDK 11/`jakarta` 禁令描述（**S7**） |
+
+> **下一步 S5（[#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50)）**：S4 的 **JDK 21 门禁已生效** —— 本地 `mvn`、CI（Java 21）与容器镜像（两阶段 JDK 21）现在是**同一个 JDK 21**，任何非 21 的 `JAVA_HOME` 都会在 `validate` 阶段立刻失败。S5 只改 9 个测试文件的 `@MockBean` → `@MockitoBean`（+ import），不触碰 `pom.xml` 的 enforcer 规则与 `README.md`；所有 S5 命令同样必须在 `JAVA_HOME=/opt/homebrew/opt/openjdk@21` 下运行（否则会先被 S4 的门禁拦下）。
 
 ---
 
