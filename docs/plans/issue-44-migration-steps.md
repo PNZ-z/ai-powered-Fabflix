@@ -102,7 +102,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 
 | # | 标题（issue 前缀） | 目标（一句话） | 主要改动面 | 依赖 | 估算 | 验证要点 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **S1**（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)） | `[Step 1/7] Record the pre-migration baseline and start the migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出 |
+| **S1**（[#46](https://github.com/PNZ-z/ai-powered-Fabflix/issues/46)） | `[Step 1/7] Record the pre-migration baseline and start the migration checklist` | 在**未改动**的 Boot 2.7 现状上复跑并记录迁移前基线，建 checklist 与回退点 | 仅 `docs/`（1 份基线记录 + 1 份 checklist）；**不改源码/pom/CI/Dockerfile** | 无 | **0.5 天** | 后端 `mvn verify`、前端 5 条命令、e2e 各跑一次并逐字记录输出。**状态（2026-10-20）：基线已测量**（JDK 27 与 JDK 21 均 `127` 用例 / `0.8980`；前端 `195` tests / `92.35%` / `12` e2e），见 `docs/logs/2026-10-20-issue-46-baseline.md` 与 `docs/plans/issue-44-migration-checklist.md`；**待提交 / PR / 合并** |
 | **S2**（[#47](https://github.com/PNZ-z/ai-powered-Fabflix/issues/47)） | `[Step 2/7] Validate non-Spring dependency readiness on the Boot 2.7 baseline` | 在 Boot 2.7 + Java 11 上单独定版并验证 `mysql-connector-j`（及 jasypt 的 JDK 21 检查），把 JDBC 差异与 Boot 3 差异分离 | `pom.xml`（1 个依赖版本）；可能 1 处配置文件 | 无（可与 S1 并行） | **1 天** | `mvn verify` 全绿 + 真 MySQL compose smoke 的日期/时区语义 |
 | **S3**（[#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48)） | `[Step 3/7] Upgrade to Spring Boot 3.5 and migrate to the Jakarta namespace` | 唯一一次原子升级：BOM 3.5.x + `release=17` + 11 文件 jakarta + 守卫白名单 + CI JDK 21 + **两阶段镜像 JDK 21** | `pom.xml`、11 个 `src/main/java` 文件、`SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、**`Dockerfile`（两行 `FROM`，B-1）** | S1、S2 | **2–3 天** | `mvn verify`（127 用例/0.8980 不下降，JDK 21 环境下）、守卫集合相等断言 == 11、jar 形态、dist 缺失仍失败、`major version: 61`、PR CI 双 job 绿、**`docker compose build app` 成功 + 容器 health 200** |
 | **S4**（[#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49)） | `[Step 4/7] Enforce JDK 21 in the build and document/verify it` | 用机器可执行的方式强制 JDK 21 并归档证据：enforcer `requireJavaVersion [21,22)` + README；**只验证不改镜像**（Dockerfile 已在 S3） | `pom.xml`（主 `<build>` 新增 enforcer 执行）、`README.md` | S3 | **1 天** | 错 JDK → BUILD FAILURE（可用本机 JDK 27 取证）；JDK 21 → 通过；两 stage 镜像为 21 + `docker compose build app` 成功（证据）；`-Pfrontend` 打包与 dist 守卫不回退 |
@@ -342,6 +342,7 @@ S2 依赖就绪 (1d, pom 单点)     ─┘        │
 | `docs/issues/issue-51-regression-proof.md` | S6 = **[#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51)**（P2-1 的 10 条深链 / `Part of #44`） | **已创建（OPEN）** |
 | `docs/issues/issue-52-close-out.md` | S7 = **[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)**（P1-6 的 §11 / P2-6 的日志编号 / `Part of #44`） | **已创建（OPEN）** |
 | `docs/issues/issue-44-boot3-java17-jakarta-migration.md` | #44 = **epic（OPEN）**：已记录 7 个子 issue、epic 正文的 2 处修改与 2 个新增区块 | **已回填（2026-10-19）** |
+| `docs/plans/issue-44-migration-checklist.md` | **7 步迁移 checklist**（每步：一句话目标 / 精确验证命令 / 回退点 / 完成分支-commit + 状态列；顶部链接 #44 与 #46–#52） | **新增（2026-10-20）**：S1 = 基线已测量（见 `docs/logs/2026-10-20-issue-46-baseline.md`），S2–S7 = 未开始 |
 
 > 上表的 7 份 issue 文档原名均为 `docs/issues/proposed-step-*.md`，issue 创建后按真实编号改名（文件未跟踪 → 直接 `mv`，无内容丢失）；除顶部元数据与 `Internal tracking` 外，`## GitHub issue body` 与远端**逐字一致**。
 
