@@ -165,16 +165,37 @@ function MovieCatalog() {
   // mount, which is also why React's development remount cycle cannot store
   // the position of the still-empty page over the remembered one. A later
   // revalidation keeps the same status, so it cannot move the page again.
+  //
+  // An offset is only remembered for a query the visitor already left, so its
+  // absence marks a query opened for the first time — a new page, filter, or
+  // sort. That list opens at its own top instead of wherever the previous
+  // query ended, which the pathname-based reset cannot do: the pathname is the
+  // same. Scrolling here rather than on mount keeps both cases on the frame
+  // after the successful render, so the reset can never overtake a restore.
   useEffect(() => {
     if (status !== 'success') return undefined
 
-    const frame = previousScrollY === null
-      ? null
-      : window.requestAnimationFrame(() => window.scrollTo(0, previousScrollY))
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo(0, previousScrollY === null ? 0 : previousScrollY)
+    })
+
+    // The cleanup below cannot read window.scrollY: it runs after React has
+    // replaced this list with the next page, and the browser has already
+    // clamped the offset to that shorter document (usually to 0). The offset
+    // the visitor really had is only readable while the list is on screen, so
+    // the scroll events of this visit report it. The initial value is the
+    // offset this visit starts from, which keeps an immediate exit from saving
+    // the leftover position of the page the visitor came from.
+    let lastScrollY = previousScrollY ?? 0
+    const recordScroll = () => {
+      lastScrollY = window.scrollY
+    }
+    window.addEventListener('scroll', recordScroll, { passive: true })
 
     return () => {
-      if (frame !== null) window.cancelAnimationFrame(frame)
-      saveMovieListScroll(requestPath, window.scrollY)
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', recordScroll)
+      saveMovieListScroll(requestPath, lastScrollY)
     }
   }, [status, previousScrollY, requestPath])
 
