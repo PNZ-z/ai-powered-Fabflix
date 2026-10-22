@@ -7,7 +7,7 @@ import { AuthContext } from '../../auth/authContext.js'
 import CartStatusProvider from '../cart/CartStatusProvider.jsx'
 import { expectNoA11yViolations } from '../../test/axe.js'
 import MovieListPage from './MovieListPage.jsx'
-import { MOVIE_LIST_CACHE_TTL_MS, clearMovieListCache, loadMovieList, saveMovieListScroll } from './movieListCache.js'
+import { MOVIE_LIST_CACHE_TTL_MS, clearMovieListCache, loadMovieList, readMovieListScroll, saveMovieListScroll } from './movieListCache.js'
 import { movieListRequestPath } from './movieListApi.js'
 
 function movieSummary(overrides = {}) {
@@ -44,8 +44,13 @@ function deferred() {
   return { promise, resolve, reject }
 }
 
+// The list records the visitor's offset from scroll events, because window
+// .scrollY itself is already clamped to the next page by the time the list
+// unmounts. Moving the offset here therefore announces it the way a browser
+// does.
 function setScrollY(value) {
   Object.defineProperty(window, 'scrollY', { value, configurable: true, writable: true })
+  window.dispatchEvent(new Event('scroll'))
 }
 
 // Fills the module cache the way an earlier visit would have, so a test can
@@ -447,6 +452,37 @@ describe('MovieListPage caching', () => {
     renderMovieList('/movies?genre=Drama', fetchMock)
 
     await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 250))
+  })
+
+  it('opens a query with no remembered offset at the top of the list', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    // The visitor arrives from a page that was scrolled far down; a list they
+    // have not visited yet must not inherit that offset.
+    setScrollY(600)
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
+
+    renderMovieList('/movies?genre=Drama', fetchMock)
+
+    await screen.findByRole('link', { name: 'Neon Horizon' })
+
+    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 0))
+  })
+
+  it('remembers the offset the visitor left even after the next page clamps it', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
+    const list = renderMovieList('/movies?genre=Drama', fetchMock)
+    await screen.findByRole('link', { name: 'Neon Horizon' })
+
+    setScrollY(400)
+    // jsdom does no layout, so the browser's clamp has to be simulated: the
+    // next page has already replaced the list by the time the list unmounts,
+    // which is why window.scrollY reads 0 there, and the scroll event of that
+    // clamp only arrives afterwards.
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true })
+    list.unmount()
+
+    const requestPath = movieListRequestPath(new URLSearchParams('genre=Drama'))
+    expect(readMovieListScroll(requestPath)).toBe(400)
   })
 
   it('does not move the page again when a revalidation lands', async () => {
