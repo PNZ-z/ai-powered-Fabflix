@@ -1,6 +1,6 @@
 # AI-powered Fabflix
 
-Fabflix is a Java movie-commerce application being modernized into a Spring Boot application, with Spring AI and agent workflows on the roadmap. The online application uses Spring Boot, JDBC, and MySQL and serves a React + Vite single-page frontend that Maven packages into the executable jar. The legacy browser-based HTML/JavaScript frontend has been retired — React is the only supported frontend. Offline import and maintenance programs remain available as standalone utilities.
+Fabflix is a Java movie-commerce application being modernized into a Spring Boot application, with Spring AI and agent workflows on the roadmap. The online application uses Spring Boot 3.5, JDBC, and MySQL and serves a React 19 + Vite single-page frontend that Maven packages into the executable jar. The legacy browser-based HTML/JavaScript frontend has been retired — React is the only supported frontend. Offline import and maintenance programs remain available as standalone utilities.
 
 ## Modernization roadmap
 
@@ -155,6 +155,8 @@ mvn verify
 CI enforces a **90% line-coverage gate** for the Spring Boot online application. One-off XML parsers and their import model, importer worker/tasks, local account setup, password initialization programs, and index-maintenance utilities are deliberately excluded because they are not part of the deployed request path. Their exclusion is defined centrally in `pom.xml`; new online application classes are covered by default.
 
 JaCoCo HTML reports are generated under `target/site/jacoco/`.
+
+The React frontend is gated separately: the CI frontend job runs `npm run test:coverage`, which fails below the 90% line threshold configured in `frontend/vitest.config.js`.
 
 ## Security note
 

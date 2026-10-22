@@ -9,7 +9,7 @@
 > - **迁移前基线（所有“不下降”判据的唯一基准）**：`docs/logs/2026-10-20-issue-46-baseline.md`
 >
 > **状态图例**：`未开始` / `基线已测量（待 PR 合并后标记完成）` / `已实施（待 PR 合并）` / `实施中` / `已完成（PR #n 已合并 @ <sha>）` / `阻塞（原因）`。
-> **本文件不表示整轮迁移已完成**：**2026-10-21 事实** —— **S1 已合并**（PR [#53](https://github.com/PNZ-z/ai-powered-Fabflix/pull/53)，merge `9696848`）、**S2 已合并**（PR [#55](https://github.com/PNZ-z/ai-powered-Fabflix/pull/55)，merge `55f8d79`）、**S3 已合并**（PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56)，merge `70fb78b`；#48 已 CLOSED；18 文件：`pom.xml` 两处 + 11 个 `src/main/java` import + 守卫测试 + 3 个测试 import + `ci.yml` 3 行 + `Dockerfile` 2 行）、**S4 已合并**（PR [#57](https://github.com/PNZ-z/ai-powered-Fabflix/pull/57)，merge `9a7705c`；#49 已 CLOSED；CI 双 job SUCCESS；`pom.xml` enforcer + `README.md`）；**S5 已合并**（PR [#58](https://github.com/PNZ-z/ai-powered-Fabflix/pull/58)，merge `ff57e79`；#50 已 CLOSED；CI 双 job SUCCESS；`@MockBean`→`@MockitoBean`，9 文件 / 11 处 + 9 import，AC-1..AC-5 全部 ✅）；**S6 已执行（2026-10-21），待 PR 合并**（纯证据步骤，无源码/配置/测试改动；后端 134 / 0.9165、前端 195 / 92.35% / 12 e2e、生产 smoke 全绿；证据 `docs/logs/2026-10-21-issue-51-regression-proof.md`）；**S7 仍未开始**。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。**合并事实取自 `git log --merges` 与 `gh pr view/checks`（本轮只读复核）；S1/S2 的 PR CI 结果本轮未单独核验**，S3 与 S4 的 PR CI 双 job 结果已核验后回填（见 §S3、§S4）。
+> **本文件不表示整轮迁移已完成**：**2026-10-21 事实** —— **S1 已合并**（PR [#53](https://github.com/PNZ-z/ai-powered-Fabflix/pull/53)，merge `9696848`）、**S2 已合并**（PR [#55](https://github.com/PNZ-z/ai-powered-Fabflix/pull/55)，merge `55f8d79`）、**S3 已合并**（PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56)，merge `70fb78b`；#48 已 CLOSED；18 文件：`pom.xml` 两处 + 11 个 `src/main/java` import + 守卫测试 + 3 个测试 import + `ci.yml` 3 行 + `Dockerfile` 2 行）、**S4 已合并**（PR [#57](https://github.com/PNZ-z/ai-powered-Fabflix/pull/57)，merge `9a7705c`；#49 已 CLOSED；CI 双 job SUCCESS；`pom.xml` enforcer + `README.md`）；**S5 已合并**（PR [#58](https://github.com/PNZ-z/ai-powered-Fabflix/pull/58)，merge `ff57e79`；#50 已 CLOSED；CI 双 job SUCCESS；`@MockBean`→`@MockitoBean`，9 文件 / 11 处 + 9 import，AC-1..AC-5 全部 ✅）；**S6 已合并**（PR [#59](https://github.com/PNZ-z/ai-powered-Fabflix/pull/59)，merge `b4a6d2a`；#51 已 **CLOSED**；CI 双 job SUCCESS；纯证据步骤，无源码/配置/测试改动；后端 134 / 0.9165、前端 195 / 92.35% / 12 e2e、生产 smoke 全绿；证据 `docs/logs/2026-10-21-issue-51-regression-proof.md`）；**S7 已实施（2026-10-21），待 PR 合并**（分支 `codex/issue-52-close-out`，基线 `b4a6d2a`；**仅 `docs/`**：契约文档 §8/§11/§12/§7、路线图执行状态、checklist/steps、#44/#52 记录、S7 日志）。每一步仍需各自走 docs-writer 计划 → oracle 只读审查 → 主 agent 批准 → 单一 worker → 3 路 reviewer → 修复与复验 → 日志的完整流程。**合并事实取自 `git log --merges` 与 `gh pr view/checks`（本轮只读复核）；S1/S2 的 PR CI 结果本轮未单独核验**，S3 与 S4 的 PR CI 双 job 结果已核验后回填（见 §S3、§S4）。
 
 ## 状态总表
 
@@ -20,8 +20,8 @@
 | **S3** 核心 Boot 3 + Jakarta 升级 | [#48](https://github.com/PNZ-z/ai-powered-Fabflix/issues/48) | **已完成（PR [#56](https://github.com/PNZ-z/ai-powered-Fabflix/pull/56) 已合并 @ `70fb78b`）**；#48 已 **CLOSED** | `codex/issue-48-core-boot3-jakarta`（基于 `main` @ `55f8d79`）；merge commit `70fb78b` | `docs/logs/2026-10-20-issue-48-core-upgrade.md`（AC-1..AC-9 回填见 `docs/issues/issue-48-core-boot3-jakarta.md`，**AC-6 已 ✅**）；行为差异与未证明项见该日志 §1.3 |
 | **S4** JDK 21 强制与镜像取证 | [#49](https://github.com/PNZ-z/ai-powered-Fabflix/issues/49) | **已完成（PR [#57](https://github.com/PNZ-z/ai-powered-Fabflix/pull/57) 已合并 @ `9a7705c`）**；#49 已 **CLOSED** | `codex/issue-49-jdk21-toolchain`（基于 `70fb78b`）；merge commit `9a7705ca2bb9f5b4dc0fb1a20a4413a0c46aa0b6` | `docs/logs/2026-10-20-issue-49-jdk21-toolchain.md`（AC-1..AC-6 回填见 `docs/issues/issue-49-jdk21-toolchain.md`）；**PR CI 双 job SUCCESS**（run `39504525702`） |
 | **S5** `@MockBean` → `@MockitoBean` | [#50](https://github.com/PNZ-z/ai-powered-Fabflix/issues/50) | **已完成（PR [#58](https://github.com/PNZ-z/ai-powered-Fabflix/pull/58) 已合并 @ `ff57e79`）**；#50 已 **CLOSED**；CI 双 job **SUCCESS** | `codex/issue-50-mockito-annotation`（基于 `9a7705c`）；merge commit `ff57e79` | `docs/logs/2026-10-20-issue-50-mockito-annotation-cleanup.md`（AC-1..AC-5 全部 ✅，回填见 `docs/issues/issue-50-mockito-annotation-cleanup.md`） |
-| **S6** 回归与生产验证 | [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) | **已执行（2026-10-21），待 PR 合并** | `codex/issue-51-regression-proof`（基于 `ff57e79`；**未提交/未推送/无 PR**，commit SHA 待提交后回填）；**无源码/配置/测试改动**，PR diff 仅含 `docs/` | **`docs/logs/2026-10-21-issue-51-regression-proof.md`**（逐项证据表 + 未执行清单；AC-1..AC-7 回填见 `docs/issues/issue-51-regression-proof.md`） |
-| **S7** 收尾（文档/状态/日志） | [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) | **未开始** | `（待填：codex/issue-52-…）` | `（待填）` |
+| **S6** 回归与生产验证 | [#51](https://github.com/PNZ-z/ai-powered-Fabflix/issues/51) | **已完成（PR [#59](https://github.com/PNZ-z/ai-powered-Fabflix/pull/59) 已合并 @ `b4a6d2a`）**；#51 已 **CLOSED**；CI 双 job **SUCCESS** | `codex/issue-51-regression-proof`（基于 `ff57e79`）；merge commit `b4a6d2a`；**无源码/配置/测试改动**，PR diff 仅含 `docs/` | **`docs/logs/2026-10-21-issue-51-regression-proof.md`**（逐项证据表 + 未执行清单；AC-1..AC-7 回填见 `docs/issues/issue-51-regression-proof.md`） |
+| **S7** 收尾（文档/状态/日志） | [#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52) | **已实施（2026-10-21），待 PR 合并** | `codex/issue-52-close-out`（基于 `b4a6d2a`；**未提交/未推送/无 PR**）；**无源码/配置/测试改动**，PR diff = `docs/` **7 个文件** + `worker` 的 `README.md`/`frontend/README.md` 4 处文本 | **`docs/logs/2026-10-21-issue-52-close-out.md`**；契约文档 §8/§11/§12/§7 已同步；AC-1..AC-7 回填见 `docs/issues/issue-52-close-out.md` |
 
 > **执行顺序硬约束**（`issue-44-migration-steps.md` §2）：S1 ∥ S2 → S3 → (S4 ∥ S5) → S6 → S7。每步**一个独立 PR**，可单独 revert。
 
@@ -391,7 +391,19 @@ grep -n "修改了哪些文件\|新增知识点" docs/logs/*issue-52*.md
 
 **(c) 回退点**：文档回退 = revert 本 PR。
 
-**(d) 完成分支 / commit**：`（待填：codex/issue-52-…）`；**前置条件已满足**：S6 证据已于 **2026-10-21** 产出（`docs/logs/2026-10-21-issue-51-regression-proof.md`），S7 **只做文档收尾**。
+**(d) 完成分支 / commit**：**`codex/issue-52-close-out`**（基线 = 已合并 S6 的 `main` = **`b4a6d2a`**，即 `Merge pull request #59 from PNZ-z/codex/issue-51-regression-proof`）；**未提交 / 未推送 / 无 PR**（commit SHA 待提交后回填）；**无源码/配置/测试改动**，PR diff = `docs/` **7 个文件** + `worker` 的 `README.md`/`frontend/README.md` 4 处文本（AC-6 允许）。**前置条件已满足**：S6 证据已于 **2026-10-21** 产出并已随 PR #59 合并（`docs/logs/2026-10-21-issue-51-regression-proof.md`），S7 **只做文档收尾**。
+
+**实际结果（2026-10-21，回填）**
+
+| 项目 | 结果 |
+| --- | --- |
+| §8 守卫描述 | 已改为「**`jakarta.servlet` = 11 路径 allow-list + 集合相等**」；仍禁 `javax.servlet` / `jakarta.servlet.annotation.WebServlet` / `@WebServlet` / `extends HttpServlet`；`pom.xml` 断言含 `jar`+`repackage`，并**同时禁 `jakarta.servlet-api` 与 `javax.servlet-api` 字面量**。核对：`grep -rl "jakarta.servlet" src/main/java \| wc -l` = **11**；白名单条目 = **11**；`grep -n "servlet" pom.xml` = **0** |
+| §11 容器约定 | 两个 JDK 阶段由 `temurin-11` 改为 **21**（三阶段 = `node:22-alpine` / `maven:3.9-eclipse-temurin-21` / `eclipse-temurin:21-jre`）；非 root `1001`、`mysql:3306`、`SPRING_PROFILES_ACTIVE=local`、SPA fallback 约定不变。核对：`grep -n "^FROM" Dockerfile` |
+| §12 / §7 | 新增「本地/CI/镜像统一 **JDK 21**、`release=17`、字节码 major **61**」一节（CI job = `Build and test (Java 21)`、`java-version: "21"`）；§7 复核后确认**无** "~106 行" 陈旧数字，口径 = 「现有 **90** 行未覆盖、0.90 门槛下最多再新增 **≈19** 行」 |
+| 路线图 | `docs/plans/ai-roadmap-overview.md` 顶部新增「执行状态」行，状态/GitHub 行与 §2.6、§6（M3）、§12.3（A-3/A-4）回填；**历史证据与已批准决策未改写** |
+| README | **漂移由 `worker` 修正 4 处文本**（`docs-writer` 未编辑这两个文件）：`README.md:3` 写明 **`Spring Boot 3.5`**/**`React 19`**；`README.md:159` 补前端 **90% lines** 覆盖率闸门（CI `frontend` job）；`frontend/README.md:51` 阈值措辞改 **90% `lines`**；`frontend/README.md:75` 新增 `mvn -Pfrontend` 需 **JDK 21** + `JAVA_HOME`（= 本 checklist S4 遗留项已闭合）。S4 已写入的 `## Java toolchain` 与实现一致；复核 `grep -n "Java 11\|temurin-11\|Boot 2\|2.7.18" README.md frontend/README.md` → 无命中 |
+| 日志 | **`docs/logs/2026-10-21-issue-52-close-out.md`**（元数据 + 「修改了哪些文件及潜在问题」+「新增知识点 / 重点学习对象」两大节） |
+| 未执行 / 不开门 | **未重跑** S6 的任何命令（本步不重验，只引用 S6 证据）；**未**运行 `mvn` / npm / Docker / CI；**未**做任何 GitHub 写操作（#52 仍 OPEN，epic #44 与 milestone #3 仍 OPEN） |
 
 ---
 
