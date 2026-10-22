@@ -1,6 +1,6 @@
 # Step 7/7 — 收尾：架构约定、README、路线图状态与工作流日志（GitHub issue #52 记录）
 
-> **文档状态：🟢 已在 GitHub 存在（[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。**本文件不表示该步骤已实施、也不表示迁移已完成**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。
+> **文档状态：🟢 已在 GitHub 存在（[#52](https://github.com/PNZ-z/ai-powered-Fabflix/issues/52)），无需新建** —— 2026-10-19 由 `github-operator` 按本文件获批的 `## GitHub issue body` 创建（**正文逐字一致**，仅 GitHub 在末尾追加一个换行；`## Internal tracking` 分区**未发布**）。~~**本文件不表示该步骤已实施、也不表示迁移已完成**：Scope / Acceptance criteria 全部未执行，无源码/配置/测试改动、无 PR。~~ → **2026-10-21 更新：本步已实施（仅文档）** —— 分支 **`codex/issue-52-close-out`**（基线 = 已合并 S6 的 `main` = **`b4a6d2a`**）；**未提交 / 未推送 / 无 PR**；**无源码/配置/测试/CI/Dockerfile 改动**，PR 的 diff = `docs/` **7 个文件** + `worker` 的 `README.md`/`frontend/README.md` **4 处文本**（AC-6 允许）；契约文档 §8/§11/§12/§7、路线图执行状态、checklist/steps、#44/#52 记录与本步日志均已更新；**`README.md` / `frontend/README.md` 的 4 处措辞对齐由 `worker` 完成**（`docs-writer` 未编辑这两个文件，见日志 §1.1 第 8 行）；AC-1..AC-7 逐条状态见文末「实施结果与 AC 回填（2026-10-21）」；证据 **`docs/logs/2026-10-21-issue-52-close-out.md`**。
 > **远端元数据（主 agent 核验，2026-10-19）**：编号 **#52** · 标题 `[Step 7/7] Close out the migration: architecture docs, roadmap status and workflow log` · milestone [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3) · labels **空** · state **OPEN** · 正文含显式 `Part of #44` · 上游 epic [#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**）。
 > `github-operator` 只发布 `## GitHub issue body` 分区（四反引号围栏只是本地容器，发布时去掉围栏行本身）；`## Internal tracking` **不上 GitHub**。
 > 拆分总览：`docs/plans/issue-44-migration-steps.md`。本步骤**不改任何源码/测试/配置**，只让文档与最终实现一致，并建立本次工作流的日志。
@@ -93,12 +93,46 @@ Documentation only: reverting the pull request removes the updates but leaves th
 | 远端 state | **OPEN**（2026-10-19 创建；`Part of #44` 已在正文） |
 | 来源 | #44 正文 `Scope → Docs (live documents only)`（§8/§12 + 陈旧覆盖率数字）；`docs/plans/ai-option-a-boot3-migration.md` §2.1-7、§5-A7；`AGENTS.md` §8（日志两大分区）；`docs/architecture/frontend-migration-contracts.md` §7/§8/§12（本轮只读核对：§7 确有 "~106 行" 表述、§8 确有"不得出现 `jakarta.servlet`"、§12 确有 `maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre`） |
 | 关联 | 上游 epic：[#44](https://github.com/PNZ-z/ai-powered-Fabflix/issues/44)（**已转为 epic，保持 OPEN**；正文 `## Steps` 列出 #46–#52）；正文含显式 `Part of #44`（P1-2），**已随创建发布**；本步承担 #44 的 **AC-8 的文档侧**，并在关闭时汇总 AC-1..AC-11 的证据 |
-| 依赖关系 | **前置 S6**（以及 S3/S4/S5 已合并） |
+| 依赖关系 | **前置 S6（已合并，PR [#59](https://github.com/PNZ-z/ai-powered-Fabflix/pull/59) @ `b4a6d2a`）**；S3/S4/S5 已合并（PR #56/#57/#58） |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)（milestone 的实际关闭由主 agent / `github-operator` 决定，本步只核对状态并记录） |
 | labels | **空** |
-| 状态 | **🟢 已在 GitHub 存在（#52），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。**实现未开始**（S7 的前置 S1–S6 全部未开始） |
+| 状态 | **🟢 已在 GitHub 存在（#52），无需新建** —— `github-operator` 按批准草稿创建（正文逐字一致，除末尾换行）；`## Internal tracking` 未发布。~~**实现未开始**（S7 的前置 S1–S6 全部未开始）~~ → **实现：已实施（2026-10-21），待提交 / PR** —— 分支 `codex/issue-52-close-out`（基线 `b4a6d2a`）；**未提交 / 未推送 / 无 PR**；**仅 `docs/`**；AC-1..AC-7 均已回填（见文末分区）；#52 远端仍 **OPEN** |
 | 估算 | 0.5 天 |
 | 负责人角色 | docs-writer → oracle → 主 agent 批准 → 单一 `worker`（只改文档并跑核对命令）→ 3 reviewer（文档与代码一致性、是否改写历史记录、是否过度声称）→ `worker` 修复 → docs-writer 定稿 → 主 agent 提交/推送 → `github-operator` 建 PR；**epic/milestone 的关闭由主 agent 决定并执行** |
-| 事实来源（可核验，本轮只读） | 契约文档 §7（"~106 行" 陈旧表述）、§8（`jakarta.servlet` 禁令原文）、§12（`maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre` / CI Java 11）；`SpringBootOnlyArchitectureTest.java`（当前禁令 + `pom.xml` 三条断言）；`README.md`（无 JDK 版本要求章节，S4 补）；路线图 `docs/plans/ai-roadmap-overview.md` §12.3 / M3 行 |
-| 未确认 | ① S4 写入 README 后还剩哪些漂移（需实施时读 diff 判断）；② 路线图 §12.3 的行号/编号在实施前是否变化；③ S6 是否留下“未执行”项（决定日志与关闭口径）。**已闭合**：**P1-6** 契约文档 **§11** 已**显式列入 Scope/AC-1**（不再依赖 AC-3 的 drift 检查）；**P2-6** 日志编号用 **S7 自己的 issue 编号** |
+| 事实来源（可核验，本轮只读） | 契约文档 §7（**复核后无** "~106 行" 陈旧表述，口径 = 90 行未覆盖 / 最多再新增 ≈19 行）、§8（`jakarta.servlet` 禁令原文 → 本轮改为 11 路径 allow-list）、§11（`maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre` → 本轮改为 **21**）、§12（CI Java 11 → 本轮补 **Java 21 / `release=17` / major 61**）；`SpringBootOnlyArchitectureTest.java`（allow-list `Set.of(...)` **11 条** + 四类禁令 + `pom.xml` 三条断言（含新增的 `javax.servlet-api` 字面量禁令））；`README.md`（S4 已写入 `## Java toolchain`；本轮静态核对无旧事实，漂移修正由 `worker` 执行）；路线图 `docs/plans/ai-roadmap-overview.md` §12.3 / §6 M3 行 / 顶部元数据表 |
+| 未确认 | ~~① S4 写入 README 后还剩哪些漂移（需实施时读 diff 判断）~~ → **已闭合（2026-10-21）**：S4 已把 `## Java toolchain` 写清（JDK 21 + `JAVA_HOME` + enforcer `[21,22)`）；本轮静态核对 `grep -n "Java 11\|temurin-11\|Boot 2\|2.7.18" README.md frontend/README.md` **无命中**，`worker` 另修了 **4 处**表述（`README.md` 首段 `Spring Boot 3.5`/`React 19`、前端 90% 闸门说明；`frontend/README.md` 阈值措辞与 `mvn -Pfrontend` 的 JDK 21 说明），详见日志 §1.1 第 8 行；~~② 路线图 §12.3 的行号/编号在实施前是否变化~~ → **已闭合**：§12.3 行仍在，按行内容（而非行号）定位并回填；~~③ S6 是否留下“未执行”项~~ → **已闭合**：S6 证据记录 §0.7 已列 6 类未执行项，本步日志与 AC-5/AC-7 回填均引用该清单，**不得读作全部验证通过**。**已闭合**：**P1-6** 契约文档 **§11** 已**显式列入 Scope/AC-1**（不再依赖 AC-3 的 drift 检查）；**P2-6** 日志编号用 **S7 自己的 issue 编号** |
 | 待裁定 | **已全部闭合（2026-10-19）**：**P1-6** 纳入 §11；**P2-6** 日志编号口径已明确。**是否创建本 issue → 已创建 #52（2026-10-19）**。**#44 的关闭方式与时机**仍由主 agent 裁定（本稿按“epic 保持 open 到 S7 完成、由主 agent 关闭”记录）。 |
+
+---
+
+## 实施结果与 AC 回填（2026-10-21）
+
+> 本分区**不发布到 GitHub**；上方 `## GitHub issue body` 围栏原文**逐字未改**（Scope / AC 措辞保持发布时的样子，逐条状态记录在此）。
+
+| 项目 | 值 |
+| --- | --- |
+| 执行状态 | **已实施（2026-10-21），待提交 / PR** |
+| 分支 / 基线 | **`codex/issue-52-close-out`**（**从已合并 S6 的 `main` = `b4a6d2a` 创建**；`b4a6d2a` = `Merge pull request #59 from PNZ-z/codex/issue-51-regression-proof`） |
+| 提交 / 推送 / PR | **未提交、未推送、无 PR**；远端 #52 仍 **OPEN**；epic #44 与 milestone #3 仍 **OPEN**（关闭由主 agent 在 S7 合并后执行） |
+| 改动规模 | **源码/配置/测试/CI/`Dockerfile`：0 行**；PR 的 diff = `docs/` **7 个文件**（契约文档、路线图、checklist、steps、`issue-44`、本文件、S7 日志）+ **`README.md` 与 `frontend/README.md` 的 4 处文本改动（由 `worker` 执行）** |
+| 证据记录 | **`docs/logs/2026-10-21-issue-52-close-out.md`**（元数据 + 「修改了哪些文件及潜在问题」+「新增知识点 / 重点学习对象」） |
+| 本轮实际运行的核对命令 | `git log --oneline -5`、`git status --short`、`grep -rl "jakarta.servlet" src/main/java \| wc -l`（→ **11**）、`awk … set.of 区间 \| grep -c '\.java"'`（→ **11**）、`grep -n "servlet" pom.xml`（→ **0**）、`grep -n "^FROM" Dockerfile`（→ 3 行，JDK 阶段均 `-21`）、`grep -n "java-version\|name: Build and test" .github/workflows/ci.yml`（→ `Build and test (Java 21)` / `"21"`）、`grep -n "maven.compiler.release" pom.xml`（→ **17**）、`grep -n "Java 11\|temurin-11\|Boot 2\|2.7.18" README.md frontend/README.md`（→ 无命中）、`grep -n "106" docs/architecture/frontend-migration-contracts.md`（→ 无命中）；另读 `git diff README.md frontend/README.md`（→ `worker` 的 4 处文本改动，见日志 §1.1 第 8 行） |
+| **未运行** | `mvn`、npm、Docker、CI **一律未运行**（本步不重验，引用 S6 证据 `docs/logs/2026-10-21-issue-51-regression-proof.md`）；**未做任何 GitHub 写操作** |
+
+### 逐条 AC 状态
+
+| AC | 状态 | 证据 / 说明 |
+| --- | --- | --- |
+| **AC-1** §8 描述 11 路径 allow-list + 集合相等、§12 写 CI 与两个镜像阶段 JDK 21 + `release=17`、**§11 写明两阶段镜像为 JDK 21**（且保留 SPA fallback 约定）、§7 不再含陈旧 "~106 lines"，且每条可对照 `SpringBootOnlyArchitectureTest` / `ci.yml` / `Dockerfile` | ✅ **满足** | 契约文档 §8 已重写为「**`jakarta.servlet` = 11 路径 allow-list（集合相等）**；`javax.servlet`/`jakarta.servlet.annotation.WebServlet`/`@WebServlet`/`extends HttpServlet` 仍禁；`pom.xml` 断言 = `jar` + `repackage` + **禁 `jakarta.servlet-api` 与 `javax.servlet-api` 字面量**」；§11 容器约定两个 JDK 阶段 = `maven:3.9-eclipse-temurin-21` / `eclipse-temurin:21-jre`（非 root 1001、`mysql:3306`、`SPRING_PROFILES_ACTIVE=local`、SPA fallback 真值表**未改**）；§12 新增「本地/CI/镜像统一 **JDK 21**、`release=17` → major **61**、CI `Build and test (Java 21)` / `java-version: "21"`」；§7 复核**无** "~106 行"（`grep -n "106"` 无命中），口径为「90 行未覆盖、0.90 门槛下最多再新增 **≈19** 行」。三条命令证据见上表 |
+| **AC-2** 文档中的 allow-list 计数 = 守卫测试断言数 = `src/main/java` 中含 `jakarta.servlet` 的文件数（11），各自有命令记录 | ✅ **满足** | `grep -rl "jakarta.servlet" src/main/java \| wc -l` → **11**；`SpringBootOnlyArchitectureTest` 的 `JAKARTA_SERVLET_ALLOW_LIST = Set.of(...)` 条目 → **11**（`awk` 区间 + `grep -c '\.java"'`）；文档 §8 写 **11**（并列出全部 11 个相对路径 + 按包分组 admin 2 / auth 2 / commerce 5 / search 1 / session 1）。三者相等 |
+| **AC-3** `README.md` 与交付的构建一致（JDK 21 要求、`JAVA_HOME`、命令），发现的漂移在本步修复并记录 | ✅ **满足（漂移由 `worker` 修正 4 处并已记录）** | S4 已写入 `## Java toolchain`（JDK 21 + `JAVA_HOME` + enforcer `requireJavaVersion [21,22)` + `release=17`/major 61 + CI 与 Dockerfile 的 JDK 21）。本轮核对发现 **4 处需对齐的表述**，由 **`worker`** 落地（`docs-writer` 不编辑 `docs/` 之外的文件）：① `README.md:3` 首段写明 **`Spring Boot 3.5`** 与 **`React 19`**；② `README.md:159` 补「前端由 CI `frontend` job 单独把关（`npm run test:coverage`，低于 `frontend/vitest.config.js` 的 **90% lines** 即失败）」；③ `frontend/README.md:51` 阈值措辞改为 **90% `lines` threshold**；④ `frontend/README.md:75` 新增「`mvn -Pfrontend` 需 **JDK 21** + `JAVA_HOME`」并链回 `README.md#java-toolchain`。复核：`grep -n "Java 11\|temurin-11\|Boot 2\|2.7.18\|JDK 11" README.md frontend/README.md` → **无命中**。**未做**：未实跑 `mvn -version`/`mvn verify`/`mvn -Pfrontend clean package` 去逐条复验 README 命令文字（由 S6 证据 §0.6 承担） |
+| **AC-4** `docs/plans/ai-roadmap-overview.md` 反映 Option A 的真实执行状态；早期历史保留、未重写 | ✅ **满足** | 路线图顶部新增「执行状态（2026-10-21）」行（**S1–S6 已合并 PR #53/#55/#56/#57/#58/#59、S7 收尾中、B/B-API/C 未开始**）；元数据表「状态 / 新增执行状态 / GitHub」行、§2.6、§6（M3 行与里程碑注）、§12.3（A-3/A-4）均已回填。**历史证据（§2 现状事实表中的 Java 11 / `temurin-11` 等**基线数字**、§4 的版本估算）与已批准决策（§11 决策表）未改写** |
+| **AC-5** 工作流日志存在、含两大分区、用**本步自己的 issue 编号**、含 S6 的真实命令结果（并标注未执行项）、引用 epic #44、明确「无已知遗留问题」或逐条列出 | ✅ **满足** | **`docs/logs/2026-10-21-issue-52-close-out.md`**（文件名用 **#52**，非 #44）：元数据（含 #52 / 分支 / 基线 / 未提交·无 PR）、**§1「修改了哪些文件及潜在问题」**（逐文件组 + 残余风险与未覆盖项 + 「无已知遗留问题」的明确结论）、**§2「新增知识点 / 重点学习对象」**（按主题分组，含含义/位置/学习价值）；正文引用 S6 证据与 §0.7 的未执行清单；显式引用 epic #44 |
+| **AC-6** PR diff 只含 `docs/` 与 `README.md` 改动；`git diff --stat` 无源码/测试/`pom.xml`/`ci.yml`/`Dockerfile` 改动 | ✅ **满足（待 PR 验证）** | 本轮**未改**任何源码/测试/`pom.xml`/`ci.yml`/`Dockerfile`/`compose.yaml`/`frontend/src`；改动 = `docs/` **7 个文件** + **`README.md` / `frontend/README.md` 的 4 处文本（`worker`）**，均在 AC-6 允许范围内。`git diff --stat` 当前为 8 个已跟踪文件（含两份 README）+ 1 个未跟踪日志，**无 `src/**`、无 `pom.xml`、无 `ci.yml`、无 `Dockerfile`**。**注意**：PR 尚不存在，其 diff 需在 PR 创建后由主 agent 最终核验；工作区既存的未跟踪 `?? .idea/` 不属本次改动、**不得带入提交** |
+| **AC-7** 完成说明写明仍开放项（如未执行的生产 smoke、`@MockBean` 后续、路线图下一里程碑），不声称干净收尾 | ✅ **满足** | 见下方「仍开放（不得读作已完成）」：① S6 §0.7 的 6 类**未执行**验证（`AdminRepository` 0/39 覆盖、生产 reCAPTCHA 0/17 与 Boot 3 `RestTemplateBuilder` 弃用、并发/池语义、跨时区跨日、真实浏览器多标签、视觉/对比度）——**不得**在关闭 #44 时写成「全部验证通过」；② S7 **自身未合并**（无 PR）；③ epic #44 与 milestone #3 的关闭、#52 的关闭**未发生**（由主 agent / `github-operator` 执行）；④ 路线图下一里程碑 = **M4.1（Option B-①）**，`B/B-API/C` 的 issue 均未创建；⑤ 远端 #44 正文的门槛数字（0.90/90）仍未同步（历史遗留，待主 agent 授权编辑）；⑥ dev 库 `sales` 行 **13562–13567**（S2–S6 的 smoke 数据，未清理） |
+
+### 仍开放（不得读作已完成）
+
+1. **提交、推送与 PR**（主 agent）：应包含 `docs/` 下 7 个文件（`docs/architecture/frontend-migration-contracts.md`、`docs/plans/ai-roadmap-overview.md`、`docs/plans/issue-44-migration-checklist.md`、`docs/plans/issue-44-migration-steps.md`、`docs/issues/issue-44-boot3-java17-jakarta-migration.md`、`docs/issues/issue-52-close-out.md`、`docs/logs/2026-10-21-issue-52-close-out.md`）**加 `worker` 的 `README.md` / `frontend/README.md` 文本改动**；`?? .idea/` 不得带入。**在此之前不得写「已合并」或「CI 绿」。**
+2. **#52 的关闭 / epic #44 / milestone #3 的状态**：由主 agent 决定并在 PR 合并后执行；本文件不自行改远端状态。**关闭 #44 时必须引用 S6 证据 §0.7 的未执行清单**。
+3. **S6 未执行项**（见上表 AC-7 第 ① 条）：属既有边界，不因 S7 完成而消除。

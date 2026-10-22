@@ -13,6 +13,8 @@
 > 若与本文档冲突，以代码和测试为准，并更新本文档。
 >
 > **本轮（2026-10-15，#31/#32/#33）更新摘要**：§1 迁移进度已收尾；§2 legacy 已退役（守卫测试替代钉死测试）；§3 占位/路由联动机制已随占位机制删除而失效；§6 补员工/顾客登出语义与 filter 归属；§7 测试设施/CI 事实全部重写（Playwright/axe/coverage/Node 22 job）；§8 新增退役守卫；§9 补员工登出；**§11/§12 为新增的跨 issue 约定**（SPA fallback、前端测试设施与 CI）。
+>
+> **本轮（2026-10-21，issue #52 / Step 7/7「收尾」）更新摘要 —— 对齐 Boot 3.5.15 + `release=17` + Jakarta 迁移后的真实代码**：**§8 语义反转**（原「源码中不得出现 `jakarta.servlet`」的禁令**已不存在**，改为 **11 个路径的 allow-list 集合相等**守卫；`@WebServlet`/`extends HttpServlet`/`javax.servlet` 禁令与 `pom.xml` 断言仍保留，并**新增** `javax.servlet-api` 字面量禁令）；**§11 容器约定**的两个 JDK 阶段由 `temurin-11` 改为 **21**（非 root 1001、`mysql:3306`、`SPRING_PROFILES_ACTIVE=local`、SPA fallback 约定**不变**）；**§12** 补「本地 / CI / 镜像统一 **JDK 21**，语言级别 `release=17` → 字节码 major **61**」；**§7** 复核覆盖率余量口径（无 "~106 行" 陈旧数字，正确口径为「现有 **90** 行未覆盖、0.90 门槛下最多再新增 **≈19** 行」）。每条均可对照 `src/test/java/com/fabflix/boot/SpringBootOnlyArchitectureTest.java`、`.github/workflows/ci.yml`、`Dockerfile`、`pom.xml`。迁移本体为 **#44**（epic，S1–S6 已合并、S7 收尾中）；本轮的证据与未覆盖项见 `docs/logs/2026-10-21-issue-52-close-out.md`。
 
 ## 1. 迁移进度与分工基线
 
@@ -104,16 +106,19 @@
 - **standalone MockMvc 不注册 filter 的陷阱【测试强制】（#31 B6）**：`standaloneSetup(controller)` **默认没有任何 filter**：需要验证 401/鉴权时必须显式 `.addFilters(new EmployeeAuthenticationFilter())` 等，否则请求会直达 controller（得到 200/404 而非 401）。示例：`EmployeeControllerTest.employeeMvc()`。
 - **`@WebMvcTest` 的跨请求 session 语义（#30 R2-B2，重要陷阱）**：`.sessionAttr(...)` 每次 `perform` 都会在该请求自己的 `getSession()` 上写属性，**每个请求得到新的 `MockHttpSession`**；只有 `.session(sharedMockHttpSession)` 才复用同一 session。**任何需要跨请求保持状态的断言（如 token 签发→提交→重放、或「登出只移除 employee 而保留 user」）必须先把属性写入一个 `MockHttpSession` 实例，再对请求 `.session(shared)`**；`.sessionAttr(...)` 只适用于单一请求用例（如 401）。
 - **CI 与后端覆盖率闸门【测试强制】**（`.github/workflows/ci.yml`）：后端 job 的唯一构建步骤是 `mvn --batch-mode --no-transfer-progress verify`；`pom.xml` 的 JaCoCo 插件在 `verify` 阶段强制 `BUNDLE / LINE / COVEREDRATIO ≥ 0.90`（含 `excludes` 白名单；**门槛于 2026-10-20 经用户批准由 0.85 收紧到 0.90**）。**任何新增/修改的后端类都必须配测试**，否则 PR 的 CI 会变红。**2026-10-20 收紧门槛后实测（JDK 21）：988 covered / 90 missed / 1078 total = 0.9165**、`Tests run: 134`；按 0.90 门槛，**新增未覆盖代码的余量只有 N ≤ 19 行**（`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`），因此**新增生产代码必须同时新增测试**，且**不得扩 `excludes`**（仍为 8 项）。历史数字（2026-10-15 的 `968/1078 = 0.8980`、`Tests run: 127`，对应 0.85 门槛）**只作历史证据**，见 `docs/logs/2026-10-15-issues-31-32-33-m2-completion.md`、`docs/logs/2026-10-20-issue-46-baseline.md` 与 `docs/logs/2026-10-20-coverage-threshold-90.md`。
+- **2026-10-21（#52 / S7）复核覆盖率余量口径**：本节**已无** "~106 行" 陈旧句子（`grep -n "106" docs/architecture/frontend-migration-contracts.md` 无命中）；当前正确表述是「**现有 90 行未覆盖**，`988/(1078+N) ≥ 0.90 ⇒ N ≤ 19`，即 0.90 门槛下最多还能新增 **≈19 行**未覆盖代码」。**不得**降低门槛、不得扩 `excludes`（仍 8 项）。
 - **CI 前端 job【已新增，#32 D-32-1/D-32-2/Q-2】**：`ci.yml` 现在有一个独立的 `frontend` job（`timeout-minutes: 20`、`actions/setup-node@v4` + `node-version: 22` + npm 缓存指 `frontend/package-lock.json`、`working-directory: frontend`），步骤 `npm ci → lint → test → test:coverage → build → npx playwright install --with-deps chromium → test:e2e`，全部阻塞。**后端 job 与 `timeout-minutes: 15` 未变**。命令详情见附录 §12。
 
-## 8. 架构守卫与退役守卫测试【测试强制】
+## 8. 架构守卫与退役守卫测试【测试强制】（**2026-10-21 / #52 更新：Jakarta 迁移后的 allow-list 守卫**）
 
-`src/test/java/com/fabflix/boot/SpringBootOnlyArchitectureTest.java`：
+`src/test/java/com/fabflix/boot/SpringBootOnlyArchitectureTest.java`（Boot 3.5.15 + Jakarta 迁移后**守卫语义已变更**：原「源码中不得出现 `jakarta.servlet`」的断言**已被移除**，由白名单取代）：
 
-- 源码中不得出现 `jakarta.servlet`、`@WebServlet`、`extends HttpServlet`（本项目 `javax.servlet` 由 Spring Boot 提供）。
-- `pom.xml` 必须保持 `jar` 打包 + `repackage`，且不得引入 `jakarta.servlet-api`。
-- 不得新增 servlet / JSP（仓库中无 `*.jsp`）。
-- **`SpaFallbackConfig` / `SpaFallbackTest` 不引入 servlet 依赖**（只依赖 Spring MVC 的 `WebMvcConfigurer`/`PathResourceResolver`）→ 上述守卫不受影响。
+- **`jakarta.servlet` = 精确白名单 + 集合相等**（测试方法 `onlineApplicationConfinesJakartaServletApiToTheReviewedAllowList`）：用 `filesContaining("jakarta.servlet")` 收集 `src/main/java` 下含该 token 的**相对路径集合**，断言它与常量 `JAKARTA_SERVLET_ALLOW_LIST`（**恰好 11 个路径**）**集合相等**（`assertEquals`，不是 `containsAll`）。后果：① 新增一个使用 Servlet API 的文件 → 断言失败，必须**显式**把路径加进白名单（白名单无法被意外扩宽）；② 某文件不再使用 Servlet API → 同样失败，必须同步删除白名单项。**操作含义**：任何新增 controller/filter 需要 `HttpServletRequest`/`HttpSession` 时，改代码与改白名单必须在同一个 PR 内完成。
+  - **11 个路径**（`src/main/java` 下的相对路径）：`com/fabflix/boot/admin/EmployeeAuthenticationFilter.java`、`com/fabflix/boot/admin/EmployeeController.java`、`com/fabflix/boot/auth/CustomerAuthController.java`、`com/fabflix/boot/auth/CustomerAuthenticationFilter.java`、`com/fabflix/boot/commerce/CartController.java`、`com/fabflix/boot/commerce/CartService.java`、`com/fabflix/boot/commerce/CheckoutController.java`、`com/fabflix/boot/commerce/CheckoutTokenService.java`、`com/fabflix/boot/commerce/PaymentController.java`、`com/fabflix/boot/search/SearchController.java`、`com/fabflix/boot/session/SessionController.java`（按包分组：admin 2、auth 2、commerce 5、search 1、session 1）。
+  - **计数可核验**：`grep -rl "jakarta.servlet" src/main/java | wc -l` → **11**；白名单 `Set.of(...)` 的条目数亦为 **11**（两者相等才通过）。
+- **仍然被禁止的写法【测试强制】**（同一测试类内 `assertNoLegacyServletEndpoint`，对 `src/main/java` 的全部 `.java` 文件逐个断言）：`javax.servlet`、`jakarta.servlet.annotation.WebServlet`、`@WebServlet`、`extends HttpServlet`。即：Jakarta Servlet API **只允许**出现在上述 11 个白名单文件中，且**不得新增 servlet 端点 / JSP**（仓库中无 `*.jsp`）。
+- **`pom.xml` 断言**（测试方法 `buildProducesAnExecutableSpringBootJarWithoutJakartaServletDependency`）：必须保持 `<packaging>jar</packaging>` 与 `<goal>repackage</goal>`，且 **`jakarta.servlet-api` 与 `javax.servlet-api` 两个字面量都不得出现**（API 由 `spring-boot-starter-web` 传递提供；显式声明会绕开 Boot 的版本管理）。可核验：`grep -n "servlet" pom.xml` → **无匹配**。
+- **`SpaFallbackConfig` / `SpaFallbackTest` 不引入 servlet 依赖**（只依赖 Spring MVC 的 `WebMvcConfigurer`/`PathResourceResolver`，不在白名单内）→ 上述守卫不受影响。
 
 `src/test/java/com/fabflix/boot/FrontendApiMigrationTest.java`（**#33 重写，语义反转**）：
 
@@ -138,7 +143,7 @@
 | AD-1 | **认证路线 C：网页端继续 session-based 认证**（`JSESSIONID` cookie + `CustomerAuthenticationFilter`）。**JWT 不作为网页端认证机制**，仅保留给**未来 Spring AI agent 平台的独立 trust boundary**；#30/#31 不得引入 Spring Security / JWT 依赖；任何 JWT 工作必须**另立 issue + 计划 + oracle 审查**。 | 用户已确认；#30 计划 D-10 / C-15 | #30、#31 及后续网页端 issue |
 | AD-2 | **部署假设：单 JVM 实例**。`compose.yaml` 只定义 `mysql` 服务（第 1-24 行），`pom.xml` 无 `spring-session`/Redis，session 为 JVM 内存。依赖 session 内存语义的设计（如 #30 的 checkout token 幂等重放）只在该假设下成立；如未来改为多实例 / Spring Session，相关保证必须重新评估并更新本条。 | 主 agent 已核实（#30 U-6） | 所有使用 session 状态的 issue |
 
-## 11. 生产静态资源与 SPA fallback 约定【测试强制】（#33 D-33-2/Q-3/N-33-1/N-33-2）
+## 11. 生产静态资源与 SPA fallback 约定【测试强制】（#33 D-33-2/Q-3/N-33-1/N-33-2；**容器镜像的 JDK 版本 2026-10-21 由 #52 更新**）
 
 > 适用：任何新增前端路由、静态资源目录、Maven profile 或反向代理相关的改动。
 
@@ -157,9 +162,9 @@
 - **顺序约定**：`@RequestMapping` 的 controller 天然优先于资源 handler；新增 controller 时**不要**用能匹配 `/api/**` 之外全路径的映射（如 `/**`），否则会抢在 fallback 之前。
 - **边界（不得声称）**：`SpaFallbackTest` 只证明**判定逻辑**与**resolver 注册**；「jar 内资源可被服务」「深链返回 HTML」**只有生产 smoke（Docker/`java -jar`）能证明**。#33 的实测结果见 `docs/plans/issue-33-*.md` §7（M2-PROD）。
 - **打包约定**：`frontend/dist` **不提交**；`mvn -Pfrontend clean package` 把 `frontend/dist` 复制进 `target/classes/static`，**dist 缺失时 `validate` 相位 enforcer `require-frontend-dist` 使构建失败**（避免打出无 UI 的 jar）。默认 `mvn verify` **不依赖** Node/`dist`（CI 后端 job 因此不需要 Node）。
-- **容器约定**：`Dockerfile` 多阶段（`node:22-alpine` → `maven:3.9-eclipse-temurin-11` → `eclipse-temurin:11-jre`），运行阶段以 **非 root（uid/gid 1001）** 启动；`compose.yaml` 的 `app` 服务容器内数据库地址必须是 `mysql:3306`（**不是** `localhost:3307`），并用 `SPRING_PROFILES_ACTIVE=local` 仅为本地/演示绕过外部 reCAPTCHA（生产需 `RECAPTCHA_SECRET_KEY`）。
+- **容器约定（2026-10-21 / #52 更新：两个 JDK 阶段均为 21）**：`Dockerfile` 三阶段 = `node:22-alpine`（前端构建）→ **`maven:3.9-eclipse-temurin-21`**（构建）→ **`eclipse-temurin:21-jre`**（运行时）；运行阶段以 **非 root（uid/gid 1001）** 启动；`compose.yaml` 的 `app` 服务容器内数据库地址必须是 `mysql:3306`（**不是** `localhost:3307`），并用 `SPRING_PROFILES_ACTIVE=local` 仅为本地/演示绕过外部 reCAPTCHA（生产需 `RECAPTCHA_SECRET_KEY`）。**历史（已失效，仅供回溯）**：迁移前两个 JDK 阶段为 `maven:3.9-eclipse-temurin-11` / `eclipse-temurin:11-jre` —— JDK 11 的 `javac` 无法编译 `release=17`，JDK 11 JRE 也无法加载 class file major 61，因此镜像阶段随 S3 一并升到 21。**可核验**：`grep -n "^FROM" Dockerfile` → 三行，JDK 阶段均为 `-21`。**上述 SPA fallback 约定（§11 真值表与顺序约定）在迁移后不变**。
 
-## 12. 前端命令、Node 版本与部署校验约定【测试强制】（#32/#33）
+## 12. 前端命令、Node 版本、Java 版本与部署校验约定【测试强制】（#32/#33；**Java 版本一节 2026-10-21 由 #52 新增**）
 
 - **Node 版本**：`frontend/package.json` 的 `engines.node = ">= 22.12.0"`；CI 与 Docker 固定 **Node 22 LTS**。以 Node 22 的结果为准（本地 Node 24 结果作为补充）。
 - **命令（工作目录 `frontend/`）**：
@@ -174,5 +179,10 @@
 | `npx playwright install --with-deps chromium` | 安装浏览器 | 仅 chromium |
 | `npm run test:e2e` | `playwright test`（360/1440 两个 project） | 12 passed |
 
-- **后端命令**：`mvn --batch-mode --no-transfer-progress verify`（含 JaCoCo `BUNDLE/LINE ≥ 0.90` 闸门，2026-10-20 起）；`mvn -Pfrontend -DskipTests clean package`（生产打包）。
+- **Java 版本约定【测试强制 / 事实】（2026-10-21 / #52 新增）：本地、CI、镜像统一 JDK 21，语言级别 17** ——
+  - `pom.xml`：`maven.compiler.release = 17`（`pom.xml:13`）→ 产物字节码 **class file major version 61**（`javap -verbose -cp target/classes com.fabflix.boot.FablixApplication | grep 'major version'`）；`pom.xml` 的 `maven-enforcer-plugin` 规则 `requireJavaVersion [21,22)`（`validate` 相位、`fail=true`）让**错误的 JDK 直接 BUILD FAILURE**，而不是静默产出偏差结果（`README.md` 的 `## Java toolchain` 节记录该要求与 `JAVA_HOME`）。
+  - `.github/workflows/ci.yml`：后端 job name = **`Build and test (Java 21)`**、`actions/setup-java@v5` + `distribution: temurin` + **`java-version: "21"`**（`ci.yml:20`、`:32`）；`ci.yml` 内**不再出现** `11`。
+  - `Dockerfile`：两个 JDK 阶段均为 **21**（§11 容器约定）。
+  - **为什么写死**：迁移前 CI 为 Java 11、镜像为 JDK 11、本地 Maven 为 JDK 27，三处不一致会让"本地绿 / CI 红"无法归因；本机 JDK 27 更**不在 Spring Boot 3.5 支持范围内（Java 17–24）**。
+- **后端命令**：`mvn --batch-mode --no-transfer-progress verify`（**必须在 JDK 21 下运行**；含 JaCoCo `BUNDLE/LINE ≥ 0.90` 闸门（2026-10-20 起）与 enforcer `requireJavaVersion [21,22)`）；`mvn -Pfrontend -DskipTests clean package`（生产打包）。
 - **仓库/CI 卫生**：`frontend/dist`、`coverage`、`test-results`、`playwright-report` 均**被 git 忽略、不得提交**；Playwright 用例的 API 一律用 `page.route` mock（不依赖真实后端/MySQL）。

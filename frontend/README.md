@@ -48,7 +48,7 @@ npm run test:coverage
 npm run build
 ```
 
-`npm run test:coverage` runs the unit/component tests through `@vitest/coverage-v8` and fails when line coverage drops below the threshold in `vitest.config.js`.
+`npm run test:coverage` runs the unit/component tests through `@vitest/coverage-v8` and fails when line coverage drops below the 90% `lines` threshold in `vitest.config.js`.
 
 Run the browser smoke tests (Playwright, chromium only, API mocked):
 
@@ -71,6 +71,8 @@ The production assets are written to `dist/` and are not committed. Spring Boot 
 cd frontend && npm ci && npm run build
 cd .. && mvn -Pfrontend clean package   # fails if frontend/dist/index.html is missing
 ```
+
+`mvn -Pfrontend` is an ordinary Maven build, so it requires JDK 21 with `JAVA_HOME` pointing at that installation; see the Java toolchain section in the root [`README.md`](../README.md#java-toolchain).
 
 The default `mvn package`/`mvn verify` build does not need Node or `dist/`; the `frontend` profile copies `dist/` into `target/classes/static` and adds the dist-missing guard.
 
