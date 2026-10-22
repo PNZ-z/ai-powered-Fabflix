@@ -252,6 +252,13 @@ button:disabled {
   width: min(760px, 100%);
 }
 
+/* The state block is narrower than some pages that host it (the movie list is
+   1060px wide), so it needs auto inline margins to stay centred; the grid in
+   `.page-content` already centres it on the other routes. */
+.page-state {
+  margin-inline: auto;
+}
+
 .route-placeholder__eyebrow,
 .page-state__eyebrow {
   color: var(--accent);

@@ -1,6 +1,42 @@
 import { expect, test } from '@playwright/test'
 import { expectNoHorizontalOverflow, mockApi } from './support/api.js'
 
+// The state block is narrower than the catalog page, so it must still sit in
+// the middle of the content area instead of hugging its left edge.
+async function expectCentredInPageContent(page, selector) {
+  const offsets = await page.evaluate((target) => {
+    const stateBox = document.querySelector(target).getBoundingClientRect()
+    const content = document.querySelector('.page-content')
+    const contentBox = content.getBoundingClientRect()
+    const contentStyle = getComputedStyle(content)
+
+    return {
+      stateCentre: stateBox.left + stateBox.width / 2,
+      areaLeft: contentBox.left + Number.parseFloat(contentStyle.paddingLeft),
+      areaRight: contentBox.right - Number.parseFloat(contentStyle.paddingRight),
+    }
+  }, selector)
+
+  const areaCentre = (offsets.areaLeft + offsets.areaRight) / 2
+  expect(Math.abs(offsets.stateCentre - areaCentre)).toBeLessThanOrEqual(2)
+}
+
+test('empty movie list centres the state block in the catalog page', async ({ page }) => {
+  await mockApi(page, { customer: true })
+  // Registered after mockApi, so it answers this endpoint first for the rest
+  // of the test; the shared mock keeps serving every other request.
+  await page.route('**/api/boot/movie-list**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }))
+
+  await page.goto('/movies')
+  await expect(page.getByRole('heading', { name: 'No movies found' })).toBeVisible()
+  await expectNoHorizontalOverflow(page)
+  await expectCentredInPageContent(page, '.page-state')
+})
+
 test('authenticated customer browses from home to a movie detail', async ({ page }) => {
   await mockApi(page, { customer: true })
 
