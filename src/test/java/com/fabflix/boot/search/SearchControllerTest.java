@@ -6,9 +6,9 @@ import com.fabflix.boot.auth.AuthenticatedCustomer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SearchApiExceptionHandler.class)
 class SearchControllerTest {
     @Autowired MockMvc mockMvc;
-    @MockBean SearchService searchService;
+    @MockitoBean SearchService searchService;
 
     @Test void returnsAutocompleteLegacyContract() throws Exception {
         when(searchService.autocomplete("Alien")).thenReturn(
