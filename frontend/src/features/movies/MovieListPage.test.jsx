@@ -53,6 +53,15 @@ function setScrollY(value) {
   window.dispatchEvent(new Event('scroll'))
 }
 
+// The scroll listener that setScrollY feeds is attached by the same effect that
+// opens a list without a remembered offset at the top. Waiting for that reset
+// is how a test knows the running list already listens: on a slower run (CI
+// with coverage) the simulated scroll can otherwise arrive first, and nothing
+// is remembered at unmount.
+async function waitForFirstVisitReset(scrollTo) {
+  await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 0))
+}
+
 // Fills the module cache the way an earlier visit would have, so a test can
 // start from a warm list. `ageMs` moves the entry past the TTL for the cases
 // that have to observe a background revalidation.
@@ -445,6 +454,7 @@ describe('MovieListPage caching', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
     const firstVisit = renderMovieList('/movies?genre=Drama', fetchMock)
     await screen.findByRole('link', { name: 'Neon Horizon' })
+    await waitForFirstVisitReset(scrollTo)
 
     setScrollY(250)
     firstVisit.unmount()
@@ -469,9 +479,11 @@ describe('MovieListPage caching', () => {
   })
 
   it('remembers the offset the visitor left even after the next page clamps it', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
     const list = renderMovieList('/movies?genre=Drama', fetchMock)
     await screen.findByRole('link', { name: 'Neon Horizon' })
+    await waitForFirstVisitReset(scrollTo)
 
     setScrollY(400)
     // jsdom does no layout, so the browser's clamp has to be simulated: the
@@ -490,9 +502,17 @@ describe('MovieListPage caching', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([movieSummary()]))
     const firstVisit = renderMovieList('/movies?genre=Drama', fetchMock)
     await screen.findByRole('link', { name: 'Neon Horizon' })
+    await waitForFirstVisitReset(scrollTo)
 
     setScrollY(250)
     firstVisit.unmount()
+    // The second visit can only restore what the first one really stored, so
+    // the offset is asserted before the render that has to use it.
+    const requestPath = movieListRequestPath(new URLSearchParams('genre=Drama'))
+    expect(readMovieListScroll(requestPath)).toBe(250)
+    // From here on the assertions are about the second visit: the first visit's
+    // own reset to the top (a query nobody had visited) must not count.
+    scrollTo.mockClear()
     await seedMovieListCache('genre=Drama', [movieSummary()], {
       ageMs: MOVIE_LIST_CACHE_TTL_MS + 1,
     })
