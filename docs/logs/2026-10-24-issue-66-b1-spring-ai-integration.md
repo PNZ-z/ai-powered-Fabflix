@@ -1,7 +1,7 @@
 # 工作流日志 — Issue #66（B1：Spring AI 接入本地 Ollama —— 依赖 + 配置 + 可达性健康端点）
 
 > **本文件的定位**：B1（issue [#66](https://github.com/PNZ-z/ai-powered-Fabflix/issues/66)）**实现完成、三路审查修复完成、本地验证完成**之后的工作流日志，按 `AGENTS.md` §8 分成**两大分区** —— §1「修改了哪些文件及潜在问题」与 §2「新增知识点 / 重点学习对象」。
-> **不声称已交付**：分支 `codex/b1-spring-ai-integration`（基线 `main` @ `df24b67`）**未提交、未推送、无 PR、无 merge commit**；GitHub issue #66 仍 **OPEN**，远端 checkbox 未勾选；**没有 CI 运行结果**（无 PR 即无 CI）。本日志不声称 PR/CI/合并已完成。
+> **交付状态（2026-10-24 回填）**：分支 `codex/b1-spring-ai-integration`（基线 `main` @ `df24b67`）已提交 **`e446aab`** 并推送，**PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67)** 已创建，**CI 两个 job 均 SUCCESS**（`Build and test (Java 21)`、`Frontend (lint, test, coverage, build, e2e)`），`mergeStateStatus=CLEAN`、`mergeable=MERGEABLE`。**合并待执行（未合并、无 merge commit）**；GitHub issue #66 仍 **OPEN**（PR 正文 `Closes #66`，合并后自动关闭），远端 checkbox 未勾选。本日志不声称已合并、不声称 #66 已关闭。
 > **本日志不重跑 `mvn`**：152 tests / 0.9208 等数字来自 `worker` 报告 + **主 agent 独立复跑核实**；`docs-writer` 只做只读核对（`git diff`/`git status`/`grep`/`wc`/源码阅读）。凡未运行的检查都在 §1.3 / §2 明确标为未验证。
 > **B1 不含任何 AI 功能**：没有 chat 调用、没有 embedding 调用、没有 RAG、没有向量库、没有前端。只做接入与可观测。
 
@@ -13,12 +13,14 @@
 | GitHub issue | **[#66](https://github.com/PNZ-z/ai-powered-Fabflix/issues/66)** `[B1] Integrate Spring AI with the local Ollama endpoint` —— **OPEN**（milestone [#3](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)，无 labels）。**未关闭、checkbox 未勾选** |
 | 分支 | **`codex/b1-spring-ai-integration`** |
 | 基线 commit | **`df24b67`** = `Merge pull request #65 from PNZ-z/codex/fix-movielist-scroll-test`（= 当前 `main`） |
-| 提交 / 推送 / PR | **均未发生**：`git status --short` 显示改动为未暂存/未跟踪（`M pom.xml`、`M src/main/resources/application.properties`、`M .env.example`、`?? src/main/java/com/fabflix/boot/ai/`、`?? src/test/java/com/fabflix/boot/ai/`、`?? docs/plans/b1-spring-ai-integration.md`、`?? docs/issues/issue-66-b1-spring-ai-integration.md`、`?? docs/logs/2026-10-24-issue-66-b1-spring-ai-integration.md`、`?? .idea/`）；**无 commit、无 push、无 PR、无 merge commit** |
+| 提交 / 推送 / PR | **commit `e446aab`**（`feat: integrate Spring AI with the local Ollama endpoint`）；**已推送** `origin/codex/b1-spring-ai-integration`（`git rev-parse` = `e446aab0869f…`，与本地 HEAD 一致）；**PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67)** `feat: integrate Spring AI with the local Ollama endpoint`，base `main`（`df24b67`）← head `codex/b1-spring-ai-integration`，正文 `Closes #66`。`git status --short` 现仅 `?? .idea/`（本地 IDE，不属交付内容） |
+| CI（2026-10-24 回填） | **两个 job 全绿**：`Build and test (Java 21)` = **SUCCESS**；`Frontend (lint, test, coverage, build, e2e)` = **SUCCESS**；`mergeStateStatus=CLEAN`、`mergeable=MERGEABLE`（PR #67 上的真实运行结果，由主 agent 转达；`docs-writer` 未触发/未重跑 CI） |
+| 合并状态 | **待执行（尚未合并，无 merge commit）**。用户已授权合并，主 agent 即将执行；#66 仍 **OPEN**，合并后由 `Closes #66` 自动关闭。**本行不得改写成「已合并」** |
 | 关联计划 | `docs/plans/b1-spring-ai-integration.md`（**§11 实现结果**、§12 状态表为本次回填） |
 | 关联 issue 记录 | `docs/issues/issue-66-b1-spring-ai-integration.md`（Internal tracking 已回填；**`## GitHub issue body` 分区逐字未改**，仍 14271 字符、与远端一致） |
 | 变更规模（实际） | **14 个文件**（以实际为准）：产码 **5** + 测试 **3** + 构建/配置 **3** + 文档 **3**（本日志 + 计划 + issue 记录）。产码/测试**行数**：产码 210 行、测试 343 行（`wc -l`） |
 | 验证证据来源 | `worker` 报告 + **主 agent 独立复跑**：`mvn --batch-mode --no-transfer-progress verify`（JDK 21）→ 152 tests / 0 failures / 0 errors；JaCoCo 90 missed / 1047 covered / 1137 total = **0.9208**；新增产码 **N=59, U=0**；`excludes` 仍 8；手工 M1–M4。**`docs-writer` 未重跑任何构建/测试** |
-| 结论 | 实现与已批准计划一致（差异均已获批/记录，见 §1.2）；本地闸门全绿；**仍未交付（无 PR/CI/合并）**；残余风险与未验证项见 §1.3 |
+| 结论 | 实现与已批准计划一致（差异均已获批/记录，见 §1.2）；本地闸门全绿 **且 PR #67 的 CI 双 job SUCCESS**；**仍未合并（无 merge commit）、#66 仍 OPEN**；残余风险与未验证项见 §1.3 |
 
 ---
 
@@ -41,9 +43,9 @@
 | 9 | `src/test/java/com/fabflix/boot/ai/AiHealthControllerTest.java`（97 行，**5 用例**） | `@WebMvcTest(AiHealthController.class)` + `@MockitoBean AiHealthService`：T1 匿名 401（真实 `CustomerAuthenticationFilter` 生效）+ `verifyNoInteractions(service)`；T2 disabled；T3 ok；T4 unreachable 仍 200；T5 **键集恰好 5 个**且无 `baseUrl/host/port/token` |
 | 10 | `src/test/java/com/fabflix/boot/ai/AiHealthServiceTest.java`（98 行，**7 用例**） | 纯单测：S1 disabled（`verify(probe, never())`）；**S1b 空值开关**（F3 回归）；**S1c `TRUE` 忽略大小写**；S2 ok 且 `verify(probe).isReachable(Duration.ofSeconds(2))`；S3 probe false；S4 probe 抛异常；S5 模型名原样透出 |
 | 11 | `src/test/java/com/fabflix/boot/ai/HttpOllamaReachabilityProbeTest.java`（148 行，**6 用例**） | `com.sun.net.httpserver.HttpServer` 在 `127.0.0.1:0` 起 stub（记录 path + method）：P1 只有 1 个请求、`/api/version`、**方法 `GET`**、六个禁用路径逐个断言不存在；P2 500 → false；P3 `sleep(600)` + 150ms deadline → 断言 **`100 ≤ elapsed < 1000`**；P4 关闭端口；P5 非法/空/`null` URL；P6 中断位保留。**无外网、无 Ollama、无固定端口** |
-| 12 | `docs/plans/b1-spring-ai-integration.md` | **本次回填**：状态改「🟢 已批准 / 已实现（本地验证通过；PR 待创建）」+ 明确"未提交/未推送/无 PR/未合并"；修正 **§2.1 S4** 与 **§9.1 P-B1-4** 的超时措辞（`AiHealthService.PROBE_TIMEOUT` 2s → **方法参数**传入，探测类不持有第二个超时）；修正 **§4.1** 文件计数（**产码 5 / 总 14**，新增 `HttpOllamaReachabilityProbe` 行、测试类改名）；**§6.2 P3/P1** 改实测（600ms sleep、`100 ≤ elapsed < 1000`、probe ~153ms、test case ~0.775s）+ 新增 P6；§6.3 补 S1b/S1c（7 用例）；§6.4 补实测覆盖率；§8.2 风险表补 M1/M3/M4/F3 证据；§9.2 更新 U 项状态；**新增 §11「实现结果（2026-10-24）」**（152 tests、0.9208、N=59/U=0、M1–M4、F1–F6、AC 对照）；原 §11 顺延为 **§12 状态与后续流程**（worker ✅ / 三路审查 ✅ / 修复 ✅ / 文档 ✅ / 提交·PR·CI·合并 ⏳） |
-| 13 | `docs/issues/issue-66-b1-spring-ai-integration.md` | **本次回填**（只动头部说明 + `Internal tracking` + 文末新小节）：状态改「实现完成，PR 待创建 / 未合并」；新增 4 行（实现与验证状态、M1–M4、审查修复 F1–F6、仍未验证项）；新增「实现结果回填（2026-10-24）」小节（含范围偏离记录）。**`## GitHub issue body` 分区逐字未改**（复算 = **14271 字符**，与发布时一致）；**未勾选远端 checkbox** |
-| 14 | `docs/logs/2026-10-24-issue-66-b1-spring-ai-integration.md` | **本文件**：两大分区（AGENTS §8 要求），元数据含"未提交/无 PR/无 CI"的明确声明 |
+| 12 | `docs/plans/b1-spring-ai-integration.md` | **本次回填**：状态改「🟢 已批准 / 已实现（本地验证通过；PR 待创建）」（**该状态行已在补充 3 中更新为「PR #67 CI 绿，合并待执行」**）+ 明确"未提交/未推送/无 PR/未合并"；修正 **§2.1 S4** 与 **§9.1 P-B1-4** 的超时措辞（`AiHealthService.PROBE_TIMEOUT` 2s → **方法参数**传入，探测类不持有第二个超时）；修正 **§4.1** 文件计数（**产码 5 / 总 14**，新增 `HttpOllamaReachabilityProbe` 行、测试类改名）；**§6.2 P3/P1** 改实测（600ms sleep、`100 ≤ elapsed < 1000`、probe ~153ms、test case ~0.775s）+ 新增 P6；§6.3 补 S1b/S1c（7 用例）；§6.4 补实测覆盖率；§8.2 风险表补 M1/M3/M4/F3 证据；§9.2 更新 U 项状态；**新增 §11「实现结果（2026-10-24）」**（152 tests、0.9208、N=59/U=0、M1–M4、F1–F6、AC 对照）；原 §11 顺延为 **§12 状态与后续流程**（worker ✅ / 三路审查 ✅ / 修复 ✅ / 文档 ✅ / 提交·PR·CI·合并 ⏳） |
+| 13 | `docs/issues/issue-66-b1-spring-ai-integration.md` | **本次回填**（只动头部说明 + `Internal tracking` + 文末新小节）：状态改「实现完成，PR 待创建 / 未合并」（**已在补充 3 中更新为「PR #67 CI 双绿，合并待执行」**）；新增 4 行（实现与验证状态、M1–M4、审查修复 F1–F6、仍未验证项）；新增「实现结果回填（2026-10-24）」小节（含范围偏离记录）。**`## GitHub issue body` 分区逐字未改**（复算 = **14271 字符**，与发布时一致）；**未勾选远端 checkbox** |
+| 14 | `docs/logs/2026-10-24-issue-66-b1-spring-ai-integration.md` | **本文件**：两大分区（AGENTS §8 要求），元数据含交付/CI/合并状态（2026-10-24 首次写入时为「未提交/无 PR/无 CI」，**同日已回填为 commit `e446aab` + 已推送 + PR #67 + CI 双 job SUCCESS + 合并待执行**，见文末补充 3） |
 
 **`docs-writer` 本次实际运行的只读核对命令**（可复跑）：`git status --short` / `git branch --show-current` / `git log --oneline -3` / `git diff pom.xml src/main/resources/application.properties .env.example` / `wc -l src/main/java/com/fabflix/boot/ai/*.java src/test/java/com/fabflix/boot/ai/*.java` / 逐文件 `cat` 阅读 8 个新类 / `grep -n` 校对计划与 issue 文档的过时措辞 / 用 `python3` 复算 `## GitHub issue body` 分区字符数（14271）。
 
@@ -73,7 +75,7 @@
 10. **配置 fail-fast 的代价（F2 副作用）**：4 处 `@Value` 默认值删除后，`spring.ai.ollama.chat.options.model` 等键若被整体删除，应用会**启动失败**而不是静默取代码默认值。这是刻意的（单一真值来源），但"删键"这种误操作现在会表现为启动失败，需在排障文档里说明。
 11. **P3/P6 的计时敏感测试**：断言 `100 ≤ elapsed < 1000` 依赖 stub `sleep(600)` 与 150ms deadline；在极端负载/慢 CI 上仍可能抖动（本次连续 5 次稳定，probe 类每例 ~0.79–0.82 s，其中 600ms 是 stub teardown 的预期开销）。
 12. **`AC-B-12` 仍未闭环**：B1 **不**闭环它（第二 embedding 候选、中→英跨语言用例、21,087 卡片 embedding 成本、`docs/` 切分块数、p95 目标、NL→JSON 合规率全部在范围外）。它是 **B-① / B-② 的准入前置**，需在 B-① 之前单独另建 issue 完成。
-13. **流程侧未完成项**：**无 PR、无 CI 结果、未合并、#66 仍 OPEN 且远端 checkbox 未勾选**；`docs/plans/ai-roadmap-overview.md` 的执行状态**未回填**（刻意留给 PR 合并后）。
+13. **流程侧未完成项（2026-10-24 回填后更新）**：PR **#67 已创建且 CI 双 job SUCCESS**，但**合并尚未执行（无 merge commit）**、#66 仍 **OPEN** 且远端 checkbox 未勾选；`docs/plans/ai-roadmap-overview.md` 的执行状态**未回填**（刻意留到合并之后）。
 14. **文档断言的可复核性**：计划 §11.5 的 AC 对照是**本地口径**；其中 AC-B1-1（`dependency:tree` 细节）与 AC-B1-9（PR CI）标为 **⚠️ 部分**，不得在 PR 描述里写成"已全部满足"。
 
 **未发现其他已知遗留问题**：本次改动无数据迁移、无 schema 变更、无破坏性接口变更；`CustomerAuthenticationFilter`、`ci.yml`、`Dockerfile`、`compose.yaml`、`frontend/**`、`README.md`、`docs/architecture/**`、B0 日志与历史日志**均零改动**（`git status` 可核）。
@@ -146,5 +148,7 @@
 
 - **实现与已批准计划一致**：范围未扩大（无 chat/embedding 调用、无 RAG、无向量库、无前端、无 filter/CI/Docker/compose 改动），5 处差异均已获批或已记录（§1.2）。
 - **本地闸门全绿**：152 tests / 0 failures / 0 errors、JaCoCo **0.9208** ≥ 0.90、新增产码 N=59/U=0、`excludes` 仍 8、M1–M4 手工验证通过。
-- **仍未交付**：分支未提交、未推送、**无 PR、无 CI、未合并**；#66 仍 OPEN。
-- **下一步（不在本步执行）**：主 agent 提交并推送 → `github-operator` 按 issue 文档 + 本日志开 PR（PR 描述需保留 §1.3 的未验证项，特别是"真实端点未抓包""U-B1-5/U-B1-6 未测""`AC-B-12` 未闭环"）→ CI 通过后再决定合并；路线图执行状态在**合并后**回填。
+- **尚未合并**：commit `e446aab` 已推送，**PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67) 已创建且 CI 双 job SUCCESS**（`Build and test (Java 21)`、`Frontend (lint, test, coverage, build, e2e)`），但仍**未合并（无 merge commit）**；#66 仍 OPEN（合并后由 `Closes #66` 自动关闭）。
+- **下一步（不在本步执行）**：主 agent 执行合并 PR #67（用户已授权）→ 合并后回填 `docs/plans/ai-roadmap-overview.md` 执行状态、确认 #66 自动关闭与远端 checkbox，并由 `github-operator` 处理后续 PR 收尾。**PR 描述需保留 §1.3 的未验证项**（特别是“真实端点未抓包”“U-B1-5/U-B1-6 未测”“`AC-B-12` 未闭环”）。
+
+> **补充 3（2026-10-24，PR/CI 元数据回填）**：本文件只回填**元数据**——头部交付状态、元数据表（提交/推送/PR、CI、合并状态、结论）、§1.1 第 14 行、§1.3 第 13 条与 §3 的结论/下一步；同步在 `docs/plans/b1-spring-ai-integration.md`（头部状态、状态表、§11.4 第 8 条、AC-B1-9、§12）与 `docs/issues/issue-66-b1-spring-ai-integration.md`（头部说明、`Internal tracking`、文末流程状态）回填相同事实。**未修改任何源码/测试/配置；未改 `docs/plans/ai-roadmap-overview.md`；未勾选远端 checkbox；未声称已合并或 #66 已关闭；`## GitHub issue body` 发布分区逐字未改。** 本文不提交、不推送。

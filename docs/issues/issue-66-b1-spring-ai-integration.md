@@ -3,8 +3,9 @@
 > **文档状态：🟢 issue #66 已创建（2026-10-24），本文件为规范来源。** 下面 `## GitHub issue body` 分区是**已逐字发布**到 GitHub 的正文；`## Internal tracking` 分区**未发布**（只存在于本仓库）。
 > **远端已核实（2026-10-24，只读操作）**：`gh issue view 66` → **OPEN**、milestone **#3 `Phase 3 — AI-powered platform`**、**labels 空**、title 与下方 `## GitHub issue title` 一致；并以脚本比对了**已发布正文与本文档 `## GitHub issue body` 分区逐字相同**（14271 字符，零差异）。文档更名为 `docs/issues/issue-66-b1-spring-ai-integration.md`，编号不再未知。
 > **2026-10-24 修订**：基线更新为 `main` @ `df24b67`（PR #65 已合并，已修复前端 coverage 时序）；按 oracle 条件 C1–C5 与主 agent 对 P-B1-1..10 的裁定改写。
-> **2026-10-24 实现回填**：B1 **已实现并在本地验证通过**（`mvn verify` 152 tests / 0.9208 / 新增产码 N=59,U=0；M1–M4 已执行），三路只读审查通过、F1–F6 修复落地。**但仍未提交、未推送、无 PR、未合并**：分支 `codex/b1-spring-ai-integration`（基线 `df24b67`），GitHub 远端 #66 仍 **OPEN**、**checkbox 未勾选**（本文件**未**修改远端，也未修改下文 `## GitHub issue body` 发布分区——它仍与远端正文逐字一致）。
-> 本文件**不声称** B1 已交付：无 CI 结果（无 PR 即无 CI）、无 merge commit、`AC-B-12` **仍未闭环**（B1 不闭环它）。详见 Internal tracking 的「实现与验证状态」行与文末「实现结果回填」小节。
+> **2026-10-24 实现回填**：B1 **已实现并在本地验证通过**（`mvn verify` 152 tests / 0.9208 / 新增产码 N=59,U=0；M1–M4 已执行），三路只读审查通过、F1–F6 修复落地。
+> **2026-10-24 PR/CI 回填**：commit **`e446aab`** 已推送，**PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67)** 已创建（`Closes #66`），**CI 双 job SUCCESS**（`Build and test (Java 21)`、`Frontend (lint, test, coverage, build, e2e)`），`mergeStateStatus=CLEAN`；**合并待执行（未合并、无 merge commit）**，GitHub 远端 #66 仍 **OPEN**、**checkbox 未勾选**（本文件**未**修改远端，也未修改下文 `## GitHub issue body` 发布分区——它仍与远端正文逐字一致）。
+> 本文件**不声称** B1 已交付：**未合并、无 merge commit**；`AC-B-12` **仍未闭环**（B1 不闭环它）。详见 Internal tracking 的「实现与验证状态」「PR / CI / 合并」行与文末「实现结果回填」小节。
 
 ## GitHub issue title
 
@@ -108,7 +109,8 @@ Single-branch, single-pull-request change with no data migration and no external
 
 | 项目 | 值 |
 | --- | --- |
-| 状态 | **🟢 实现完成，PR 待创建 / 未合并**（2026-10-24）。流程：oracle 只读审查 ✅（有条件，C1–C5 已落实）→ 主 agent 批准 ✅ → 用户授权 ✅ → `github-operator` 创建 #66 ✅ → `worker` 实现 ✅ → 三路只读审查（无 P0/P1）✅ → 接受的意见修复（F1/F2/F3/F6）✅ → `docs-writer` 文档回填 ✅。**分支未提交、未推送、无 PR、无 CI 结果、未合并；#66 仍 OPEN，远端 checkbox 未勾选** |
+| 状态 | **🟢 已实现 / PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67) 已创建、CI 双绿 / 合并待执行**（2026-10-24）。流程：oracle 只读审查 ✅（有条件，C1–C5 已落实）→ 主 agent 批准 ✅ → 用户授权 ✅ → `github-operator` 创建 #66 ✅ → `worker` 实现 ✅ → 三路只读审查（无 P0/P1）✅ → 接受的意见修复（F1/F2/F3/F6）✅ → `docs-writer` 文档回填 ✅ → 提交 `e446aab` + 推送 + PR #67 ✅ → CI 双 job SUCCESS ✅ → **合并待执行**。**未合并、无 merge commit；#66 仍 OPEN（合并后由 `Closes #66` 自动关闭），远端 checkbox 未勾选** |
+| **PR / CI / 合并（2026-10-24 回填）** | **PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67)** `feat: integrate Spring AI with the local Ollama endpoint`：base `main`（`df24b67`）← head `codex/b1-spring-ai-integration`（commit **`e446aab`**，已推送）；正文 `Closes #66`。**CI 双 job SUCCESS**：`Build and test (Java 21)`、`Frontend (lint, test, coverage, build, e2e)`；`mergeStateStatus=CLEAN`、`mergeable=MERGEABLE`。**合并待执行**（用户已授权，主 agent 执行）；本行**不得**改写成“已合并/已关闭”（上述事实由主 agent 转达，`docs-writer` 未做 GitHub 写操作、未重跑 CI） |
 | GitHub issue 编号 / URL | **[#66](https://github.com/PNZ-z/ai-powered-Fabflix/issues/66)**（OPEN；GitHub API `createdAt` = `2026-10-25T02:01:50Z`，主 agent 告知的本地创建日期为 **2026-10-24**）。本文件已更名为 `docs/issues/issue-66-b1-spring-ai-integration.md` |
 | 建议标题 | `[B1] Integrate Spring AI with the local Ollama endpoint`（与上方 `## GitHub issue title` 一致） |
 | milestone | [#3 `Phase 3 — AI-powered platform`](https://github.com/PNZ-z/ai-powered-Fabflix/milestone/3)（保持 open） |
@@ -119,7 +121,7 @@ Single-branch, single-pull-request change with no data migration and no external
 | **实现与验证状态（2026-10-24）** | **`mvn --batch-mode --no-transfer-progress verify`（JDK 21）= Tests run 152 / Failures 0 / Errors 0**（基线 134 → +18）；**JaCoCo 90 missed / 1047 covered / 1137 total = 0.9208（闸门 0.90）**；新增产码 **N=59 / U=0**；`excludes` 仍 **8**；新增 3 个测试类共 **18 用例**（controller 5 / service 7 / probe 6），连续 5 次稳定。该结果由 `worker` 报告并由**主 agent 独立复跑核实**；`docs-writer` 未自行重跑 `mvn` |
 | **手工验证（M1–M4）** | **M1**：无 AI env 启动 **0.992 s**，`/api/boot/health` = UP，进程对 11434 的 TCP 连接数 = **0**（`lsof -nP -a -p <pid> -iTCP`，socket 级证据）；**M2**：`FABFLIX_AI_ENABLED=`（空值）启动 **0.941 s**、登录后 `disabled` / **4 ms** / 零探测；**M3**：`enabled=true` + `localhost` 无 Ollama → **200 `unreachable` / 16.9 ms**；**M4**：`enabled=true` + 局域网端点 → **200 `ok` / 34 ms**（probe 29 ms），JVM 具备 macOS「本地网络」权限，采样到 `HttpClient` keep-alive 的 `ESTABLISHED`（**非泄漏**） |
 | **审查修复（F1–F6，无 P0/P1）** | **F1** 请求加 `.timeout(timeout)`（与 `orTimeout` **同值**，超时真正终止 exchange）；**F2**/P2-1 删掉 4 处 `@Value` 重复默认值（**单一配置真值**，缺键 fail-fast）；**F3** `FABFLIX_AI_ENABLED=` **空值曾导致启动失败**（已实测复现）→ 改 `String` + **仅 `true`（忽略大小写）启用**、空/其他 = 关闭；**F6** Javadoc 写明 disabled 时 `reachable=false` = **未探测**；另：测试 P3 加下界（`100 ≤ elapsed < 1000`）与 600ms stub sleep、P1 断言 `GET`；**P6（中断）保留**；**§6.1 超时注入点接受**（方法参数，2s 常量在 service） |
-| **仍未验证（不得读作已完成）** | ① 真实端点抓包证明“只请求 `/api/version`”（仅 loopback stub 证明）；② keep-alive 连接生命周期；③ **U-B1-5** starter 启动/内存开销（未与基线对比）；④ **U-B1-6** compose 透传；⑤ **模型就绪**（`reachable ≠ ready`）；⑥ chat/embedding 推理（B1 不做）；⑦ **`AC-B-12` 仍未闭环**；⑧ **PR CI 未运行** |
+| **仍未验证（不得读作已完成）** | ① 真实端点抓包证明“只请求 `/api/version`”（仅 loopback stub 证明）；② keep-alive 连接生命周期；③ **U-B1-5** starter 启动/内存开销（未与基线对比）；④ **U-B1-6** compose 透传；⑤ **模型就绪**（`reachable ≠ ready`）；⑥ chat/embedding 推理（B1 不做）；⑦ **`AC-B-12` 仍未闭环**。**⑧ PR CI 已不再属未验证项**：PR #67 双 job SUCCESS；但 CI 绿**不**外推第 ①–⑦ 项 |
 | **本文件发布分区保护** | 下方 `## GitHub issue body` **未改动**（保持与远端 #66 正文逐字一致）；**未勾选**远端任何 checkbox（任务未交付）；本文只改头部说明、Internal tracking 与本条以下的新增小节 |
 | **不写 `Part of #44`** | #44 已 **CLOSED（reason=completed，2026-10-21）**，且其范围只覆盖 Option A 迁移；B1 属 milestone **`Phase 3 — AI-powered platform`** 的后续工作。正文以 milestone 名称 + B0 日志仓库路径表达归属，**不建立与 #44 的父子关系** |
 | 事实来源（可核验） | **Spring AI 1.1.8 工件**：`docs-writer` 本轮 `curl` 复核 `spring-ai-bom` / `spring-ai-starter-model-ollama` / `spring-ai-vector-store` 的 `1.1.8` 路径均 **HTTP 200**（repo1.maven.org）；BOM 含 `spring-ai-starter-model-ollama`（`${project.version}`），**不含** `org.springframework.boot` 工件；starter 依赖 `spring-boot-starter:3.5.15`，与 `pom.xml` 的 `spring-boot.version=3.5.15` 一致。配置前缀/模型键/`pull-model-strategy=NEVER` 默认值由 **1.1.8 字节码常量**读出（`javap`，计划 §10.2）。**oracle 追加核实（主 agent 转达，计划 §10.4）**：`spring-ai-ollama:1.1.8` 传递 `spring-webflux:6.2.19`/`jackson-databind:2.21.4` 与 Boot 3.5.15 管理版本一致；`OllamaChatProperties.getModel()` 委托 `options.getModel()`；`OllamaApi` 无 `version()`；`ChatClientAutoConfiguration` 需要 `ChatModel`；`initializeModel` 在 `NEVER` 下 no-op；`/api/boot/ai/health` 受 `CustomerAuthenticationFilter` 保护。**B0 数字**（56–70 tok/s、1024 维、7.64 s 冷启动、`size_vram=size`）来自主 agent 实测并经 B0 日志记录，本文只引用不重测。**窗口环境**：`main` @ **`df24b67`**（PR #65 已合并；主 agent 告知其修复前端 coverage 时序），`git status --short` = `?? .idea/` + 两份未跟踪的 B1 草稿 |
@@ -127,7 +129,7 @@ Single-branch, single-pull-request change with no data migration and no external
 | **oracle 条件落实（C1–C5）** | **C1 已完成**（main 绿，基线 `df24b67`）；**C2 已落实**（B1 只做接入、不闭环 `AC-B-12`，正文与计划 §2.3 双写；不建 B1.5 issue）；**C3 已落实**（删除 “≤19 行” 推导，改 `U ≤ 0.1N + 17.8`，见正文 AC-8 与 risk note）；**C4 已落实**（回退三选一 + 优先级，见正文 risk note；并纠正“单写 `spring.ai.model.chat=none` 会启动失败”）；**C5 已落实**（`status` 改为 health 端点家族字段措辞、`reachable ≠ ready` 写进正文 risk notes） |
 | **主 agent 已裁定的 P 项** | **P-B1-1 A**（JDK `HttpClient`）、**P-B1-2 A**（捕获全部 `RuntimeException` → `unreachable`）、**P-B1-3 A**（保留 `status` 三态、按 C5 改写措辞、不改 `state`）、**P-B1-4 A**（2s 常量 + **方法参数注入**，不加运维键）、**P-B1-5 B**（**不加** `ApplicationContextRunner`，删掉 `AiPropertiesBindingTest`）、**P-B1-6 A**（`GET /api/version`，不暴露模型清单）、**P-B1-7 A**（保持自动配置开启，回退按 C4）、**P-B1-8 B**（不更新 README）、**P-B1-9 B**（不回填 `ai-option-b` §4.1）、**P-B1-10 A**（B1 用 `/api/boot/ai/health`，`/ai/status` 留 M4.2） |
 | 发布前置（**已完成**） | ① oracle 只读审查 **✅**（有条件，C1–C5 已落实）；② 主 agent 明确批准/标记可发布 **✅**（2026-10-24）；③ 用户授权创建 **✅**；④ `github-operator` 按草稿创建 **✅**（→ #66）。发布结果：正文与草稿逐字一致，`Internal tracking` 未上 GitHub |
-| 待确认 | labels 是否补充（当前为空，创建时未添加）；是否把 B1 拆成子任务（**实际产出 14 个文件：产码 5 + 测试 3 + 配置 3 + 文档 3，不拆 issue**）；B0 #5–#8 的后续 issue 何时立项（**记录为 B-① 之前单独做，不在本工作流创建**）；PR 何时创建（**由主 agent 决定；本步不开**） |
+| 待确认 | labels 是否补充（当前为空，创建时未添加）；是否把 B1 拆成子任务（**实际产出 14 个文件：产码 5 + 测试 3 + 配置 3 + 文档 3，不拆 issue**）；B0 #5–#8 的后续 issue 何时立项（**记录为 B-① 之前单独做，不在本工作流创建**）；**PR 已创建（#67，CI 双绿）**，合并时点由主 agent 执行（用户已授权）；合并后需回填 `docs/plans/ai-roadmap-overview.md` 并确认 #66 自动关闭与 checkbox 状态 |
 
 ### 实现结果回填（2026-10-24）
 
@@ -144,8 +146,8 @@ Single-branch, single-pull-request change with no data migration and no external
 | 认证边界 | `CustomerAuthenticationFilter.java` **零 diff**；匿名 → 401 |
 | 手工验证 | M1（0.992 s、socket 级零出站）、M2（空值启用位→ `disabled`/4 ms）、M3（`unreachable`/16.9 ms）、M4（`ok`/34 ms）——详见计划 §11.3 |
 
-**仍未验证 / 未发生**（禁止写成已完成）：真实端点抓包、keep-alive 生命周期、**U-B1-5** starter 启动/内存开销、**U-B1-6** compose 透传、模型就绪（`reachable ≠ ready`）、chat/embedding 推理、**`AC-B-12`**、**PR CI**。
+**仍未验证 / 未发生**（禁止写成已完成）：真实端点抓包、keep-alive 生命周期、**U-B1-5** starter 启动/内存开销、**U-B1-6** compose 透传、模型就绪（`reachable ≠ ready`）、chat/embedding 推理、**`AC-B-12`**。**PR CI 已不在此列**（PR #67 双 job SUCCESS）；**合并仍未发生**。
 
-**流程状态**：分支 `codex/b1-spring-ai-integration`（基线 `df24b67`）——**未提交、未推送、无 PR、无 merge commit**；#66 **OPEN**。下一步：主 agent 提交 + 推送 → `github-operator` 按本文档与日志开 PR。
+**流程状态（2026-10-24 PR/CI 回填）**：分支 `codex/b1-spring-ai-integration`（基线 `df24b67`）@ **`e446aab`**，已推送；**PR [#67](https://github.com/PNZ-z/ai-powered-Fabflix/pull/67)** 已创建、**CI 双 job SUCCESS**、`mergeStateStatus=CLEAN`；**未合并（无 merge commit）**，**#66 仍 OPEN**。下一步：主 agent 合并 PR #67（用户已授权）→ 合并后 #66 自动关闭；回填 `docs/plans/ai-roadmap-overview.md` 执行状态与 checkbox 记录。
 
 **范围偏离（已获批/已记录）**：① probe **接口 + 实现拆为 2 个文件**（产码由 4 变 5，总数 13 → 14）；② 测试类名 `OllamaReachabilityProbeTest` → **`HttpOllamaReachabilityProbeTest`**；③ `.enabled` 绑定类由计划隐含的 boolean 改为 **String（仅 `true` 启用）**（F3，已在 `String` 层面保持外部契约不变）；④ 测试 P3 改为 `600ms sleep + 100≤elapsed<1000` 区间断言。均为**收紧/澄清**，未扩大 AC、未改响应契约、未改认证边界。
