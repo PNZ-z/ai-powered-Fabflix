@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fabflix.local/schemas/b1-5-golden-set.json",
+  "title": "B1.5 golden set (queries + tool cases)",
+  "description": "Machine-readable schema for the B1.5 evaluation fixtures. The 60 shared queries are used by B1.5a (embedding retrieval) and B1.5b (tool routing); the 15 tool cases are B1.5b only. Positive cases MUST be verified against the recorded database snapshot before the fixture is frozen.",
+  "oneOf": [
+    { "$ref": "#/$defs/querySet" },
+    { "$ref": "#/$defs/toolCaseSet" }
+  ],
+  "$defs": {
+    "snapshotRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "snapshot_date", "movies", "year_min", "year_max", "genre_distinct_names", "movies_without_rating"],
+      "properties": {
+        "source": { "type": "string", "const": "fabflix-mysql:3307/moviedb" },
+        "snapshot_date": { "type": "string", "format": "date" },
+        "movies": { "type": "integer", "minimum": 1 },
+        "year_min": { "type": "integer" },
+        "year_max": { "type": "integer" },
+        "genre_rows": { "type": "integer" },
+        "genre_distinct_names": { "type": "integer", "minimum": 1 },
+        "movies_without_rating": { "type": "integer" },
+        "ratings_covered_from_year": { "type": "integer" },
+        "db_snapshot_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "movieId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10,
+      "description": "Opaque catalog id (VARCHAR(10)). Do not assume a 'tt' prefix."
+    },
+    "track": { "type": "string", "enum": ["zh_zh", "zh_en", "en_en"] },
+    "lang": { "type": "string", "enum": ["zh", "en"] },
+    "intent": {
+      "type": "string",
+      "enum": ["search_by_title", "filter_catalog", "similar_movies", "recommend_by_preference", "explain_recommendation", "clarify_or_refuse"]
+    },
+    "queryCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "track", "query", "lang", "intent", "acceptable_movie_ids", "labeling_note", "snapshot_row_refs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^Q(0[1-9]|[1-5][0-9]|60)$" },
+        "track": { "$ref": "#/$defs/track" },
+        "query": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "lang": { "$ref": "#/$defs/lang" },
+        "intent": { "$ref": "#/$defs/intent" },
+        "acceptable_movie_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 25,
+          "items": { "$ref": "#/$defs/movieId" },
+          "uniqueItems": true,
+          "description": "Accepted-result set, not a single answer. Every id must exist in the snapshot."
+        },
+        "labeling_note": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Why these results are acceptable, e.g. share genre Drama, 1990s, same director."
+        },
+        "snapshot_row_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 5 },
+          "description": "Evidence that the accepted set is reachable in the snapshot (ids plus the predicate used to verify them)."
+        },
+        "expects_no_match": { "type": "boolean", "default": false, "description": "True only for boundary cases expected to return no result." },
+        "cjk_alias_only": { "type": "boolean", "default": false, "description": "True when the query can only match via a Chinese translated title; failure is recorded, not excused." },
+        "expected_tools": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["search_movies_by_title", "filter_movies", "find_similar_movies", "recommend_movies", "get_movie_card"] },
+          "description": "B1.5b only: tools that may legitimately be called."
+        },
+        "required_slots": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "B1.5b only: slot -> expected value; genre values must be from the derived enum."
+        },
+        "expected_refusal": { "type": "boolean", "description": "B1.5b only: system must refuse without calling a tool." }
+      }
+    },
+    "toolCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "query", "lang", "expected_behavior", "pass_criteria"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^T(0[1-9]|1[0-5])$" },
+        "category": { "type": "string", "enum": ["refusal", "clarification", "multi_slot"] },
+        "query": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "lang": { "$ref": "#/$defs/lang" },
+        "expected_behavior": {
+          "type": "string",
+          "enum": ["refuse_no_tool", "ask_one_clarifying_question", "explain_coverage_limit", "call_tools_and_answer"],
+          "description": "explain_coverage_limit covers EMPTY_RESULT/OUT_OF_RANGE with coverage metadata instead of a bare empty list."
+        },
+        "expected_tools": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["search_movies_by_title", "filter_movies", "find_similar_movies", "recommend_movies", "get_movie_card"] }
+        },
+        "expected_error_code": { "type": "string", "enum": ["INVALID_ARGUMENT", "OUT_OF_RANGE", "EMPTY_RESULT", "NOT_FOUND", "LIMIT_EXCEEDED", "TOOL_ERROR", "TIMEOUT", "AI_DISABLED", "MODEL_UNAVAILABLE", "NONE"] },
+        "acceptable_movie_ids": { "type": "array", "items": { "$ref": "#/$defs/movieId" }, "uniqueItems": true },
+        "pass_criteria": { "type": "string", "minLength": 10 },
+        "notes": { "type": "string" }
+      }
+    },
+    "querySet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["golden_version", "snapshot", "queries"],
+      "properties": {
+        "golden_version": { "type": "string", "pattern": "^b1-5-golden/v[0-9]+$" },
+        "snapshot": { "$ref": "#/$defs/snapshotRef" },
+        "queries": { "type": "array", "minItems": 60, "maxItems": 60, "items": { "$ref": "#/$defs/queryCase" } }
+      }
+    },
+    "toolCaseSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["golden_version", "snapshot", "tool_cases"],
+      "properties": {
+        "golden_version": { "type": "string", "pattern": "^b1-5-tool-cases/v[0-9]+$" },
+        "snapshot": { "$ref": "#/$defs/snapshotRef" },
+        "tool_cases": { "type": "array", "minItems": 15, "maxItems": 15, "items": { "$ref": "#/$defs/toolCase" } }
+      }
+    }
+  }
+}

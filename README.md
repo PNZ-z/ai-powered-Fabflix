@@ -10,10 +10,10 @@ Items 3 and 4 are planned work: no AI capability exists in the codebase yet.
 2. **Spring Boot:** migrate one vertical slice at a time into controller, application-service, and repository layers while keeping API behavior stable.
 3. **Spring AI (planned):** add evaluated AI features on top of the existing lexical search, separating what the current data supports from what needs new corpora:
    - **Natural-language search:** natural language in, structured query and ranking out, with an evaluated quality gate.
-   - **Movie catalog semantic retrieval (doable now):** embed structured catalog cards — `title`, `year`, `director`, `genres`, `stars`, `rating` — so catalog questions such as "movies similar to X" or "1990s sci-fi" work without any external corpus.
-   - **Project/developer knowledge RAG Q&A:** the first-version corpus is the existing `docs/` (11 markdown documents, excluding these AI roadmap drafts) plus this `README.md`; every answer must cite its sources.
+   - **Movie catalog structured search (doable now) and semantic similarity search (under evaluation):** use structured catalog cards — `title`, `year`, `director`, `genres`, `stars`, `rating` — so catalog questions such as "movies similar to X" or "1990s science fiction" work without any external corpus. The catalog snapshot holds 21,087 movies (years 196–2024); ratings exist only for 2001-onwards titles, so rating-filtered questions cannot match 2000 or earlier. Dense semantic similarity over the card text is still **under evaluation**: it currently falls below the retrieval quality gate (`recall@5` 0.48 against the 0.80 target), see [`docs/ai/reports/b1-5a-embedding-eval.md`](docs/ai/reports/b1-5a-embedding-eval.md).
+   - **User-side scope is the movie catalog only:** repository development documentation (`docs/`, this `README.md`) is **not** user-facing corpus — it is not chunked, embedded, indexed, or retrieved as Q&A material, and users are not answered questions about this project's development process.
    - **Movie plot/synopsis Q&A is out of scope for this phase:** the `movies` table has no synopsis field, so plot questions require an external synopsis corpus (data acquisition and licensing), deferred to a later stage.
-   - Recommendations and multi-turn conversational features are deferred to the agent-platform stage.
+   - Recommendations are part of the user-side movie retrieval/recommendation target; multi-turn conversational features remain deferred to the agent-platform stage.
 4. **Agent workflows:** expose narrowly scoped tools with authorization, human approval for writes, budgets, audit logs, and end-to-end observability.
 
 ## Current architecture

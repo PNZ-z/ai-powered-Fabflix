@@ -1,0 +1,1206 @@
+{
+  "golden_version": "b1-5-golden/v1",
+  "snapshot": {
+    "source": "fabflix-mysql:3307/moviedb",
+    "snapshot_date": "2026-11-09",
+    "movies": 21087,
+    "year_min": 196,
+    "year_max": 2024,
+    "genre_rows": 61,
+    "genre_distinct_names": 56,
+    "movies_without_rating": 13082,
+    "ratings_covered_from_year": 2001,
+    "db_snapshot_hash": "8b16c047de5c885a2d90309797c51c0c506311c074927a2d5b3fc5ad162ff925"
+  },
+  "queries": [
+    {
+      "id": "Q01",
+      "track": "zh_zh",
+      "query": "帮我找《The Matrix》这部电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "AWw10"
+      ],
+      "labeling_note": "精确片名检索：快照里 title='The Matrix' 只有 1 行（1999，导演 Wachowski，类型 Sci-Fi，无评分）。可接受集合 = 该行本身。",
+      "snapshot_row_refs": [
+        "predicate: title = 'The Matrix' | rows=1 | ids=AWw10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q02",
+      "track": "zh_zh",
+      "query": "有没有一部叫 Chief Zabu 的电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "tt0094859"
+      ],
+      "labeling_note": "精确片名检索：title='Chief Zabu' 只有 1 行（2016，Neil Cohen，Comedy，评分 7.9），是 movie-cards.md 里唯一有实测 token 的样例片。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Chief Zabu' | rows=1 | ids=tt0094859",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q03",
+      "track": "zh_zh",
+      "query": "找片名以 Before 开头、而且是爱情片的电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "RLl15",
+        "RLl21",
+        "tt0439878",
+        "tt0443465"
+      ],
+      "labeling_note": "前缀片名 + 类型双约束：title LIKE 'Before%' AND 类型含 Romance，共 4 部（Before Sunrise 1995 / Before Sunset 2004 / Before It Had a Name 2005 / Before We Go 2014）。",
+      "snapshot_row_refs": [
+        "predicate: title LIKE 'Before%' AND genres ⊇ {Romance} | rows=4 | ids=RLl15,RLl21,tt0439878,tt0443465",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q04",
+      "track": "zh_zh",
+      "query": "Toy Story 系列一共有哪几部",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "ILt15",
+        "ILt18",
+        "tt0435761"
+      ],
+      "labeling_note": "系列/前缀片名：title LIKE 'Toy Story%' 共 3 部（1995 / 1999 / 2010），跨 1990s-2010s，且只有 2010 那部有评分。",
+      "snapshot_row_refs": [
+        "predicate: title LIKE 'Toy Story%' | rows=3 | ids=ILt15,ILt18,tt0435761",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q05",
+      "track": "zh_zh",
+      "query": "1960 年代的犯罪片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "ArP5",
+        "DaM15",
+        "GDo78",
+        "GDo81",
+        "GuL10",
+        "INw50",
+        "JD17",
+        "JHe10",
+        "JLo17",
+        "JTh10",
+        "JWe12",
+        "JqB38",
+        "LM110",
+        "PY4"
+      ],
+      "labeling_note": "类型 + 年代：类型含 Crime 且 year 1960-1969，共 14 部；该年代整体无评分行（rating 全为 null，评分覆盖从 2001 才开始），用于验证“无评分卡片”仍可被年代+类型检索命中。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Crime} | rows=14 | ids=ArP5,DaM15,GDo78,GDo81,GuL10,INw50,JD17,JHe10,JLo17,JTh10,JWe12,JqB38,LM110,PY4",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q06",
+      "track": "zh_zh",
+      "query": "1960 年代的动画片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "CJo40",
+        "CJo50",
+        "GgD10",
+        "JfH10",
+        "SBg10",
+        "WRe10",
+        "WRe20"
+      ],
+      "labeling_note": "类型 + 年代：类型含 Animation 且 year 1960-1969，共 7 部；全部无评分（评分行只覆盖 year>=2001）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Animation} | rows=7 | ids=CJo40,CJo50,GgD10,JfH10,SBg10,WRe10,WRe20",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q07",
+      "track": "zh_zh",
+      "query": "1980 年代的爱情喜剧",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "AMc10",
+        "ChS10",
+        "ChS13",
+        "GiC10",
+        "HJ5",
+        "JTo5",
+        "MBl5",
+        "PWr14",
+        "RbR10",
+        "WHu17",
+        "xSz10"
+      ],
+      "labeling_note": "双类型 + 年代：同时含 Comedy 与 Romance 且 year 1980-1989，共 11 部；全部无评分，检验“多类型 AND”在卡片文本里能否被检索到。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Comedy, Romance} | rows=11 | ids=AMc10,ChS10,ChS13,GiC10,HJ5,JTo5,MBl5,PWr14,RbR10,WHu17,xSz10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q08",
+      "track": "zh_zh",
+      "query": "1990 年代的犯罪惊悚片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "MM33",
+        "PK22",
+        "WoP17"
+      ],
+      "labeling_note": "双类型 + 年代：同时含 Crime 与 Thriller 且 1990-1999，共 3 部（In the Line of Fire / Rising Sun / Heat）；集合小、区分度高。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Crime, Thriller} | rows=3 | ids=MM33,PK22,WoP17",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q09",
+      "track": "zh_zh",
+      "query": "2000 年代评分 8 分以上的悬疑片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0166924",
+        "tt0327056",
+        "tt0329474",
+        "tt0330954",
+        "tt0338564",
+        "tt0353969",
+        "tt0371392",
+        "tt0376968",
+        "tt0440963",
+        "tt0462239",
+        "tt0469833",
+        "tt0482571"
+      ],
+      "labeling_note": "类型 + 年代 + 评分三约束：含 Mystery、year 2000-2009、rating>=8.0，共 12 部（含 Mulholland Dr. 8.0 / The Prestige 8.5 / Infernal Affairs 8.1）。评分约束只用于 2001+：快照里评分行最早出现在 year=2001（实测 MIN(year)=2001，196-2000 全部无评分），故 year 2000 的电影永远不可能满足 rating 门槛（本集合不含 year 2000 的行）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Mystery} AND rating >= 8.0 | rows=12 | ids=tt0166924,tt0327056,tt0329474,tt0330954,tt0338564,tt0353969,tt0371392,tt0376968,tt0440963,tt0462239,tt0469833,tt0482571",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q10",
+      "track": "zh_zh",
+      "query": "2010 年以后评分 7.5 分以上的剧情片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0176694",
+        "tt0331312",
+        "tt0381957",
+        "tt0406282",
+        "tt0439724",
+        "tt0446792",
+        "tt0453562",
+        "tt0469152"
+      ],
+      "labeling_note": "类型 + 2010s + 评分：含 Drama、year 2010-2019、rating>=7.5，共 8 部。2010s 在快照里只有 94 部，本集合是该年代少数可解释的高分剧情片。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Drama} AND rating >= 7.5 | rows=8 | ids=tt0176694,tt0331312,tt0381957,tt0406282,tt0439724,tt0446792,tt0453562,tt0469152",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q11",
+      "track": "zh_zh",
+      "query": "2020 年以后的科幻片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt9000001",
+        "tt9000002"
+      ],
+      "labeling_note": "2020s + 科幻：类型为 Sci-Fi 或 Science Fiction 且 year>=2020，共 2 部（Neon Horizon 2021 / Midnight Circuit 2022）。快照里 2020s 仅 7 部，且科幻在这两行写作 'Science Fiction'（与 457 部的 'Sci-Fi' 是语义变体），因此规则取两者并集。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2020 AND year <= 2024 AND genres ⊇ {Sci-Fi} OR ⊇ {Science Fiction} | rows=2 | ids=tt9000001,tt9000002",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q12",
+      "track": "zh_zh",
+      "query": "和《Pulp Fiction》相似的电影",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "QTa1",
+        "QTa6",
+        "tt0361748",
+        "tt0378194",
+        "tt0401792"
+      ],
+      "labeling_note": "相似规则 = 同导演（seed Pulp Fiction 1994）。快照把 Tarantino 的作品拆成两个 director 字符串：'Tarantino'（Reservoir Dogs 1992 / Pulp Fiction 1994 / Jackie Brown 1997）与 'Quentin Tarantino'（Kill Bill: Vol. 2 2004 / Sin City 2005 / Inglourious Basterds 2009），故规则取两者并集共 6 部，排除 seed 后 5 部可接受。依据 movie-cards.md §3.1：同 director 属可解释相似信号。",
+      "snapshot_row_refs": [
+        "predicate: director IN ('Tarantino', 'Quentin Tarantino') AND id NOT IN (QTa3) | rows=5 | ids=QTa1,QTa6,tt0361748,tt0378194,tt0401792",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q13",
+      "track": "zh_zh",
+      "query": "喜欢《Terminator 2》，想看类似的 90 年代动作科幻片",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "DCn10",
+        "IWo40",
+        "JCm5"
+      ],
+      "labeling_note": "相似规则 = 共享 Action+Sci-Fi 且同年代：1990-1999 共 4 部（Terminator 2 / The Terminator / Judge Dredd / Face/Off），排除 seed 后 3 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Action, Sci-Fi} AND id NOT IN (JCm20) | rows=3 | ids=DCn10,IWo40,JCm5",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q14",
+      "track": "zh_zh",
+      "query": "像《The Game》那样的动作惊悚片",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "ADv17",
+        "JDB10",
+        "LBe10"
+      ],
+      "labeling_note": "相似规则 = 共享 Thriller+Action 且同年代：1990-1999 共 4 部（La Femme Nikita 1991 / The Fugitive 1993 / Speed 1994 / The Game 1997），排除 seed（The Game = DFi17）后 3 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Thriller, Action} AND id NOT IN (DFi17) | rows=3 | ids=ADv17,JDB10,LBe10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q15",
+      "track": "zh_zh",
+      "query": "喜欢《When Harry Met Sally》那种爱情喜剧",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AMc10",
+        "PWr14",
+        "xSz10"
+      ],
+      "labeling_note": "相似规则 = 共享 Comedy+Romance 且同期（1988-1989）：共 4 部（When Harry Met Sally 1989 / Punchline 1988 / Green Card 1989 / Kitchen Sink 1989），排除 seed 后 3 部；年代窗口收窄以避免口味集合过大。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1988 AND year <= 1989 AND genres ⊇ {Comedy, Romance} AND id NOT IN (RbR10) | rows=3 | ids=AMc10,PWr14,xSz10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q16",
+      "track": "zh_zh",
+      "query": "喜欢《Back to the Future》这种科幻片",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "RZe12",
+        "RZe14",
+        "RZe20"
+      ],
+      "labeling_note": "相似规则 = 同导演 + 同类型：Zemeckis 名下含 Sci-Fi 的共 4 部（Back to the Future 1985 / Part II 1989 / Part III 1990 / Contact 1997），排除 seed 后 3 部。",
+      "snapshot_row_refs": [
+        "predicate: director = 'Zemeckis' AND genres ⊇ {Sci-Fi} AND id NOT IN (RZe5) | rows=3 | ids=RZe12,RZe14,RZe20",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q17",
+      "track": "zh_zh",
+      "query": "推荐几部 Steven Spielberg 执导的电影",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0181689",
+        "tt0212720",
+        "tt0264464",
+        "tt0362227",
+        "tt0408306"
+      ],
+      "labeling_note": "导演偏好推荐：director='Steven Spielberg' 在快照里有 5 部（A.I. / Minority Report / Catch Me If You Can / The Terminal / Munich），全部为 2000s 且有评分。注意快照另有一个 director='Spielberg' 的 29 部长名单（含 1957-1998 作品），属不同字符串，不计入本集合。",
+      "snapshot_row_refs": [
+        "predicate: director = 'Steven Spielberg' | rows=5 | ids=tt0181689,tt0212720,tt0264464,tt0362227,tt0408306",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q18",
+      "track": "zh_zh",
+      "query": "推荐 2000 年代评分 8 分以上的冒险片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0319061",
+        "tt0361748",
+        "tt0367495",
+        "tt0379557",
+        "tt0381061",
+        "tt0450259",
+        "tt0460394",
+        "tt0471291"
+      ],
+      "labeling_note": "类型 + 年代 + 评分偏好：含 Adventure、2000-2009、rating>=8.0，共 8 部；集合中等，检验评分门槛与类型叠加。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Adventure} AND rating >= 8.0 | rows=8 | ids=tt0319061,tt0361748,tt0367495,tt0379557,tt0381061,tt0450259,tt0460394,tt0471291",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q19",
+      "track": "zh_zh",
+      "query": "推荐几部 1990 年代的喜剧动作片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "ADg10",
+        "BS15",
+        "BS8",
+        "DZu12",
+        "IBa20",
+        "JiA15",
+        "JiA18",
+        "QTa3",
+        "SnT28",
+        "WhR10"
+      ],
+      "labeling_note": "双类型 + 年代偏好：同时含 Comedy 与 Action 且 1990-1999，共 10 部；全部无评分（1990s 无评分行），用于验证无评分片段仍能被偏好检索命中。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Action} | rows=10 | ids=ADg10,BS15,BS8,DZu12,IBa20,JiA15,JiA18,QTa3,SnT28,WhR10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q20",
+      "track": "zh_zh",
+      "query": "推荐 1980 年代的动画片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "ARv10",
+        "BMs10",
+        "DBl10",
+        "DBl12",
+        "DBl13",
+        "FrB13",
+        "FrB17",
+        "GaT3",
+        "GaT7",
+        "Ilt1",
+        "KGC10",
+        "KOt10",
+        "KYo1",
+        "RBa7",
+        "RBa8",
+        "RLa2",
+        "RZe10",
+        "WRe35",
+        "WRe38",
+        "WRe40"
+      ],
+      "labeling_note": "类型 + 年代偏好：含 Animation 且 1980-1989，共 20 部（Akira / The Little Mermaid / Who Framed Roger Rabbit 等）；全部无评分。集合较大但仍≤25，用于检验头部排序是否仍落在同年代动画里。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Animation} | rows=20 | ids=ARv10,BMs10,DBl10,DBl12,DBl13,FrB13,FrB17,GaT3,GaT7,Ilt1,KGC10,KOt10,KYo1,RBa7,RBa8,RLa2,RZe10,WRe35,WRe38,WRe40",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q21",
+      "track": "zh_en",
+      "query": "找一下《黑客帝国》",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "AWw10"
+      ],
+      "labeling_note": "仅中文译名（黑客帝国 → The Matrix，快照 id AWw10，1999）。卡片里只有英文原名，无别名表 → 原则上无法命中，属 B15a-9 要求单列的译名失败样本；可接受集合仍是真实目标行。",
+      "snapshot_row_refs": [
+        "predicate: title = 'The Matrix' | rows=1 | ids=AWw10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_alias_only": true
+    },
+    {
+      "id": "Q22",
+      "track": "zh_en",
+      "query": "《阿甘正传》是哪部电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "RZe19"
+      ],
+      "labeling_note": "仅中文译名（阿甘正传 → Forrest Gump，快照 id RZe19，1994，Comedy，无评分）。与 Q21 同类：预期失败并如实记录，不得用“用户会给英文名”回避。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Forrest Gump' | rows=1 | ids=RZe19",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_alias_only": true
+    },
+    {
+      "id": "Q23",
+      "track": "zh_en",
+      "query": "我想看《泰坦尼克号》",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "JCm28"
+      ],
+      "labeling_note": "仅中文译名（泰坦尼克号 → Titanic 1997，快照 id JCm28）。注意同 title 还有 1953 年 Negulesco 版（JN19），本条的语义是 1997 版，故规则加 year=1997；1953 版不计入可接受集合。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Titanic' AND year = 1997 | rows=1 | ids=JCm28",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_alias_only": true
+    },
+    {
+      "id": "Q24",
+      "track": "zh_en",
+      "query": "找片名叫 Infernal Affairs 的电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "tt0338564"
+      ],
+      "labeling_note": "中文提问 + 英文原名精确匹配：title='Infernal Affairs' 只有 1 行（2002，Crime/Drama/Mystery，8.1）。无别名依赖，属 zh→en 轨道的正常正样本。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Infernal Affairs' | rows=1 | ids=tt0338564",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q25",
+      "track": "zh_en",
+      "query": "有没有叫 Memories of Murder 的电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "tt0353969"
+      ],
+      "labeling_note": "中文提问 + 英文原名精确匹配：title='Memories of Murder' 只有 1 行（2003，Crime/Drama/Mystery，8.1）。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Memories of Murder' | rows=1 | ids=tt0353969",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q26",
+      "track": "zh_en",
+      "query": "找一下 The Big Lebowski 这部片",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "JlC18"
+      ],
+      "labeling_note": "中文提问 + 英文原名：title='The Big Lebowski' 只有 1 行（1997，J.Coen，**0 个 genre**、无评分）。用于覆盖 movie-cards.md 的 0-genre 边界（卡片写 Genres: N/A）。",
+      "snapshot_row_refs": [
+        "predicate: title = 'The Big Lebowski' | rows=1 | ids=JlC18",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q27",
+      "track": "zh_en",
+      "query": "1970 年代的犯罪片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "DLD10",
+        "GPk10",
+        "GPk14",
+        "NiR1",
+        "PY7",
+        "RAC10",
+        "RWF4",
+        "SRo32"
+      ],
+      "labeling_note": "类型 + 年代：含 Crime 且 1970-1979，共 8 部；全部无评分（1970s 无评分行）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1970 AND year <= 1979 AND genres ⊇ {Crime} | rows=8 | ids=DLD10,GPk10,GPk14,NiR1,PY7,RAC10,RWF4,SRo32",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q28",
+      "track": "zh_en",
+      "query": "1980 年代的西部片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "BSz10",
+        "CEa10",
+        "CEa5",
+        "CH10",
+        "DS49",
+        "FSc10",
+        "IHk30",
+        "MCi3",
+        "MDa5",
+        "MGw2",
+        "StC30"
+      ],
+      "labeling_note": "类型 + 年代：含 Western 且 1980-1989，共 11 部；西部片总量 279 部，本切片足够小且全部无评分。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Western} | rows=11 | ids=BSz10,CEa10,CEa5,CH10,DS49,FSc10,IHk30,MCi3,MDa5,MGw2,StC30",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q29",
+      "track": "zh_en",
+      "query": "2000 年代评分 8 分以上的动作片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0296574",
+        "tt0369221",
+        "tt0375878",
+        "tt0378194",
+        "tt0381061",
+        "tt0440963",
+        "tt0452803",
+        "tt0455829",
+        "tt0459516",
+        "tt0462249",
+        "tt0468569",
+        "tt0471043",
+        "tt0471571",
+        "tt0490964",
+        "tt0496318"
+      ],
+      "labeling_note": "类型 + 年代 + 评分：含 Action、2000-2009、rating>=8.0，共 15 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Action} AND rating >= 8.0 | rows=15 | ids=tt0296574,tt0369221,tt0375878,tt0378194,tt0381061,tt0440963,tt0452803,tt0455829,tt0459516,tt0462249,tt0468569,tt0471043,tt0471571,tt0490964,tt0496318",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q30",
+      "track": "zh_en",
+      "query": "1990 年代的剧情动作片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "FFC24",
+        "LTa10",
+        "MMj10",
+        "RTo10"
+      ],
+      "labeling_note": "双类型 + 年代：同时含 Drama 与 Action 且 1990-1999，共 4 部（The Godfather Part III / La Scorta / The Edge / The Color of Paradise）；全部无评分。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Drama, Action} | rows=4 | ids=FFC24,LTa10,MMj10,RTo10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q31",
+      "track": "zh_en",
+      "query": "2010 年以后的动画片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0137204",
+        "tt0176694",
+        "tt0331314",
+        "tt0377981",
+        "tt0435761",
+        "tt0481499",
+        "tt0498351"
+      ],
+      "labeling_note": "类型 + 2010s：含 Animation 且 2010-2019，共 7 部（Toy Story 3 / The Croods / Gnomeo & Juliet 等）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Animation} | rows=7 | ids=tt0137204,tt0176694,tt0331314,tt0377981,tt0435761,tt0481499,tt0498351",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q32",
+      "track": "zh_en",
+      "query": "2020 年以后评分 8 分以上的电影",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt9000001",
+        "tt9000004"
+      ],
+      "labeling_note": "年代 + 评分：year>=2020 且 rating>=8.0，共 2 部（Neon Horizon 2021 Action/Science Fiction 8.4；Quiet Signal 2023 Horror/Thriller 8.8）。快照 2020s 只有 7 行，这是覆盖上限附近的用例。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2020 AND year <= 2024 AND rating >= 8.0 | rows=2 | ids=tt9000001,tt9000004",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q33",
+      "track": "zh_en",
+      "query": "想找像《The Fugitive》那样的动作惊悚片",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "DFi17",
+        "JDB10",
+        "LBe10"
+      ],
+      "labeling_note": "相似规则 = 共享 Thriller+Action 且同年代：1990-1999 共 4 部（La Femme Nikita 1991 / The Fugitive 1993 / Speed 1994 / The Game 1997），排除 seed（The Fugitive = ADv17）后 3 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Thriller, Action} AND id NOT IN (ADv17) | rows=3 | ids=DFi17,JDB10,LBe10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q34",
+      "track": "zh_en",
+      "query": "喜欢《Men in Black》，有类似的吗",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "JJm13",
+        "JyR2",
+        "JyR4",
+        "MMy10"
+      ],
+      "labeling_note": "相似规则 = 共享 Comedy+Crime 且同年代：1990-1999 共 5 部（Men in Black 1997 / Austin Powers 系 3 行 / Ghost Dog 1999），排除 seed（Men in Black = BS10）后 4 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Crime} AND id NOT IN (BS10) | rows=4 | ids=JJm13,JyR2,JyR4,MMy10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q35",
+      "track": "zh_en",
+      "query": "想找像《Fargo》那样的片子",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "JlC10",
+        "JlC11",
+        "JlC14",
+        "JlC15",
+        "JlC18",
+        "JlC4",
+        "JlC7"
+      ],
+      "labeling_note": "相似规则 = 同导演（seed Fargo 1996 的 director 为 J.Coen）：J.Coen 名下 8 部（Blood Simple 1985 … The Big Lebowski 1997），排除 seed（JlC16）后 7 部。注意 The Big Lebowski 在该行是 0 genre，只能靠 director 信号命中。",
+      "snapshot_row_refs": [
+        "predicate: director = 'J.Coen' AND id NOT IN (JlC16) | rows=7 | ids=JlC10,JlC11,JlC14,JlC15,JlC18,JlC4,JlC7",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q36",
+      "track": "zh_en",
+      "query": "像《Heat》一样，还想看 Michael Mann 的其他片子",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "MM10",
+        "MM20",
+        "MM25",
+        "MM30",
+        "MM37",
+        "MM41"
+      ],
+      "labeling_note": "相似规则 = 同导演：M.Mann 名下 7 部（Thief 1979 … Collateral 2004），排除 seed 后 6 部。查询里给出的是英文人名 Michael Mann，卡片里的值是 M.Mann，属 zh→en 轨道的真实别名/缩写差异。",
+      "snapshot_row_refs": [
+        "predicate: director = 'M.Mann' AND id NOT IN (MM33) | rows=6 | ids=MM10,MM20,MM25,MM30,MM37,MM41",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q37",
+      "track": "zh_en",
+      "query": "喜欢《Toy Story》这种动画喜剧，有类似的吗",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "EwD10",
+        "JPy10",
+        "MzN15",
+        "RMn10"
+      ],
+      "labeling_note": "相似规则 = 共享 Comedy+Animation 且同年代：1990-1999 共 4 部（Volare Volare 1991 / Space Jam 1996 / Antz 1998 / Stuart Little 1999）。seed Toy Story 在该行只标了 Animation（无 Comedy），所以 seed 本身不在集合内，也不做排除。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Animation} | rows=4 | ids=EwD10,JPy10,MzN15,RMn10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q38",
+      "track": "zh_en",
+      "query": "推荐 2000 年代评分 8 分以上的传记片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0253474",
+        "tt0264464",
+        "tt0292352",
+        "tt0331232",
+        "tt0339723",
+        "tt0343121",
+        "tt0352248",
+        "tt0363163",
+        "tt0368711",
+        "tt0395169",
+        "tt0396087",
+        "tt0436231",
+        "tt0453508",
+        "tt0471003",
+        "tt0473453",
+        "tt0498362",
+        "tt0498366"
+      ],
+      "labeling_note": "类型 + 年代 + 评分偏好：含 Biography、2000-2009、rating>=8.0，共 17 部。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Biography} AND rating >= 8.0 | rows=17 | ids=tt0253474,tt0264464,tt0292352,tt0331232,tt0339723,tt0343121,tt0352248,tt0363163,tt0368711,tt0395169,tt0396087,tt0436231,tt0453508,tt0471003,tt0473453,tt0498362,tt0498366",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q39",
+      "track": "zh_en",
+      "query": "推荐 2010 年以后评分 7 分以上的纪录片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0218252",
+        "tt0430524",
+        "tt0481470"
+      ],
+      "labeling_note": "类型 + 2010s + 评分偏好：含 Documentary、2010-2019、rating>=7.0，共 3 部；集合小、区分度高。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Documentary} AND rating >= 7.0 | rows=3 | ids=tt0218252,tt0430524,tt0481470",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q40",
+      "track": "zh_en",
+      "query": "推荐几部 Quentin Tarantino 的电影",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0361748",
+        "tt0378194",
+        "tt0401792"
+      ],
+      "labeling_note": "导演偏好推荐：director='Quentin Tarantino' 在快照里有 3 部（Kill Bill: Vol. 2 2004 / Sin City 2005 / Inglourious Basterds 2009）。注意同片库还有 director='Tarantino' 的 3 部 1990s 作品（Reservoir Dogs / Pulp Fiction / Jackie Brown），字符串不同，不计入本集合。",
+      "snapshot_row_refs": [
+        "predicate: director = 'Quentin Tarantino' | rows=3 | ids=tt0361748,tt0378194,tt0401792",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q41",
+      "track": "en_en",
+      "query": "find the movie City of God",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "tt0317248"
+      ],
+      "labeling_note": "Exact title match: only one row (2002, Fernando Meirelles, Crime/Drama, 8.6).",
+      "snapshot_row_refs": [
+        "predicate: title = 'City of God' | rows=1 | ids=tt0317248",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q42",
+      "track": "en_en",
+      "query": "is there a film called Mulholland Dr.?",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "tt0166924"
+      ],
+      "labeling_note": "Exact title match incl. the '.' in the stored title: one row (2001, Drama/Mystery/Thriller, 8.0).",
+      "snapshot_row_refs": [
+        "predicate: title = 'Mulholland Dr.' | rows=1 | ids=tt0166924",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q43",
+      "track": "en_en",
+      "query": "movies whose title starts with The Godfather",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "FFC24",
+        "FFC5",
+        "FFC7"
+      ],
+      "labeling_note": "Title prefix: title LIKE 'The Godfather%' -> 3 rows (1972 / 1974 / 1990, all Coppola, all Action). Rows such as 'The Three Godfathers' and 'Tokyo Godfathers' are rejected by the prefix rule and are not acceptable.",
+      "snapshot_row_refs": [
+        "predicate: title LIKE 'The Godfather%' | rows=3 | ids=FFC24,FFC5,FFC7",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q44",
+      "track": "en_en",
+      "query": "find the movie Cast Away",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "RZe22"
+      ],
+      "labeling_note": "Exact title match: one row (1999, Zemeckis) with **0 genres** and no rating, i.e. the movie-cards.md 0-genre / null-rating card boundary. The card text must still be retrievable by title alone.",
+      "snapshot_row_refs": [
+        "predicate: title = 'Cast Away' | rows=1 | ids=RZe22",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q45",
+      "track": "en_en",
+      "query": "find the movie Ocean's Eleven",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "LM110",
+        "StS13"
+      ],
+      "labeling_note": "Ambiguous title: two rows share the exact title (1960 Milesstone, LM110; 2001 Soderbergh, StS13), so both are acceptable and the query has no year constraint.",
+      "snapshot_row_refs": [
+        "predicate: title = 'Ocean's Eleven' | rows=2 | ids=LM110,StS13",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q46",
+      "track": "en_en",
+      "query": "film noir from the 1970s",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "AR10",
+        "AR8",
+        "AlC10",
+        "CaR7",
+        "JEu20",
+        "PBa3"
+      ],
+      "labeling_note": "Genre + decade: Noir in 1970-1979 -> 6 rows, all without ratings (rating rows only exist for year>=2001).",
+      "snapshot_row_refs": [
+        "predicate: year >= 1970 AND year <= 1979 AND genres ⊇ {Noir} | rows=6 | ids=AR10,AR8,AlC10,CaR7,JEu20,PBa3",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q47",
+      "track": "en_en",
+      "query": "1960s westerns that are also comedies",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "BuK10",
+        "ElS2",
+        "PTw9"
+      ],
+      "labeling_note": "Two genres + decade: Comedy AND Western in 1960-1969 -> 3 rows (Cat Ballou 1965 / Stay Away, Joe 1968 / Support Your Local Sheriff 1969).",
+      "snapshot_row_refs": [
+        "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Comedy, Western} | rows=3 | ids=BuK10,ElS2,PTw9",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q48",
+      "track": "en_en",
+      "query": "1990s romantic musicals",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "IMd17",
+        "PJH14",
+        "THk14",
+        "WA25"
+      ],
+      "labeling_note": "Two genres + decade: Romance AND Music in 1990-1999 -> 4 rows (That Thing You Do! / My Best Friend's Wedding / Everyone Says I Love You / Shakespeare in Love).",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Romance, Music} | rows=4 | ids=IMd17,PJH14,THk14,WA25",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q49",
+      "track": "en_en",
+      "query": "thrillers from 2000 to 2009 rated 8.5 or higher",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0329474",
+        "tt0343956",
+        "tt0400234",
+        "tt0405094",
+        "tt0462249",
+        "tt0496418"
+      ],
+      "labeling_note": "Genre + decade + rating: Thriller in 2000-2009 with rating>=8.5 -> 6 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Thriller} AND rating >= 8.5 | rows=6 | ids=tt0329474,tt0343956,tt0400234,tt0405094,tt0462249,tt0496418",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q50",
+      "track": "en_en",
+      "query": "horror movies from the 2000s rated 7.5 or higher",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0230600",
+        "tt0291407",
+        "tt0297411",
+        "tt0358456",
+        "tt0361038",
+        "tt0379290",
+        "tt0426425",
+        "tt0445940",
+        "tt0456005",
+        "tt0462322",
+        "tt0473565",
+        "tt0482470",
+        "tt0482545",
+        "tt0496354"
+      ],
+      "labeling_note": "Genre + decade + rating: Horror in 2000-2009 with rating>=7.5 -> 14 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Horror} AND rating >= 7.5 | rows=14 | ids=tt0230600,tt0291407,tt0297411,tt0358456,tt0361038,tt0379290,tt0426425,tt0445940,tt0456005,tt0462322,tt0473565,tt0482470,tt0482545,tt0496354",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q51",
+      "track": "en_en",
+      "query": "family movies from 2000 to 2009 rated 8 or higher",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0328810",
+        "tt0357979",
+        "tt0395197",
+        "tt0462559",
+        "tt0490803"
+      ],
+      "labeling_note": "Genre + decade + rating: Family in 2000-2009 with rating>=8.0 -> 5 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Family} AND rating >= 8.0 | rows=5 | ids=tt0328810,tt0357979,tt0395197,tt0462559,tt0490803",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q52",
+      "track": "en_en",
+      "query": "sci-fi movies from 2000 to 2009 rated 7.5 or higher",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0212712",
+        "tt0289879",
+        "tt0379786",
+        "tt0399361",
+        "tt0447160",
+        "tt0482571"
+      ],
+      "labeling_note": "Genre + decade + rating: Sci-Fi in 2000-2009 with rating>=7.5 -> 6 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Sci-Fi} AND rating >= 7.5 | rows=6 | ids=tt0212712,tt0289879,tt0379786,tt0399361,tt0447160,tt0482571",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q53",
+      "track": "en_en",
+      "query": "something like Face/Off",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "DCn10",
+        "JCm20",
+        "JCm5"
+      ],
+      "labeling_note": "Similarity rule = shares Action+Sci-Fi in 1990-1999: 4 rows (Terminator 2 / The Terminator / Judge Dredd 1995 / Face/Off 1997), 3 after excluding the seed (Face/Off = IWo40).",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Action, Sci-Fi} AND id NOT IN (IWo40) | rows=3 | ids=DCn10,JCm20,JCm5",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q54",
+      "track": "en_en",
+      "query": "movies like True Lies",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AMo13",
+        "JrR10",
+        "MiR21",
+        "PVh18",
+        "RbH10"
+      ],
+      "labeling_note": "Similarity rule = shares Romance+Action in 1990-1999: 6 rows (True Lies / Basic Instinct / Nowhere to Run / The Gun in Betty Lou's Handbag / Trouble Bound / B.Monkey), 5 after excluding the seed (True Lies = JCm25).",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Romance, Action} AND id NOT IN (JCm25) | rows=5 | ids=AMo13,JrR10,MiR21,PVh18,RbH10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q55",
+      "track": "en_en",
+      "query": "I love Blue Velvet - anything similar?",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "DLy1",
+        "DLy10",
+        "DLy12",
+        "DLy18",
+        "DLy2",
+        "DLy21",
+        "DLy5"
+      ],
+      "labeling_note": "Similarity rule = same director: D.Lynch has 8 rows (Eraserhead 1978 ... The Straight Story 1999), 7 after excluding the seed Blue Velvet (DLy8). Same-director is one of the whitelisted signals in movie-cards.md 3.1.",
+      "snapshot_row_refs": [
+        "predicate: director = 'D.Lynch' AND id NOT IN (DLy8) | rows=7 | ids=DLy1,DLy10,DLy12,DLy18,DLy2,DLy21,DLy5",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q56",
+      "track": "en_en",
+      "query": "more films like Before Sunrise",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "RLl10",
+        "RLl13",
+        "RLl18",
+        "RLl21"
+      ],
+      "labeling_note": "Similarity rule = same director: Linklater has 5 rows (Slacker / Dazed and Confused / Before Sunrise / Suburbia / Before Sunset), 4 after excluding the seed.",
+      "snapshot_row_refs": [
+        "predicate: director = 'Linklater' AND id NOT IN (RLl15) | rows=4 | ids=RLl10,RLl13,RLl18,RLl21",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q57",
+      "track": "en_en",
+      "query": "I want more movies like The Shining",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "StK1",
+        "StK10",
+        "StK2",
+        "StK20",
+        "StK21",
+        "StK3",
+        "StK4",
+        "StK5",
+        "StK6",
+        "StK7",
+        "StK8",
+        "StK9"
+      ],
+      "labeling_note": "Similarity rule = same director: Kubrick has 13 rows (1953-1999), 12 after excluding the seed; spans 1950s-1990s and mixes rated/unrated rows.",
+      "snapshot_row_refs": [
+        "predicate: director = 'Kubrick' AND id NOT IN (StK15) | rows=12 | ids=StK1,StK10,StK2,StK20,StK21,StK3,StK4,StK5,StK6,StK7,StK8,StK9",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q58",
+      "track": "en_en",
+      "query": "recommend animated movies from the 2000s rated 7.5 or higher",
+      "lang": "en",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0126029",
+        "tt0286244",
+        "tt0291350",
+        "tt0307456",
+        "tt0312004",
+        "tt0327597",
+        "tt0388130",
+        "tt0388473",
+        "tt0441773",
+        "tt0485601"
+      ],
+      "labeling_note": "Preference (genre + decade + rating): Animation in 2000-2009 with rating>=7.5 -> 10 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Animation} AND rating >= 7.5 | rows=10 | ids=tt0126029,tt0286244,tt0291350,tt0307456,tt0312004,tt0327597,tt0388130,tt0388473,tt0441773,tt0485601",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q59",
+      "track": "en_en",
+      "query": "recommend mystery movies from the 2000s rated 8.5 or higher",
+      "lang": "en",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0329474",
+        "tt0371392",
+        "tt0469833",
+        "tt0482571"
+      ],
+      "labeling_note": "Preference (genre + decade + rating): Mystery in 2000-2009 with rating>=8.5 -> 4 rows.",
+      "snapshot_row_refs": [
+        "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Mystery} AND rating >= 8.5 | rows=4 | ids=tt0329474,tt0371392,tt0469833,tt0482571",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "Q60",
+      "track": "en_en",
+      "query": "recommend some films by Scorsese",
+      "lang": "en",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "MS1",
+        "MS10",
+        "MS18",
+        "MS19",
+        "MS2",
+        "MS20",
+        "MS21",
+        "MS22",
+        "MS23",
+        "MS25",
+        "MS26",
+        "MS28",
+        "MS29",
+        "MS3",
+        "MS30",
+        "MS32",
+        "MS34",
+        "MS35",
+        "MS36",
+        "MS4",
+        "MS5",
+        "MS6",
+        "MS7"
+      ],
+      "labeling_note": "Director preference: director='Scorsese' has 23 rows in the snapshot (1970-2001), which is the largest acceptable set in the fixture (schema cap is 25).",
+      "snapshot_row_refs": [
+        "predicate: director = 'Scorsese' | rows=23 | ids=MS1,MS10,MS18,MS19,MS2,MS20,MS21,MS22,MS23,MS25,MS26,MS28,MS29,MS3,MS30,MS32,MS34,MS35,MS36,MS4,MS5,MS6,MS7",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    }
+  ]
+}
