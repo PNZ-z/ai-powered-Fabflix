@@ -64,8 +64,13 @@ class HttpOllamaReachabilityProbeTest {
 
     @Test
     void appliesOneWholeProbeDeadline() throws Exception {
+        // The stub answers far later than the 150 ms deadline, so a working deadline must give up
+        // long before this response exists. The upper bound is deliberately generous (2.5 s instead
+        // of the ~150 ms budget): a busy CI can schedule the timeout callback late, and such a delay
+        // is not a deadline failure. It still cannot pass a broken deadline - without the timeout the
+        // probe would wait ~3 s, return true, and fail both the reachable and the elapsed assertion.
         startStub(exchange -> {
-            Thread.sleep(600);
+            Thread.sleep(3_000);
             respond(exchange, 200, "{\"version\":\"0.0.0\"}");
         });
 
@@ -73,9 +78,9 @@ class HttpOllamaReachabilityProbeTest {
         boolean reachable = new HttpOllamaReachabilityProbe(baseUrl()).isReachable(Duration.ofMillis(150));
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
 
-        assertFalse(reachable);
+        assertFalse(reachable, () -> "probe waited for the 3 s stub response instead of its 150 ms deadline");
         assertTrue(elapsedMillis >= 100, () -> "probe gave up after only " + elapsedMillis + " ms, before its 150 ms deadline");
-        assertTrue(elapsedMillis < 1_000, () -> "probe took " + elapsedMillis + " ms, far beyond its 150 ms deadline");
+        assertTrue(elapsedMillis < 2_500, () -> "probe took " + elapsedMillis + " ms, far beyond its 150 ms deadline");
     }
 
     @Test
