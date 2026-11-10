@@ -1,0 +1,86 @@
+{
+  "golden_version": "b1-5-negative/v1",
+  "snapshot": {
+    "source": "fabflix-mysql:3307/moviedb",
+    "snapshot_date": "2026-11-09",
+    "movies": 21087,
+    "year_min": 196,
+    "year_max": 2024,
+    "genre_rows": 61,
+    "genre_distinct_names": 56,
+    "movies_without_rating": 13082,
+    "ratings_covered_from_year": 2001,
+    "db_snapshot_hash": "8b16c047de5c885a2d90309797c51c0c506311c074927a2d5b3fc5ad162ff925"
+  },
+  "negatives": [
+    {
+      "id": "N01",
+      "track": "zh_zh",
+      "query": "1990 年代的科幻片，评分 9.5 分以上",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [],
+      "labeling_note": "Data-unsatisfiable: ratings only exist for year>=2001 titles (196-2000 rows have no rating row at all), so 1990s + rating>=9.5 has 0 rows even though 1990s Sci-Fi itself has 55 rows. Expected EMPTY_RESULT + coverage.rating_coverage_from=2001, not a silent empty list.",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Sci-Fi} AND rating >= 9.5 | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true
+    },
+    {
+      "id": "N02",
+      "track": "zh_en",
+      "query": "有没有 Cyberpunk 类型的电影",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [],
+      "labeling_note": "Unknown genre: 'Cyberpunk' is not one of the 56 distinct genre names in the snapshot (Sci-Fi is), so the structured answer is INVALID_ARGUMENT / no matching genre. Semantic retrieval may still return sci-fi cards - such a hit is NOT a valid answer, which is exactly the boundary this case records.",
+      "snapshot_row_refs": [
+        "predicate: genres ⊇ {Cyberpunk} | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true
+    },
+    {
+      "id": "N03",
+      "track": "zh_zh",
+      "query": "《The Matrix》讲了什么故事？",
+      "lang": "zh",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "No synopsis/plot column exists in movies(id,title,year,director); a card can never answer this. Retrieval returning the The Matrix card cannot satisfy the request, so a top-5 hit is not a pass.",
+      "snapshot_row_refs": [
+        "no SQL predicate: case is defined by a data gap (see labeling_note); 0 rows in the 21,087-row snapshot @ 2026-11-09"
+      ],
+      "expects_no_match": true
+    },
+    {
+      "id": "N04",
+      "track": "zh_en",
+      "query": "找《盗梦空间》",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [],
+      "labeling_note": "Chinese alias with no anchor in the snapshot: 'Inception' does not exist in the 21,087 rows at all, so both alias translation and title match must fail. Distinguishes 'alias table missing' from 'movie missing'.",
+      "snapshot_row_refs": [
+        "predicate: title = 'Inception' | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-09 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_alias_only": true,
+      "expects_no_match": true
+    },
+    {
+      "id": "N05",
+      "track": "en_en",
+      "query": "which movies won the Academy Award for Best Picture",
+      "lang": "en",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "Cross-data capability: no awards/box-office columns exist. Any list produced from cards would be fabricated, so an answer is a fail regardless of overlap with real-world winners.",
+      "snapshot_row_refs": [
+        "no SQL predicate: case is defined by a data gap (see labeling_note); 0 rows in the 21,087-row snapshot @ 2026-11-09"
+      ],
+      "expects_no_match": true
+    }
+  ]
+}

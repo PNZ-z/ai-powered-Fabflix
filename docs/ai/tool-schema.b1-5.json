@@ -1,0 +1,421 @@
+{
+  "$comment": "B1.5b evaluation contract. Machine-readable tool schema fixture; the single source of truth for variants G0-G3. Production truth becomes the @Tool/@ToolParam generated schema, which must be verified identical by a consistency test. See docs/ai/README.md.",
+  "contract_version": "b1.5-tools/v2",
+  "revised": "2026-11-09 (fact fix: ratings coverage starts 2001, not 2000; contract_version bumped v1 -> v2)",
+  "created": "2026-11-09",
+  "status": "DRAFT - pending oracle review and user approval; not implemented in production code",
+  "schema_hash_algorithm": "sha256 over json.dumps(tools, sort_keys=True, separators=(',',':'), ensure_ascii=False) encoded as UTF-8",
+  "schema_hash": "8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567",
+  "db_snapshot": {
+    "source": "docker container fabflix-mysql (host port 3307), database moviedb",
+    "snapshot_date": "2026-11-09",
+    "movies": 21087,
+    "genre_rows": 61,
+    "genre_distinct_names": 56,
+    "year_min": 196,
+    "year_max": 2024,
+    "movies_without_rating": 13082,
+    "ratings_covered_from_year": 2001,
+    "notes": [
+      "genre enum MUST be derived from the database (SELECT DISTINCT name FROM genres ORDER BY name), never hand-written; the list below is only this snapshot",
+      "genre rows contain duplicate names Action/Comedy/Drama/Horror/Thriller (ids 1-23 and 9001-9006) - always DISTINCT",
+      "'Sci-Fi' has 457 movies while 'Science Fiction' has 2: canonicalization of this pair is a server-side alias decision, not an enum change",
+      "movie id is an opaque VARCHAR(10); only 9073 of 21087 rows start with 'tt' - never assume the prefix",
+      "ratings exist only for 2001-onwards titles (MIN(year) among rated movies = 2001; all 58 movies from 2000 and all 11,975 from 196-2000 have no rating row), so any pre-2001 rating filter is unsatisfiable and must return EMPTY_RESULT with coverage metadata"
+    ]
+  },
+  "error_contract": {
+    "INVALID_ARGUMENT": "wrong type/syntax, missing required, unknown field, or value outside the enum",
+    "OUT_OF_RANGE": "syntactically valid number, but outside current data coverage (196-2024); server returns coverage{year_min,year_max}",
+    "EMPTY_RESULT": "valid and in-range query with zero matches; server returns coverage (including rating_coverage_from)",
+    "NOT_FOUND": "movie_id does not exist",
+    "LIMIT_EXCEEDED": "limit above the per-tool maximum",
+    "TOOL_ERROR": "database or internal failure",
+    "TIMEOUT": "per-call budget exceeded",
+    "AI_DISABLED": "AI feature switched off",
+    "MODEL_UNAVAILABLE": "endpoint unreachable"
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "search_movies_by_title",
+        "description": "Resolve a movie title to catalog rows. The catalog stores English original titles only; Chinese translated titles do not match. Use it to look up a title and to resolve a seed movie before calling find_similar_movies.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "query"
+          ],
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 200,
+              "description": "Title fragment as typed by the user, in the catalog's English original form."
+            },
+            "year": {
+              "type": "integer",
+              "minimum": 196,
+              "maximum": 2024,
+              "description": "Optional release year for disambiguation only. Omit unless the user stated a year."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Maximum rows to return. Server default is 5 (3 when used for disambiguation)."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "filter_movies",
+        "description": "Filter the catalog by genre, year range and/or minimum rating. At least one filter must be provided; sort and limit are not filters. Years outside 196-2024 return OUT_OF_RANGE, not an empty list.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "genres"
+              ]
+            },
+            {
+              "required": [
+                "year_from"
+              ]
+            },
+            {
+              "required": [
+                "year_to"
+              ]
+            },
+            {
+              "required": [
+                "min_rating"
+              ]
+            }
+          ],
+          "properties": {
+            "genres": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Action",
+                  "Adult",
+                  "Adventure",
+                  "Allegory",
+                  "Animation",
+                  "anti-Dram",
+                  "Art Video",
+                  "Avant Garde",
+                  "AvGa",
+                  "Biography",
+                  "CA",
+                  "Camp",
+                  "Comedy",
+                  "Crime",
+                  "Cult",
+                  "Disa",
+                  "Dist",
+                  "Documentary",
+                  "Drama",
+                  "Epic",
+                  "Experimental",
+                  "Family",
+                  "Fantasy",
+                  "Genre1",
+                  "History",
+                  "Homo",
+                  "Horror",
+                  "Kinky",
+                  "Music",
+                  "Musical",
+                  "Mystery",
+                  "Natu",
+                  "Noir",
+                  "Porb",
+                  "Porn",
+                  "Psyc",
+                  "Psych Dram",
+                  "Reality-TV",
+                  "Road",
+                  "Romance",
+                  "RomtAdvt",
+                  "Sati",
+                  "Scat",
+                  "Sci-Fi",
+                  "Science Fiction",
+                  "Sport",
+                  "stage musical",
+                  "Surreal",
+                  "Thriller",
+                  "TV",
+                  "TVmini",
+                  "verite",
+                  "Violence",
+                  "War",
+                  "Weird",
+                  "Western"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1,
+              "maxItems": 5
+            },
+            "year_from": {
+              "type": "integer",
+              "minimum": 196,
+              "maximum": 2024,
+              "description": "Inclusive lower bound on release year."
+            },
+            "year_to": {
+              "type": "integer",
+              "minimum": 196,
+              "maximum": 2024,
+              "description": "Inclusive upper bound on release year."
+            },
+            "min_rating": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Inclusive minimum rating. Only pass when the user asked for one; ratings exist for 2001-onwards titles only (no 2000-or-earlier title has a rating row)."
+            },
+            "sort": {
+              "type": "string",
+              "enum": [
+                "rating_desc",
+                "year_desc",
+                "title_asc"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum rows to return. Server default is 5."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "find_similar_movies",
+        "description": "Given a catalog movie id, return movies sharing catalog signals (genres, same/close year, same director, shared top-3 stars). Cannot use plot or style similarity: the catalog has no synopsis.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "movie_id"
+          ],
+          "properties": {
+            "movie_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "description": "Catalog movie id obtained from search_movies_by_title. Never invent it."
+            },
+            "same_primary_genre_only": {
+              "type": "boolean",
+              "description": "If true, results must share the seed movie's primary genre, defined as the alphabetically first of the seed's genre names."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum rows to return. Server default is 5."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "recommend_movies",
+        "description": "Recommend catalog movies from explicit user preferences (genre, year range, minimum rating, director, seed movies). At least one preference is required. This is content-based recommendation, not personalized history.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "preferred_genres"
+              ]
+            },
+            {
+              "required": [
+                "year_range"
+              ]
+            },
+            {
+              "required": [
+                "min_rating"
+              ]
+            },
+            {
+              "required": [
+                "director"
+              ]
+            },
+            {
+              "required": [
+                "seed_movie_ids"
+              ]
+            }
+          ],
+          "properties": {
+            "preferred_genres": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Action",
+                  "Adult",
+                  "Adventure",
+                  "Allegory",
+                  "Animation",
+                  "anti-Dram",
+                  "Art Video",
+                  "Avant Garde",
+                  "AvGa",
+                  "Biography",
+                  "CA",
+                  "Camp",
+                  "Comedy",
+                  "Crime",
+                  "Cult",
+                  "Disa",
+                  "Dist",
+                  "Documentary",
+                  "Drama",
+                  "Epic",
+                  "Experimental",
+                  "Family",
+                  "Fantasy",
+                  "Genre1",
+                  "History",
+                  "Homo",
+                  "Horror",
+                  "Kinky",
+                  "Music",
+                  "Musical",
+                  "Mystery",
+                  "Natu",
+                  "Noir",
+                  "Porb",
+                  "Porn",
+                  "Psyc",
+                  "Psych Dram",
+                  "Reality-TV",
+                  "Road",
+                  "Romance",
+                  "RomtAdvt",
+                  "Sati",
+                  "Scat",
+                  "Sci-Fi",
+                  "Science Fiction",
+                  "Sport",
+                  "stage musical",
+                  "Surreal",
+                  "Thriller",
+                  "TV",
+                  "TVmini",
+                  "verite",
+                  "Violence",
+                  "War",
+                  "Weird",
+                  "Western"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1,
+              "maxItems": 5
+            },
+            "year_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "from",
+                "to"
+              ],
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "minimum": 196,
+                  "maximum": 2024
+                },
+                "to": {
+                  "type": "integer",
+                  "minimum": 196,
+                  "maximum": 2024
+                }
+              }
+            },
+            "min_rating": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Inclusive minimum rating. Only pass when the user asked for one."
+            },
+            "director": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100,
+              "description": "Director name exactly as stored in the catalog (Latin script)."
+            },
+            "seed_movie_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10
+              },
+              "minItems": 1,
+              "maxItems": 5,
+              "description": "Catalog movie ids used as positive seeds."
+            },
+            "exclude_seed": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "Maximum rows to return. Server default is 5."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_movie_card",
+        "description": "Return the full card of a single catalog movie by id (title, year, director, genres, top-3 stars, rating).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "movie_id"
+          ],
+          "properties": {
+            "movie_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "description": "Catalog movie id from a previous tool result. Never invent it."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

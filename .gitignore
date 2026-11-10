@@ -182,3 +182,6 @@ buildNumber.properties
 /.pi/
 /AGENTS.md
 
+# Python bytecode caches (eval scripts under scripts/eval/)
+__pycache__/
+*.pyc
