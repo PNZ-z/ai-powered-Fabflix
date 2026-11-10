@@ -5,10 +5,10 @@
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文档类型 | **umbrella / 决策备忘录**（共享数据集、共享样本、共享指标、决策标准、拆分与顺序）；**不承载执行细节** |
-> | `last_updated` | **2026-11-09**（同日 **r6**：B1.5a 实测完成并回填 A 路线结论——**D8 FAIL（0.4833 / 0.4167）**，片名强 / filter·similar 弱，**A 不得单独交付**，B1.5b 为下一步（未开始）；r4：共享指标口径拆清——“D8 gate = `recall@5` ≥80%”与“跨路线配对比较用任务级成功”分属两个用途；卡片统计改实测值；`OPEN-U2`/`OPEN-U3` 关闭。r3：按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 拆分） |
+> | `last_updated` | **2026-11-10**（同日 **r7**：回填 **B1.5b issue #72 已创建**（milestone #3、无 labels），B 路线状态 = 已批准 / 已建 issue / **待实施**（仍无脚本、无报告）；不改共享数据集/指标/决策规则。2026-11-09 **r6**：B1.5a 实测完成并回填 A 路线结论——**D8 FAIL（0.4833 / 0.4167）**，片名强 / filter·similar 弱，**A 不得单独交付**，B1.5b 为下一步；r4：共享指标口径拆清——“D8 gate = `recall@5` ≥80%”与“跨路线配对比较用任务级成功”分属两个用途；卡片统计改实测值；`OPEN-U2`/`OPEN-U3` 关闭。r3：按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 拆分） |
 > | 基线 | `main` @ `85d4675`（PR #68 合并后） |
 > | 执行子计划 | **A 路线** = `docs/plans/b1-5a-movie-card-embeddings.md`；**B 路线** = `docs/plans/b1-5b-tool-routing.md` |
-> | issue 草稿 / 已建 issue | **A 路线 = 已建 [issue #69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（规范记录 `docs/issues/issue-69-b1-5a-movie-card-embeddings.md`，milestone #3、无 labels）；**B 路线 = `docs/issues/proposed-b1-5b-tool-routing.md`（仍为草稿、未创建）**（milestone #3、无 labels） |
+> | issue 草稿 / 已建 issue | **A 路线 = 已建 [issue #69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（规范记录 `docs/issues/issue-69-b1-5a-movie-card-embeddings.md`，milestone #3、无 labels）；**B 路线 = 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（规范记录 `docs/issues/issue-72-b1-5b-tool-routing.md`，milestone #3、无 labels；**已创建、待实施**） |
 > | 评测契约 | `docs/ai/README.md`（三个 hash 的算法）、`docs/ai/tool-schema.b1-5.json`（B 路线 schema fixture）、`docs/ai/golden-set.schema.json` |
 > | 上级路线 | `docs/plans/ai-roadmap-overview.md`（A → **B** → C）、`docs/plans/ai-option-b-spring-ai-rag.md`（已批准 B 方案；2026-11-09 已追加 dated 回填） |
 > | 前置 | B0（spike，已完成）、B1（Spring AI 接入，已合并：PR #67 / `aea0477` / issue #66 CLOSED） |
@@ -22,6 +22,8 @@
 > **r5（2026-11-09，数据事实修正）**：评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = **2001**、2000 年 58 部全无评分、196–2000 共 **11,975** 部无评分）；§2 表与硬事实 1 的 `rating_coverage_from=2000` 改为 **2001**、"1960s–1990s" 改为 "1960s–2000"。
 >
 > **r4（2026-11-09，oracle delta 复核后）**：① §3.2 拆清两个口径（**A 的 pass/fail = D8 `recall@5` ≥80%**；**跨路线配对 = 任务级成功**，两者不可互代）；② §2 卡片统计改实测值（类型 **全量 1.2061 / 有 genre 的 1.4313 / 最多 4 / 3,318 无 genre**；主演 **全量 5.9258 / 有主演的 7.0458 / 最多 46 / 3,352 无主演**）；③ `OPEN-U2`/`OPEN-U3` 关闭。
+>
+> **r7（2026-11-10，B1.5b issue 回填）**：B 路线 [issue **#72**](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) 已由 `github-operator` 创建（milestone **#3**、**无 labels**），规范记录 = `docs/issues/issue-72-b1-5b-tool-routing.md`（原草稿 `proposed-b1-5b-tool-routing.md` 已改名）；B 路线计划与本文的链接/状态同步为 **已批准 / 已建 issue / 待实施**。**B1.5b 仍未开始实施**（无脚本、无报告、无评测数字），§7 决策备忘录仍无法完成；共享数据集、指标与决策规则**未修改**。
 
 ---
 
@@ -93,7 +95,7 @@ schema = `docs/ai/golden-set.schema.json`；正样本必须在 21k 快照内逐�
 
 | 维度 | 权重（建议） | A（卡片 embedding） | B（工具/路由） |
 | --- | --- | --- | --- |
-| 任务级成功率 / D8 | 高 | **任务级 = `recall@5`，实测 0.4833 / 0.4167 → D8 FAIL**（并集 53.3% 仍 <80%）；片名类 0.867–1.000，filter 0.10–0.45，similar 0.20 | 见 B1.5b 报告（**未开始**） |
+| 任务级成功率 / D8 | 高 | **任务级 = `recall@5`，实测 0.4833 / 0.4167 → D8 FAIL**（并集 53.3% 仍 <80%）；片名类 0.867–1.000，filter 0.10–0.45，similar 0.20 | 见 B1.5b 报告（**未开始**：issue #72 已建，尚无脚本/报告/实测数字） |
 | 延迟（p50/p95，含冷启动） | 高 | 1 次 embedding（**实测** 热 p50 **35–59 ms**；冷启动 **1.37–2.37 s**；`qwen3` 已测） | 1 次 chat（热 0.38–1.94 s / 冷 **39.10 s**）+ 工具 SQL（未单独计时） |
 | 实现复杂度 | 中 | 卡片构建 + 索引 + 重建 + 模型选择 | 工具实现 + **服务端校验/枚举映射/覆盖检查/渲染/前置拒绝** + 路由 |
 | 数据新鲜度 | 中 | 需重建（新片/改模板） | 实时 |
@@ -142,14 +144,14 @@ B-① 立项（另建 issue，需用户批准）
 ```
 
 - **两个 issue / 两个 PR**（D-9/B-9 已批准），彼此不互相阻塞实现，但**共用同一份 60 条金标准集**：由 B1.5a 先建立并冻结（`golden_version` + SHA-256），B1.5b 直接复用，避免两套样本导致无法配对比较。
-- **进度（2026-11-09）**：**B1.5a 已完成**（报告 `docs/ai/reports/b1-5a-embedding-eval.md`，D8 FAIL）；60 条金标准集已冻结（`b1-5-golden/v1`，sha256 `0c2f4c5e…be079`），**B1.5b 可直接复用**。**B1.5b 尚未开始**（草稿未发布、无脚本/报告）。
+- **进度（2026-11-10 更新）**：**B1.5a 已完成**（报告 `docs/ai/reports/b1-5a-embedding-eval.md`，D8 FAIL）；60 条金标准集已冻结（`b1-5-golden/v1`，sha256 `0c2f4c5e…be079`），**B1.5b 可直接复用**。**B1.5b = 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)（2026-11-10）/ 尚未开始实施**（无脚本、无报告、无评测数字）。
 - 若 60 条在 B1.5a 阶段因标注问题需要修订，**bump `golden_version`** 并在 B1.5b 报告注明其使用的是哪一版。
 
 ---
 
 ## 7. 决策备忘录的产出要求（两份报告之后才写）
 
-> **当前状态（2026-11-09）**：A 侧输入**已就绪**（B1.5a 报告，D8 FAIL）；B 侧**尚无报告**（B1.5b 未开始）。因此**本 memo 现在无法完成**——第 3 条 2×2 配对与第 4 条 B 侧门槛都需要 B1.5b 的实测数字。**不得**用 A 的单边结果代替 memo 结论。
+> **当前状态（2026-11-10 更新）**：A 侧输入**已就绪**（B1.5a 报告，D8 FAIL）；B 侧**尚无报告**（B1.5b 已建 issue #72、**未开始实施**）。因此**本 memo 现在无法完成**——第 3 条 2×2 配对与第 4 条 B 侧门槛都需要 B1.5b 的实测数字。**不得**用 A 的单边结果代替 memo 结论。
 
 备忘录（届时更新本文件，或另建 `docs/plans/b1-5-decision-memo.md`，由主 agent 决定）必须包含：
 
@@ -185,9 +187,9 @@ B-① 立项（另建 issue，需用户批准）
 | --- | --- | --- |
 | `docs/plans/b1-5-movie-retrieval-eval.md`（本文件） | umbrella / 决策备忘录 | 🟡 待 oracle 复核 |
 | `docs/plans/b1-5a-movie-card-embeddings.md` | A 路线执行计划 | 🟢 已批准 / 已建 issue **#69** / **已实施（评测完成，D8 FAIL）**；见其 §16 |
-| `docs/plans/b1-5b-tool-routing.md` | B 路线执行计划 | 🟡 待 oracle 复核 |
+| `docs/plans/b1-5b-tool-routing.md` | B 路线执行计划 | 🟢 已批准（2026-11-10）/ 已建 issue **#72** / **待实施** |
 | `docs/issues/issue-69-b1-5a-movie-card-embeddings.md` | A 路线 issue 规范记录（**已创建 #69**） | 🟢 已发布、**评测实施完成（D8 FAIL）** |
-| `docs/issues/proposed-b1-5b-tool-routing.md` | B 路线 issue 草稿 | 🟡 未发布（待 G1 修复/复核后另建） |
+| `docs/issues/issue-72-b1-5b-tool-routing.md` | B 路线 issue 规范记录（**已创建 #72**） | 🟢 已发布 / **待实施**（尚无脚本、报告、评测数字） |
 | `docs/issues/proposed-b1-5-movie-retrieval-eval.md` | **SUPERSEDED**（原单 issue 草稿，不发布；仅保留追溯） | ⬜ 不发布 |
 | `docs/ai/reports/b1-5a-embedding-eval.md` | **A 路线评测报告（实测）** | ✅ 已完成：D8 FAIL（0.4833 / 0.4167） |
 | `docs/ai/README.md` + `docs/ai/*.json` | 评测契约（hash 算法、schema fixture、golden schema） | 🟡 草案（金标准集与 A 路线报告已冻结/生成） |
@@ -228,4 +230,4 @@ B-① 立项（另建 issue，需用户批准）
 | oracle | 2026-11-09 提出 9 项阻塞（B-1…B-9），本文件与两份子计划、两份规范、两份历史文档回填**逐项对应修复**；同日 **delta 复核**再提 3 项（`db_snapshot_hash` SQL / 卡片统计旧口径 / D8 门槛口径）→ **r4 已修** | 🟡 待复核 r4 |
 | 主 agent | 已裁定“按 oracle 9 项阻塞 + 用户批准决策实施”；**新裁定 r4 的两项口径**（D8 gate = `recall@5`；标注人 = 主 agent）；其余（`OPEN-U1`/`OPEN-U4`/`OPEN-U5`）未裁定 | 🟡 部分待裁定 |
 
-> **本文件不声称**：B 路线任何评测已运行、任何阈值已达标（**A 路线实测 D8 FAIL**）、MCP 已实现或端点可达、oracle 已复核 r6、B1.5b 已开始。**issue 事实（2026-11-09）**：B1.5a 已建 **[#69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（**评测实施已完成，D8 FAIL**）；B1.5b **仍未创建**。 **B1.5b 尚未开始**（草稿未发布；下一步）。
+> **本文件不声称**：B 路线任何评测已运行、任何阈值已达标（**A 路线实测 D8 FAIL**）、MCP 已实现或端点可达、oracle 已复核 r6/r7、B1.5b 已开始或已完成。**issue 事实（2026-11-10）**：B1.5a 已建 **[#69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（**评测实施已完成，D8 FAIL**）；B1.5b 已建 **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（**已创建、待实施**，状态以远端为准）。 **B1.5b 尚未开始实施**（无脚本、无报告；下一步）。

@@ -1,25 +1,26 @@
-# B1.5b — Evaluate structured tools and deterministic routing for user-side movie retrieval（issue 草稿）
+# B1.5b — Evaluate structured tools and deterministic routing for user-side movie retrieval（issue #72 规范记录）
 
-> **文档状态：🟡 草稿 — 未发布、未创建 GitHub issue。**
+> **文档状态：🟢 GitHub issue [#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) 已创建（2026-11-10；milestone #3、无 labels）/ 待实施 — B1.5b **尚未开始实施**：无脚本、无报告、无评测数字。**
 >
 > | 元数据 | 值 |
 > | --- | --- |
-> | 文件类型 | `docs/issues/proposed-*` 草稿（发布前的规范来源） |
-> | 计划来源 | `docs/plans/b1-5b-tool-routing.md`（🟡 待 oracle 复核 / 用户批准）；总纲 = `docs/plans/b1-5-movie-retrieval-eval.md` |
+> | 文件类型 | `docs/issues/issue-72-*` 规范记录（原发布草稿 `proposed-b1-5b-tool-routing.md` 已改名回填编号；下方 `## GitHub issue body` 为该 issue 已发布的正文，**本次回填未改动**） |
+> | 计划来源 | `docs/plans/b1-5b-tool-routing.md`（🟢 已批准（2026-11-10，主 agent）/ 已建 issue #72 / 待实施）；总纲 = `docs/plans/b1-5-movie-retrieval-eval.md` |
 > | 关联规范 | `docs/architecture/ai-user-workflows.md`（工具契约、`R7` 服务端强制、year/enum 契约、runtime prompt）、`docs/architecture/movie-cards.md` |
 > | 共用契约 | `docs/ai/tool-schema.b1-5.json`（**机器可读 schema fixture**，`schema_hash` 已记录）、`docs/ai/README.md`、`docs/ai/golden-set.schema.json` |
-> | GitHub issue | **不存在**（编号未知，**不得虚构**） |
+> | GitHub issue | **已创建**：[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)（2026-11-10，由 `github-operator` 发布） |
 > | 目标 milestone | **#3 `Phase 3 — AI-powered platform`** |
 > | Labels | **无** |
-> | 批准状态 | 🟡 **待 oracle 复核 / 待用户批准**；不得交付 `github-operator` 创建 |
-> | `last_updated` | 2026-11-09（r4：G1 改为必做、`required`/`anyOf` 口径同步） |
+> | 批准状态 | 🟢 **主 agent 已批准创建（2026-11-10）**；issue **#72 已按本文件“GitHub issue title/body”发布**；实施状态 = **未开始（待实施）** |
+> | `last_updated` | 2026-11-10（r6：**回填 GitHub issue #72** — 文件改名 `issue-72-b1-5b-tool-routing.md`、状态→已创建/待实施、内部跟踪补 URL/milestone/labels、发布清单标为完成；**`## GitHub issue body` 未改动**；**未实施、未运行评测**）。r5：状态→已批准创建；发布前检查清单标为满足；`OPEN-b1` = **≥90%** 已裁定、`OPEN-b4` 只留可选 G3；正文仅同步 Dependencies/Scope 中与 90% 门槛相关的表述） |
 >
-> **发布前检查清单（全部未完成）**
+> **发布检查清单（✅ 已完成 — issue [#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) 已于 2026-11-10 创建）**
 >
-> - [ ] oracle 已复核拆分后的计划与本文
-> - [ ] 主 agent 已裁定 `OPEN-b1`（≥90% 门槛）与 `OPEN-b4`（**仅 G3** 是否本期做；G1 已定为必做）
-> - [ ] 60 条共享金标准集已由 B1.5a 冻结（`golden_version` + SHA-256）
-> - [ ] 主 agent 显式标记"可发布"
+> - [x] oracle 2026-11-09 **delta 条件已满足**：G1 为必做（不是可选）、`required`/对象级 `anyOf` 口径已写入标题/正文/验收
+> - [x] 主 agent 已裁定 `OPEN-b1`（交付候选形态 **≥90%** 任务级成功率；G0 58% 不得交付）与 `OPEN-b4`（**G3 本期可选/不要求**，未做须写“未测”；G1/G2/G0 必做）
+> - [x] 60 条共享金标准集已由 B1.5a 冻结（`docs/ai/golden/queries.b1-5.json`，`golden_version = b1-5-golden/v1`，sha256 `0c2f4c5e2eed33333b804487ddb9473f9fb25362c4271cb7ba5c1d3ac22be079`）；15 条工具用例由本 issue 新建
+> - [x] 主 agent 显式标记“可发布”（2026-11-10：批准创建）
+> - [x] `github-operator` 已按本文件 `## GitHub issue title` / `## GitHub issue body` 创建 **issue #72**（2026-11-10；milestone #3、无 labels）；正文内容未在本文件回填中修改
 
 ---
 
@@ -58,7 +59,7 @@ Two decisions frame the work and are not re-opened here: users ask about **movie
 - [ ] Implement and verify the **year and enum contract**: wrong type/syntax, unknown fields and out-of-enum values return `INVALID_ARGUMENT`; syntactically valid values outside the data coverage (196–2024) return `OUT_OF_RANGE` with `coverage`; valid in-range queries with no matches return `EMPTY_RESULT` with `coverage` (including `rating_coverage_from`). These three states are mutually exclusive, and none of them may be silently converted into a bare empty list.
 - [ ] Ground answers server-side: the six catalog fields are rendered from database results, and no fabricated title, rating or id — and no attribute outside those fields — is tolerated.
 - [ ] Report the 7/12 baseline and the post-mitigation results **side by side**, with the failure taxonomy behind each number.
-- [ ] State a routing verdict: pure-LLM routing is **not** a delivery form (measured 58%); the proposed form is deterministic routing with controlled slot filling, and its measured task-level success rate is reported against the agreed gate.
+- [ ] State a routing verdict: pure-LLM routing is **not** a delivery form (measured 58%); the proposed form is deterministic routing with controlled slot filling, and its measured task-level success rate is reported against the **agreed ≥90%** task-level gate.
 
 ## Non-goals
 
@@ -89,7 +90,7 @@ Two decisions frame the work and are not re-opened here: users ask about **movie
 - A reachable Ollama endpoint with `qwen2.5:7b` (Q4_K_M, `capabilities` includes `tools`); no authentication, so it must stay on a controlled network.
 - The Docker MySQL snapshot (`fabflix-mysql`, host port 3307) for grounding checks and coverage metadata.
 - The 60-case golden set frozen by B1.5a (`golden_version` + SHA-256), so both routes answer the same queries.
-- Agreement on the delivery-form threshold (proposed ≥90% task-level success) and on whether **G3** is in scope this period. **G1 is not optional**: it is the measured basis for the proposed deterministic delivery form.
+- The delivery-form threshold is **agreed at ≥90%** task-level success (approved 2026-11-10); **G3 stays optional and is not required this period**, and anything not run is reported as "not measured". **G1 is not optional**: it is the measured basis for the proposed deterministic delivery form.
 
 ## Risks
 
@@ -115,27 +116,30 @@ Two decisions frame the work and are not re-opened here: users ask about **movie
 
 | 项 | 值 |
 | --- | --- |
-| 来源 | 用户 2026-11-09 批准 D-1/D-3/D-4/D-6/D-7/D-9/B-4/B-9；oracle 2026-11-09 的 9 项阻塞（B-1…B-9）修复 |
-| 关联计划 | `docs/plans/b1-5b-tool-routing.md`（🟡 待 oracle 复核） |
-| 总纲 | `docs/plans/b1-5-movie-retrieval-eval.md`（umbrella） |
-| 兄弟 issue | `docs/issues/proposed-b1-5a-movie-card-embeddings.md`（同批，未发布） |
+| 来源 | 用户 2026-11-09 批准 D-1/D-3/D-4/D-6/D-7/D-9/B-4/B-9；oracle 2026-11-09 的 9 项阻塞（B-1…B-9）修复 + 同日 delta 复核 2 项（r4 已修）；**主 agent 2026-11-10 裁定 `OPEN-b1`（≥90%）/ `OPEN-b4`（仅 G3，可选）并批准创建本 issue** |
+| 关联计划 | `docs/plans/b1-5b-tool-routing.md`（🟢 已批准（2026-11-10，主 agent）/ 已建 issue #72 / 待实施；r7） |
+| 总纲 | `docs/plans/b1-5-movie-retrieval-eval.md`（umbrella；其 `OPEN-U1` 对应的 ≥90% 门槛由本次 `OPEN-b1` 裁定，umbrella 本文件本次未同步修改） |
+| 兄弟 issue | `docs/issues/issue-69-b1-5a-movie-card-embeddings.md`（**A 路线已完成**：PR #70 已合并、报告 D8 FAIL；60 条金标准集由它冻结） |
 | 机器可读契约 | `docs/ai/tool-schema.b1-5.json`（`schema_hash = 8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567`，`contract_version = b1.5-tools/v2`）；**`filter_movies`/`recommend_movies` 的 `anyOf` 已逐项复核存在**；r3 因评分覆盖起点 2000→2001 的文本修正使 hash 由 `8eea424b…44cd` 变为现值（见 `docs/ai/README.md` §4） |
 | 目标 milestone | **#3 `Phase 3 — AI-powered platform`** |
 | Labels | **无** |
-| GitHub issue | **未创建**；编号/URL 未知，**不得虚构** |
-| 创建者 | `github-operator`（仅在被主 agent 明确标记"可发布"后） |
-| 创建后动作 | 回填编号/URL，改名 `docs/issues/issue-<N>-b1-5b-tool-routing.md` |
+| GitHub issue | ✅ **已创建**：[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) — milestone **#3**、**无 labels**（2026-11-10 由 `github-operator` 按本文件 `GitHub issue title` / `GitHub issue body` 发布；远端标题/正文以 GitHub 为准，本文件不做远端修改） |
+| 实施状态 | 🔴 **未开始（待实施）**：无脚本、无评测运行、无报告；issue #72 的 OPEN/CLOSED 状态以远端为准（本文件不声称已关闭） |
+| 创建者 | `github-operator`（已由主 agent 标记“可发布”并于 2026-11-10 完成创建） |
+| 创建后动作 | ✅ 已回填编号/URL，并已将文件由 `docs/issues/proposed-b1-5b-tool-routing.md` 改名为 `docs/issues/issue-72-b1-5b-tool-routing.md`（下一步：实施并产出报告后才更新评测结果） |
 
 ### 待确认项
 
 | ID | 待确认 | 归属 | 状态 |
 | --- | --- | --- | --- |
-| `OPEN-b1` | 交付形态任务级成功率门槛（建议 ≥90%） | 用户/oracle | 🟡 待定 |
+| `OPEN-b1` | 交付形态任务级成功率门槛 | 用户/oracle | 🟢 **已关闭（2026-11-10 主 agent）**：**≥90%**；G0 的 58% 不得交付 |
 | `OPEN-b2` | 端到端 p95 目标（D8：先实测后定） | 实测后定 | 🟡 待测 |
 | `OPEN-b3` | 别名映射词表（中文类型词、`Sci-Fi`↔`Science Fiction`）与维护者 | 实现时定 | 🟡 待定 |
-| `OPEN-b4` | **G3** 是否纳入本期（**G1 已必做，不在本项内**） | 主 agent | 🟡 待定 |
+| `OPEN-b4` | **G3** 是否纳入本期（**G1 已必做，不在本项内**） | 主 agent | 🟢 **已裁定（2026-11-10）**：**本期可选 / 不要求**，未做写“未测” |
 | `OPEN-b5` | `same_primary_genre_only` 保留与否（`ai-user-workflows.md` 已给确定性定义：seed 的字典序首个 genre） | oracle | 🟡 待复核 |
 | `OPEN-U3` | 60 条标注人 / 复核人 | 主 agent | 🟡 待指派 |
+
+> **issue #72 已建后再看剩余未决**：`OPEN-b2`（p95 目标，需实测）、`OPEN-b3`（别名词表）、`OPEN-b5`（`same_primary_genre_only` 复核）、`OPEN-U3`（标注人）均属**实施期**待定项，不影响 issue 已创建的事实，也**不得**被写成已解决。
 
 ### 发布正文自检
 
@@ -146,4 +150,4 @@ Two decisions frame the work and are not re-opened here: users ask about **movie
 - [x] AC-2 条件化已解除（第二个 embedding 模型与本 issue 无关；本 issue 明确不碰 embedding）
 - [x] AC-9 写"MCP 端点 N/A；若引入另立安全验收"
 - [x] 无虚构编号、无端点地址、无 token/密钥
-- [x] 无"评测已运行/阈值已达标/oracle 已复核"表述
+- [x] 无“评测已运行/阈值已达标/oracle 已复核”表述；正文只将阈值写作 **agreed ≥90%**（已批准），不写“待定/待确认”
