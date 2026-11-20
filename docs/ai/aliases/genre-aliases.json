@@ -1,6 +1,6 @@
 {
   "$comment": "B1.5c genre alias table. Catalog-derived only: every alias target is one of the 56 values of filter_movies.genres[].items.enum (SELECT DISTINCT name FROM genres ORDER BY name). No external data source, no hand-written long-tail mapping. Asserted by scripts/eval/check_schema.py.",
-  "aliases_version": "b1-5c-aliases/v1",
+  "aliases_version": "b1-5c-aliases/v2",
   "created": "2026-11-19",
   "source": "fabflix-mysql:3307/moviedb genres table (56 distinct names) + the B1.5b GENRE_ALIASES vocabulary that this file replaces; the additions Fantasy/History/Sport/War and the Musical/Music split are plan §5.1/B15c-5 decisions",
   "semantics": {
@@ -9,7 +9,8 @@
     "unsupported": "enum values with no alias. They stay in the enum (they are real catalog values) but must never receive a hand-written alias and must never appear in a canonical group; mapping them would silently route users into long-tail/porn rows (scout §1.1/§4.1)."
   },
   "canonical_groups": [
-    ["Sci-Fi", "Science Fiction"]
+    ["Sci-Fi", "Science Fiction"],
+    ["Music", "Musical"]
   ],
   "aliases": {
     "动作": ["Action"],
@@ -31,6 +32,7 @@
     "crime": ["Crime"],
     "纪录片": ["Documentary"],
     "documentary": ["Documentary"],
+    "documentaries": ["Documentary"],
     "剧情": ["Drama"],
     "drama": ["Drama"],
     "家庭": ["Family"],
@@ -117,7 +119,8 @@
   "notes": [
     "B1.5b reported 43 word forms / 17 alias targets and left 39 enum values unmapped. B1.5c adds Fantasy, History, Sport and War (the four genres the frozen 75 never exercised; 492/215/103/125 rows), splits Musical (139 rows) from Music (619 rows) and makes Science Fiction a variant of Sci-Fi, so 39 = 5 promoted to targets + 1 promoted to a canonical variant + the 33 names below.",
     "unsupported is asserted to equal (56 enum values - alias targets - canonical group variants): check_schema.py recomputes it, so an enum change or a new alias cannot leave this list stale.",
-    "Alias targets must never be an unsupported name and must never appear in canonical_groups' variant positions; both are asserted.",
-    "Chinese director/genre words that are transliterations (e.g. 希区柯克) are deliberately absent: person normalization is catalog-derived only (person-normalization.json) and genre aliases must not invent names."
+    "Alias targets must never be an unsupported name (asserted). A target may itself be a canonical group variant: the B1.5e Music/Musical group folds the `musical(s)` target into the `Music` key without making it unsupported.",
+    "Chinese director/genre words that are transliterations (e.g. 希区柯克) are deliberately absent: person normalization is catalog-derived only (person-normalization.json) and genre aliases must not invent names.",
+    "B1.5e: `Music` and `Musical` share one canonical group (a user word for either denotes one family; the catalog enum stays split at 619 / 139, so this is a recall expansion, not an equivalence), and `documentaries` is the only plural word form added (plan §4 F-3/F-4)."
   ]
 }
