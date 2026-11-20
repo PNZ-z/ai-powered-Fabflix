@@ -651,6 +651,12 @@ def check_genre_aliases(alias_doc: dict, schema_doc: dict) -> list[str]:
             )
     if not any({"Sci-Fi", "Science Fiction"} <= set(group) for group in groups):
         errors.append("genre-aliases: 'Sci-Fi' and 'Science Fiction' must share a canonical group")
+    # B1.5e (R-1): `musical`/`music` user words denote one family. The catalog enum stays split
+    # (139 / 619), so the merge is the canonical key's job and the group must be keyed on `Music`.
+    music_group = next((group for group in groups if {"Music", "Musical"} <= set(group)), None)
+    if music_group is None or music_group[0] != "Music":
+        errors.append("genre-aliases: 'Music' and 'Musical' must share a canonical group keyed on "
+                      "'Music'")
     return errors
 
 

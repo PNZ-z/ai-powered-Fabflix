@@ -1,0 +1,155 @@
+# [B1.5e] Fix the routing/execution gaps B1.5d exposed and land `R-1`/`R-2`（**🟢 已创建 / issue #78 / 实现完成 / 待 PR**）
+
+> **状态：🟢 实现完成 / 待 PR（r3）。** GitHub issue [#78](https://github.com/PNZ-z/ai-powered-Fabflix/issues/78) 已创建；oracle 3 项 P1 已闭合；`OD-1`…`OD-7` 已裁定（`OD-1` 实施中细化为 **③b2**）；用户已授权 B1.5e（"a"）；worker 已实现、三路 reviewer 意见已处理、测试与回归已实跑。**待 PR**（未提交、未推送）。
+>
+> | 元数据 | 值 |
+> | --- | --- |
+> | 文件类型 | `docs/issues/issue-78-b1-5e-routing-gap-fixes.md`（规范记录；已创建） |
+> | 计划来源 | `docs/plans/b1-5e-routing-gap-fixes.md`（**r3**：实现完成后回填 `F-5`/`OD-1` = ③b2 + `Q12` 例外、`T-*`/AC 实测数字） |
+> | 实现状态 | 🟢 **实现完成 / 待 PR**：in-sample `G1` **67/75 → 70/75**（routing 73 → **74**/75）；自测 **43 → 61** checks / 75 sentinels / 0 problem；4 个 checker 全绿；B1.5c held-out `G1` **28/30**（`H01`/`H16`）；B1.5d `G1` **28/30**（`B01`/`B14`）。**唯一回归 `Q12`（主 agent 批准）**；`Q57` 仍失败（`OPEN-C3`）。报告 = `docs/ai/reports/b1-5e-routing-gap-fixes.md` |
+> | 前序 | **#74（OPEN，保持 OPEN）** — `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`；#76 **已 CLOSED**（B1.5d）；报告 `docs/ai/reports/b1-5d-blind-holdout.md` |
+> | 目标 milestone | **#3 `Phase 3 — AI-powered platform`** |
+> | Labels | **无** |
+> | 关联关键词 | 正文用 **`Refs #74`**；**不含** 任何 closing keyword（`Closes`/`Fixes`/`Resolves`）——PR 也不使用 closing keyword |
+> | 审批状态 | 🟢 **主 agent 已批准发布**（r2）；实施中新增的 **③b2 + `Q12` 例外** 也已由主 agent 明确批准（r3） |
+> | 不声称 | 不声称 B1.5f 已生成/已冻结/已运行（**本轮均未做**）；不声称 `G1-T` 达标或已泛化；不声称 #74 可关闭；不声称生产代码有任何改动；本 issue 的每条 AC 都是 **in-sample 回归证据，不是门槛** |
+
+---
+
+## GitHub issue title
+
+```
+[B1.5e] Fix the routing and execution gaps exposed by the B1.5d blind holdout, and land R-1/R-2
+```
+
+## GitHub issue body
+
+````markdown
+## Goal
+
+The B1.5d blind holdout — 30 cases that never informed rule development — measured **`G1-T` (cold) 25/30 = 83.3%** against a **≥27/30** gate, i.e. **FAIL** (report `docs/ai/reports/b1-5d-blind-holdout.md`). Three of the five failures are genuine gaps in the evaluation harness's routing/execution layer; two are pre-declared probes whose root causes are two semantic decisions (`R-1`, `R-2`), now settled by the owner and implemented here.
+
+This issue (a) fixes those gaps inside the **evaluation harness only**, (b) lands the `R-1`/`R-2` rulings, and (c) proves the fixes with the self-test suite plus **in-sample regression only**. It deliberately **does not** claim generalisation, and it does **not** generate, freeze or run the new blind set: the gate can only be answered by **B1.5f**, which is separate follow-up work created by a different session after this issue lands.
+
+Nothing here changes production code, the tool contract, the golden-set schema, any threshold or denominator, or the state of #74.
+
+## Background (measured, not assumed)
+
+**B1.5d result.** `G1-T` (cold) 25/30; `G1` baseline 23/30; the five `G1-T` failures are `B10`, `B22`, `B23`, `B26`, `B27`; cold/warm/replay agree case by case. Frozen snapshot: 21,087 titles (`db_snapshot_hash 8b16c047…f925`), ratings only from 2001.
+
+**The five root causes, verified against the code (two B1.5d wordings are corrected here):**
+
+1. **`B10` — out-of-catalog requests are not refused.** `REFUSAL_RULES` (`scripts/eval/tool_eval.py:276`) covers only `plot`/`transaction`/`internal`/`external`; there is no box-office/budget/studio/composer/award vocabulary, so `detect_refusal` returns `None`, the title `《The Lion King》` is picked up by `TITLE_PATTERNS[0]`, and the request is "answered" by a title search. This contradicts the product contract (`docs/architecture/ai-user-workflows.md` §R4-1 lists 获奖/票房 as must-refuse).
+2. **`B22` — `R-1`, the `Musical`/`Music` split.** `genre-aliases.json` maps `musical(s) → ["Musical"]`, while the frozen annotation convention (Q48/B1.5a, and the B1.5d probe) is `Music`. The canonical-group list holds only `["Sci-Fi","Science Fiction"]`, so `slots_match` cannot fold the two.
+3. **`B23` — `R-2` plus a title-extraction bug.** `TITLE_PATTERNS` matches `(?:like|love|loved)` but **not `liked`**, so `I really liked Trainspotting, can you find something similar?` falls through to the last-resort branch, which searches `EN_TITLE_RUN` **from the beginning of the sentence** → `seed_title = "I really liked Trainspotting"` → 0 rows and `find_similar_movies` is never called. Behind that, `run_g1`'s seed hop only ever forwards text-derived constraints, so a similar query whose text declares nothing has no narrowing at all (`R-2`).
+4. **`B26` — genre words inside a title leak into the constraints.** **Correction to the B1.5d report:** the executor does *not* AND the seed's own genres into `WHERE` (`_similar` builds `where = [m.id <> seed] + constraint_sql(constraints)` and uses seed genres only for `overlap` ranking). The real cause is that `extract_genres` runs over the whole sentence, so `The Addams Family - horror films from 1991 to 1992` yields `["Family","Horror"]`, and `Family ∧ Horror ∧ 1991-1992 = 0`. **An "explicit constraints win" change alone cannot fix this case.**
+5. **`B27` — plural genre nouns.** The alias table has `documentary` but not `documentaries`; `alias_pattern` matches Latin terms on word boundaries, so `documentaries` yields nothing and `recommend_movies` loses `preferred_genres`. Only `documentaries` is added here — other plurals are deliberately out of scope (see Scope `F-3`).
+
+**Correction on apparent passes.** `B28` (`Which studio released Jaws?`) and `B29` (`Who composed the score for Vertigo?`) did **not** hit a refusal rule — no such markers exist. They fell through to `{"action":"clarify"}` with no tool calls, and `refuse_no_tool` only requires "no tools called". They passed by accident, exactly like `B19`; `B10` failed only because it carried a `《…》` title. Turning "out of scope" from an accident into a rule is part of this issue, and `B19`/`B28`/`B29` must **stay green** afterwards.
+
+**Contract fact that shapes the fix.** `find_similar_movies` exposes only `movie_id`, `same_primary_genre_only`, `limit` — there is **no** genre/year parameter (`docs/ai/tool-schema.b1-5.json`, `b1.5-tools/v3`, `schema_hash 712c0e34…474a`). Derived narrowing therefore has to live in the evaluation stand-in's server-side behaviour; this issue does **not** bump the contract and must not pretend production already behaves that way.
+
+**Catalog evidence for the two decisions (read-only SQL, snapshot 21,087):** `Music` 619 / `Musical` 139; `1948–1950 ∧ genre ∈ {Music, Musical}` = **25** vs `∧ Music` 24 vs `∧ Musical` 1 (the extra row is `ChW4`); `1990s ∧ Romance ∧ Music` 4 vs `∧ Musical` 0; `1991–1992 ∧ Horror` 23 (seed excluded → 22); `1960–1969 ∧ Documentary` 25; `Trainspotting` = Comedy+Noir/1996 → `Comedy∧Noir ∧ 1990s` 12 (seed excluded → 11).
+
+## Scope
+
+> Item IDs `F-1`…`F-5` match the plan's fix items. Verification and reporting are labelled `E-1`/`E-2` here because the plan's `F-6` is the **rejected** generic director-catalog guard and `F-7` is the plan's tests/report anchor.
+>
+> **B1.5f is not in this issue.** This issue does not generate, freeze, run or reference the next blind set (no fixture path, no `blind_version`); the gate can only be answered by B1.5f, created after this lands by a session that did not write these fixes.
+>
+> **Owner ruling refinement (approved during implementation):** `R-2` ships as **③b2** — derive only when the seed has **exactly two** canonical genres and the text states no director — because the original "all seed genres, no ≤2 cap" rule scored 67/75 and regressed `Q12`/`Q36`/`Q55`/`Q56`, and "≤2 genres" scored 69/75 (regressing `Q12`/`Q56`). **`Q12` is the single owner-approved regression** (approved as a named exception, not a general relaxation).
+
+- [ ] **`F-1` Refuse out-of-catalog requests** — add an `out_of_catalog` class to `REFUSAL_RULES` (`tool_eval.py:276`): Chinese `票房`/`预算`/`发行公司`/`配乐`/`作曲`/`奥斯卡`/`获奖`/`奖项`; English `box office`/`grossed`/`budget`/`distributor`/`which studio`/`who composed`/`composer`/`academy award`/`oscars`. **Excluded on purpose:** `score` (collides with rating), `music` (collides with the genre), `released` (would hit "movies released in 1999"), bare `studio` (would hit "Studio Ghibli"). No routing-precedence change is needed — `detect_refusal` already runs first.
+  **Collision surface (precise, not "zero collisions"):** a fresh grep shows **zero** marker occurrences across the 105 existing fixtures (75 in-sample + 30 B1.5c held-out; the 5 `negative.b1-5.json` entries are not scored), and **exactly four** occurrences in the 30 B1.5d cases — `B10` (票房), `B19` (奥斯卡), `B28` (which studio), `B29` (who composed). All four are annotated `expected_refusal=true`, so hitting them is the **intended** behaviour. `B19`/`B28`/`B29` must still pass afterwards (they move from "fall through to clarify" to a real refusal, which `refuse_no_tool` accepts); `B10` must flip to a pass.
+- [ ] **`F-2` Stop genre words inside a title from becoming constraints, and fix seed-title extraction** — extend the verb list to `(?:like|liked|love|loved|enjoyed|watched)`; rewrite `extract_title`'s last-resort branch to search **after** the marker and to reject sentence-shaped matches (stopwords/imperatives, genre aliases), with the capitalisation guard evaluated from the first token of the match **in the original text** — the run pattern constrains only its first token to uppercase and lets later tokens be lowercase, and that last-resort `re.search` call passes no `IGNORECASE` flag, so neither the flag nor a folded match string can decide this — so that **both** sentence classes return `None`: `Show me history films from 1998 to 1999` (today it returns the whole sentence and is only harmless because that case routes to `filter_movies`) and `find …`-style requests; then mask the **returned title string** in the text before running `extract_genres`/`extract_years`/`extract_rating`. Masking by `match.group(1)`'s span is wrong: the raw capture of the `B26` sentence includes ` - horror films from 1991 to 1992`, so span-masking would delete the case's real constraints. Fix order is mandatory: last-resort guard first, masking second, or `H23` regresses. **Both `B26` and `H23` must be asserted, not just `B26`.**
+- [ ] **`F-3` Plural genre nouns — `documentaries` only, plus a demonym stoplist** —
+  (a) add exactly one alias, `"documentaries": ["Documentary"]`, to `docs/ai/aliases/genre-aliases.json` (data layer, no hidden plural rule in code). **Do not** add `dramas`/`horrors`/`mysteries`/`romances`/`biographies`/`animations`/`fantasies`/`histories`/`adventures`/`crimes`/`wars`/`families`/`actions`: `EN_GENRE_NOUNS` is built from **all** ASCII alias keys, so every extra plural widens the `DIRECTOR_PATTERNS[5]` lookahead and turns another `Recommend some Italian <plural> …` into `director="Italian"` → `1 = 0` → 0 rows. Other plurals are separate work.
+  (b) **Behaviour, not just a locked assertion**: add a router-local `DEMONYM_STOPLIST` constant of nationality/language adjectives (`italian`, `french`, `japanese`, `chinese`, `korean`, `german`, `british`, `english`, `american`, `indian`, `spanish`, `mexican`, `canadian`, `australian`, `russian`, `soviet`, `swedish`, `danish`, `norwegian`, `polish`, `brazilian`, `argentine`, `iranian`, `israeli`, `turkish`, `greek`, `egyptian`, `thai`, `african`, `european`) and make `extract_director` skip a match whose normalised value is on that list (continuing to later patterns; `None` if all are skipped). Result: `Recommend some Italian documentaries from the 1960s` yields `genres == ["Documentary"]` and **no director slot**, so the 1960s documentary pool (25 rows) is not zeroed by `1 = 0`. The same list also repairs the pre-existing `Recommend some Italian comedies …` case at no extra cost, and an assertion covers it. The list lives in code on purpose: `genre-aliases.json`'s key set is tightly constrained by `check_schema.py`'s `unsupported = enum − targets − variants − keys` arithmetic, and demonyms are router stopwords, not genre vocabulary.
+  (c) **No generic director-catalog guard.** Dropping a resolved `director` slot whenever `matching_directors() == []` is a semantic change ("ignore any name that is not a director") and is out of scope; `F-3b` only stops the demonym class.
+- [ ] **`F-4` `R-1` — one canonical group `["Music","Musical"]`** — user words `musical`/`music` are one family while the **catalog enum stays split** (139 / 619); retrieval expands to both members. Add the group + a `notes` entry and bump `aliases_version` to **`b1-5c-aliases/v2`** (bump the number only: `check_schema.py:582` and `check_heldout.py:315` hard-code `^b1-5c-aliases/v[0-9]+$`, and neither regex changes). Keep alias targets, `check_schema.py`'s `MUSICAL_SPLIT`, and the `route: musical != music` self-test assertion unchanged. Add a "`Music`/`Musical` share a group" assertion to `check_schema.py` and a `canonical_genres(["Musical"]) == ["Music"]` self-test. **Do not** re-annotate `Q48` or `B22`.
+  **`B22` must be proved, not asserted verbally**: a recorded SQL statement (`1948–1950 ∧ genre ∈ {Music, Musical}` = 25; `∧ Music` = 24; `∧ Musical` = 1 → `ChW4`), the `_filter` top-5 listing (`ORDER BY m.title, m.year LIMIT 5`), the fact that **all five are `Music` rows and `ChW4` is not among them**, and therefore `acceptable_hit = true` against the frozen 24-id set. `Q48` 4 rows and `B05` 5 rows stay unchanged. **Semantics to state plainly: this is a recall expansion, not an equivalence** — any `filter_movies{genres:["Music"]}` now also returns `Musical` rows (619 + 139) — and **B1.5f's `R-1` probe must be annotated on the union (25 rows), not B1.5d's 24.**
+  Record the alias file's old SHA **`f7126f022e69b2748a1a33407505bd22f62e366d2edf916e752c4ba642ecc203`** (`b1-5c-aliases/v1`) and the new SHA in the report, and append a line to the alias index in `docs/ai/README.md`.
+- [ ] **`F-5` `R-2` — derived constraints with explicit-key precedence (shipped as ③b2)** — in `run_g1`'s seed hop (not inside `_similar`, whose "narrow by the given constraints" semantics the self-test depends on): derive **only when** the text states no `director` **and** the seed has **exactly two** canonical genres — then, if the text names no `genres`, derive `canonical_genres(seed genres)`, and if it names no `year_from`/`year_to`, derive the seed's **whole decade**. Merge as `effective = {**derived, **constraints}` so an explicit key always wins; keep `narrow_seed_candidates` on text constraints only. Seeds with 1 genre and seeds with 3+ genres derive nothing (this is what keeps the same-director cases `Q35`/`Q56`/`Q55` green). **An empty derived pool does not fall back to "rank without narrowing"** — it fails honestly. Record `derived_constraints`, `effective_constraints` **and `seed_genre_count`** in the run record and leave `route` untouched, so a reviewer can tell text-derived keys from seed-derived ones and see how narrow the seed was. List empty-pool cases separately in the report. Read **only** route + the seed catalog row — never an annotation (`--assert-no-annotation-read` must stay green).
+  **Why the "exactly two" gate (measured, owner-approved refinement):** the original "all seed canonical genres" rule scored 67/75 and regressed `Q12`/`Q36`/`Q55`/`Q56`; a "≤2 genres" rule scored 69/75 and still regressed `Q12`/`Q56`; the shipped ③b2 rule scores **70/75** and regresses only `Q12`.
+  **Zero-regression gate (with the one named exception):** `Q16`, `Q35`, `Q36`, `Q55`, `Q56` must stay green — they do. **`Q12` is the single approved regression:** it and `Q34` produce byte-identical route artifacts (`{seed_title, result_constraints: {}}`, both seeds have 2 canonical genres) while the frozen annotations disagree (`Q12` = same director, `Q34` = shared genre × window), so no text-only signal can separate them; this makes `Q12` an annotation inconsistency rather than a code defect. Any **second** similar regression still stops the work for an owner decision instead of being reported and carried on.
+- [ ] **`E-1` Regression + evidence (in-sample only)** — run the self-test suite (every existing assertion must stay green and their count must not drop; baseline **43** semantic checks + **75** annotation sentinels + **24** independence utterances from the pre-fix run, **61** checks / 47 utterances after), `check_schema.py --quiet`, `check_golden.py --quiet`, `check_heldout.py`, the full in-sample `G1` (75 cases, before/after side by side, every verdict change listed — **including the before/after state of each of `Q12`/`Q16`/`Q35`/`Q36`/`Q55`/`Q56`**), and the B1.5c held-out as **regression only**. `check_blind_holdout.py` is **not** modified.
+  **Shipped assertion coverage:** `A1`–`A11` are covered by **18 new labels** (`A1`+`A2` and `A5`+`A6` are each one label), `A12` (empty derived pool) is **not** implemented — no stable empty-pool sample exists, so the "no fallback" path has structural evidence only and is reported as a residual risk.
+- [ ] **`E-2` Report** — `docs/ai/reports/b1-5e-routing-gap-fixes.md`: the five gaps and what changed for each; the `R-1`/`R-2` rulings and their **measured** blast radius; the `B22` SQL + top-5 + `acceptable_hit` evidence; the in-sample table with every added/removed pass and the per-case state of `Q12`/`Q16`/`Q35`/`Q36`/`Q55`/`Q56`; the self-test/checker output; `aliases_version = b1-5c-aliases/v2` with old SHA `f7126f02…c203` → new SHA; `derived_constraints`/`effective_constraints`/`seed_genre_count` samples with empty-pool cases listed separately; the statement that `R-1` is a **recall expansion, not an equivalence**; and an explicit statement that `G1-T` generalisation is **still unmeasured**, belongs to B1.5f, and that this issue neither generates, freezes nor runs B1.5f.
+
+## Non-goals
+
+- **No production change**: no `src/main/**`, no `pom.xml`, no CI, no DB writes, no MCP, no migrations. The similar/recommend executor and the title resolver remain evaluation stand-ins.
+- **No contract or schema change**: `docs/ai/tool-schema.b1-5.json`, `contract_version b1.5-tools/v3`, `schema_hash`, and `docs/ai/golden-set.schema.json` stay byte-identical. Derived narrowing is a server-side behaviour of the stand-in and is reported as such.
+- **B1.5f is out of this issue, entirely.** This issue does **not** generate its cases, does **not** freeze them, does **not** run it, and does **not** reference any B1.5f fixture or `blind_version`. The cases are created after this lands, by a session that did not write these fixes, and are then run once, cold. This issue also must not re-run B1.5d as a gate; B1.5d's 25/30 stays frozen exactly as reported.
+- **No edits to B1.5d's fixtures, plan, report or `check_blind_holdout.py`** (its `BLIND_VERSION = b1-5d-blind/v1` and its `R-1` probe rule are that task's evidence; parameterising them — and switching the probe to the union annotation — belongs to B1.5f).
+- **No other plural genre nouns**, and **no generic director-catalog guard** (see Scope `F-3`).
+- **No threshold, denominator or annotation change**: the gate stays `G1-T` ≥ 27/30 on `/30`; no `/28` figure may be used to claim a pass; `Q48`/`B22` annotations and the B1.5a–B1.5d fixtures are untouched.
+- **No architecture-document change.** The production meaning of derived narrowing is written in the report only; `docs/architecture/` is revisited after B1.5f.
+- **No change to #74's state** and no claim that B1.5c/B1.5d/B1.5e reached the gate.
+
+## Acceptance criteria
+
+> Every criterion below is **in-sample regression evidence, not a gate**. None of them may be quoted as evidence of generalisation.
+
+| # | Criterion | How it is verified |
+| --- | --- | --- |
+| 1 | All five gaps have a concrete fix, and the diff touches only `scripts/eval/tool_eval.py`, `docs/ai/aliases/genre-aliases.json`, `scripts/eval/check_schema.py` (group + demonym-related assertions), `docs/ai/README.md` (appended index line) and the new report | diff listing |
+| 2 | `git diff` proves zero change to `src/main/**`, `pom.xml`, CI, the tool contract/`schema_hash`, the golden-set schema, `check_blind_holdout.py`, and every B1.5a–B1.5d fixture, plan and report | diff + hashes |
+| 3 | After masking, the `B26` sentence yields `genres == ["Horror"]` and `years == 1991–1992`; **and** `H23`'s `extract_title` returns `None` with its task outcome unchanged; the last-resort guard is asserted for **both** `Show me …` and `find …` shapes | new assertions + regression record |
+| 4 | An out-of-catalog request refuses with no tool call, and `score`/`music`/`released`/bare `studio` are provably **not** treated as refusal markers | new assertion + negative assertions |
+| 5 | **Only** `documentaries` is added among plurals; it extracts to `Documentary`; `Recommend some Italian documentaries from the 1960s` yields `genres == ["Documentary"]` and **no director slot** (so its 1960s pool is not zeroed), with `Italian comedies` covered by the same assertion; no generic director-catalog guard is implemented | new assertions + diff |
+| 6 | `R-1` lands as the `["Music","Musical"]` canonical group with `aliases_version = b1-5c-aliases/v2` and a `check_schema.py` group assertion; the report carries the **reproducible SQL** (25 / 24 / 1 rows, extra row `ChW4`), the `_filter` top-5 listing (all `Music`, `ChW4` absent) and `acceptable_hit = true`; `Q48` 4 rows and `B05` 5 rows unchanged; the alias file's old SHA `f7126f02…c203` → new SHA is recorded and the `docs/ai/README.md` index line appended; no annotation edited; the report states the change is a **recall expansion, not an equivalence** | SQL + regression + `check_schema.py` output + report |
+| 7 | `R-2` lands as **③b2** (derive only when the seed has exactly two canonical genres and no director slot is stated) with derived-then-explicit precedence, `derived_constraints`/`effective_constraints`/**`seed_genre_count`** visible in the record, an empty derived pool failing honestly (no silent widening) and empty-pool cases listed separately, and `annotation_guard` true on every run | run records + report |
+| 7b | **Zero regression on similar cases, with one named exception:** between the `R-2` before/after runs, no B1.5c in-sample similar case that currently has `task_success=true` becomes a failure — **except `Q12`, which the owner approved** as a single named regression because `Q12` and `Q34` are byte-identical at route level with contradictory frozen annotations. Concretely: `Q16`, `Q35`, `Q36`, `Q55`, `Q56` stay green and `Q12` flips to a failure. A **second** regression still requires adjusting the derivation rule and re-measuring; if it persists, the work stops for an owner decision instead of being reported and continued | before/after table with per-case ✅/❌ |
+| 8 | `B23` and `Q34`/`Q53`/`Q54` pass after the fixes, and failures that remain (`Q57`/`OPEN-C3`) are reported as remaining — these are seen in-sample cases, so they are recorded as regression repairs only, never as generalisation evidence | in-sample table |
+| 9 | Every existing self-test assertion stays green with no drop in count (baseline 43 checks / 75 sentinels / 24 utterances), and all new assertions pass (18 new labels, 43 → 61 checks; `A12` deliberately not implemented) | `tool_eval.py --self-test` output, before and after |
+| 10 | `check_schema.py`, `check_golden.py` and `check_heldout.py` pass after the alias-file change, with **no** change to their `aliases_version` regexes | command output |
+| 11 | The full in-sample `G1` is reported before/after with every verdict change named, including the explicit before/after state of `Q12`/`Q16`/`Q35`/`Q36`/`Q55`/`Q56` | report table |
+| 12 | The B1.5c held-out appears only as a regression note and carries no gate claim; the report states that generalisation is unmeasured pending B1.5f | report wording check |
+| 13 | `B19`, `B28` and `B29` still pass after the refusal change (`expected_refusal=true`, no tool call), and `B10` flips to a pass; markers hit nothing in the 105 existing fixtures and only these four cases in B1.5d | regression table (B1.5d as a seen fixture, no gate) + grep record |
+| 14 | The issue's boundary holds: nothing generates, freezes or runs B1.5f, `check_blind_holdout.py` is untouched, and the repository contains no reference to a B1.5f fixture | `git diff --stat` + `grep -r "b1-5f"` |
+| 15 | Every acceptance statement is worded as in-sample regression; no text claims B1.5c/B1.5d/B1.5e "met the gate" or generalised | report wording check |
+
+## Dependencies
+
+- The owner rulings on `R-1` (canonical group `["Music","Musical"]`, `aliases_version = b1-5c-aliases/v2`) and `R-2` (derived constraints **only when the seed has exactly two canonical genres and no director slot is stated**, whole decade, explicit-key precedence, **no** fallback on an empty pool — the ③b2 refinement approved during implementation), plus `documentaries`-only plus a demonym stoplist for the `B27` fallout — all recorded in plan §4/§5/§10.
+- Read-only MySQL (`fabflix-mysql`, host 3307, `moviedb`) for the DB-backed assertions and for reproducing the row counts quoted above.
+- The frozen B1.5d report/plan (read-only) as the failure record, and `main` @ `b26f35e` as the baseline (`tool_eval.py` diff is the thing being reviewed).
+- B1.5f is a **successor, not a dependency**: this issue can land without it, and landing it does not imply the gate is met.
+
+## Risks
+
+- **Marker collisions in a substring-matching refusal table.** `REFUSAL_RULES` has no word boundaries, so a short marker can silently refuse legitimate filters; hence the deliberately excluded words and the fixture-wide grep. The four B1.5d hits are intended, and `B19`/`B28`/`B29` must stay green.
+- **Masking can remove the very constraints a case needs.** Masking by the raw match span would delete `horror`/`1991-1992` from the `B26` sentence; only the post-`TITLE_CUTS` title string may be masked, and the last-resort title guard must land first or `H23` regresses.
+- **`R-1` is a recall expansion, not an equivalence.** Any `filter_movies{genres:["Music"]}` now also returns `Musical` rows (619 + 139). `B22`'s verdict stability must be shown by SQL + top-5, not asserted, and B1.5f's probe must be annotated on the union.
+- **Per-key derivation can make existing cases narrower than before.** `Q12`/`Q16`/`Q35`/`Q36`/`Q55`/`Q56` all passed before the change with exactly the constraint shapes derivation touches. The shipped ③b2 gate keeps five of them green; **`Q12` is the one regression the owner approved** (AC 7b), and **any second one** would block the work. Seeds with three or more genres derive nothing, so the empty-pool risk is structurally avoided rather than handled — a 2-genre seed whose pool ANDs to empty still fails honestly, with no fallback.
+- **The `documentaries` fix touches a pre-existing director bug.** `EN_GENRE_NOUNS` is built from all ASCII alias keys, so any added plural widens the `DIRECTOR_PATTERNS` lookahead. Hence one plural plus a demonym stoplist, not a batch of plurals and not a general director-catalog guard.
+- **A demonym stoplist could block a real director surname.** Members are full nationality/language adjectives, and the full self-test + in-sample regression must stay green; any affected existing case is treated as a regression and reported before proceeding.
+- **Alias-file hashes change,** so run fingerprints are not comparable with B1.5c/B1.5d; the report records old and new SHAs and B1.5f must freeze a fresh baseline.
+- **Fix-then-rerun-on-B1.5d would destroy the evidence.** B1.5d becomes a seen fixture the moment its failures inform rule changes; the gate run must be B1.5f only.
+- **Scope creep.** Generating or freezing B1.5f cases, tuning thresholds, editing #74, changing the schema, adding further plurals, adding a director-catalog guard, or "fixing" a failure outside the five named gaps all require a separate decision.
+
+## Notes
+
+- Predecessors: `docs/plans/b1-5d-blind-holdout.md` and its report `docs/ai/reports/b1-5d-blind-holdout.md` (§4 failures, §5 probes, §8 next steps); `docs/plans/b1-5c-tool-routing-fixes.md` for the inherited gate and semantics.
+- Plan: `docs/plans/b1-5e-routing-gap-fixes.md` (§3 root causes incl. the two corrections, §4 `F-1`…`F-7`, §5 rulings, §6 test plan, §7 B1.5f boundary, §10 settled decisions, §11 revision log).
+- The executor and the resolver are evaluation stand-ins; no number in this issue is a statement about production behaviour.
+- `Refs #74`: the `R-1`/`R-2` semantics landed here originate there. This issue does **not** close, resolve or supersede #74, and makes no claim about its gate.
+````
+
+## Internal tracking
+
+> 以下内容**不发布**到 GitHub。
+
+| 项 | 值 |
+| --- | --- |
+| 来源 | 用户需求（B1.5e = 修 B1.5d 暴露的路由/执行缺口 + 落码 `R-1`/`R-2`；用户已授权选项 **"a"**）+ B1.5d 报告 §8 + scout `.pi/artifacts/scout-b1-5e.md` + oracle `.pi/artifacts/oracle-b1-5e-review.md` |
+| 关联计划 | `docs/plans/b1-5e-routing-gap-fixes.md`（**r3**：P1-1/P1-2/P1-3 + P2 已回写；`OD-1`…`OD-7` 已裁定；实施中 `OD-1` 细化为 ③b2） |
+| 关联 issue | `Refs #74`（**保持 OPEN**）；#76 已 CLOSED（B1.5d 报告完成）；本 issue = **#78**（不写 closing keyword） |
+| 实现状态 | 🟢 **实现完成 / 待 PR**（2026-11-21）。实际改动：`scripts/eval/tool_eval.py`、`docs/ai/aliases/genre-aliases.json`（`b1-5c-aliases/v2`，`ab8e07dd…c104`）、`scripts/eval/check_schema.py`（组断言）、`docs/ai/README.md`（别名 v2 行 + 报告索引行）、报告 `docs/ai/reports/b1-5e-routing-gap-fixes.md`。**零改动**：`src/main/**`、`pom.xml`、CI、`docs/ai/tool-schema.b1-5.json`、`schema_hash`、`docs/ai/golden-set.schema.json`、`check_blind_holdout.py`、B1.5a–B1.5d 全部 fixture/计划/报告（B1.5d fixture/checker SHA 未变） |
+| 实测结果 | in-sample `G1` **67/75 → 70/75**（routing 73 → 74/75；similar 11/15 → 13/15；filter 19/20 → 20/20）；变绿 `Q34`/`Q48`/`Q53`/`Q54`；变红 **仅 `Q12`（主 agent 批准）**；`Q16`/`Q35`/`Q36`/`Q55`/`Q56` 保持 ✅；`Q57` 仍 ❌（`OPEN-C3`）；自测 **43 → 61** checks、75 sentinels、**47** independence utterances、0 problem；4 个 checker 全绿；B1.5c held-out `G1` **28/30**（`H01`/`H16`，`H23` ✅）；B1.5d `G1` **28/30**（`B01`/`B14`，仅记录，不作门槛） |
+| 已裁定的 7 项 + 细化 | `OD-1` 派生池空不回退 + **③b2（恰好 2 类型才派生、无 director 槽）** + 整十年 + `seed_genre_count`；`OD-2` group `["Music","Musical"]` + `b1-5c-aliases/v2` + 不改标注 + 记录新旧 SHA；`OD-3` 只加 `documentaries` + demonym stoplist 最小行为修复 + 负例断言，不做通用 director guard；`OD-4` B1.5e 不生成/冻结/运行 B1.5f；`OD-5` 不引用 B1.5f fixture；`OD-6` 派生语义写报告、架构文档等 B1.5f 后；`OD-7` `liked`/`enjoyed`/`watched` + "从句不是片名"双断言（落地时还加了 `FUNCTION_WORDS`/`GENRE_TITLE_WORDS` 守卫与汉字粘连边界修复） |
+| 超出原文字的实现（已由 reviewer 核对并写入报告） | ① `F-2` 动词语句守卫（`movies I enjoyed in the 1990s`、`I enjoyed comedy films from the 1990s` 不再误抓）；② 汉字粘连边界（`查一下The Matrix`）；③ 既有断言 `route: musical != music` 改为**数据层**断言（`extract_genres` 折 canonical 后原断言不可能成立），行为由新断言 `route: musical and music share one canonical key` 锁定；④ 新增 18 个 label（非计划里的 11–12） |
+| 远端备注（未执行） | 远端 #78 的**正文仍是 r2 表述**（`F-5` = "all seed genres, no ≤2 cap"、AC 7b = "none may regress"）。本文已改为实际 ③b2 + `Q12` 例外，但**未**发起任何远端编辑；是否用新正文覆盖远端由主 agent 决定（可选、不影响代码交付）。PR 正文必须以本文为准 |
+| 未验证项 | ① `A12`（空派生池失败路径）**未实测**，只有结构依据；② B1.5f **未生成/未冻结/未运行**；③ 生产语义未实现（派生收窄只在评测替身里），`docs/architecture/` 未改；④ `FUNCTION_WORDS` 对 `I loved Who Framed Roger Rabbit` 这类片名的新窄边界无 fixture 覆盖 |
+| 不发布内容 | 本节、计划 §10/§11 的内部证据与行号、任何本文件内部的未验证数字 |

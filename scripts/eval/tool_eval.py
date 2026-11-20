@@ -281,6 +281,12 @@ REFUSAL_RULES = (
     ("internal", ("项目", "开发文档", "用了什么模型", "系统提示", "工具定义", "system prompt",
                   "tool definition", "which model")),
     ("external", ("豆瓣", "imdb", "rotten tomatoes", "烂番茄")),
+    # B1.5e F-1: fields the catalog cannot answer (R4-1 lists 获奖/票房 as must-refuse). Markers are
+    # whole phrases matched as substrings, so "score" (rating), "music" (genre), "released"
+    # ("released in 1999") and bare "studio" ("Studio Ghibli") are deliberately absent.
+    ("out_of_catalog", ("票房", "预算", "发行公司", "配乐", "作曲", "奥斯卡", "获奖", "奖项",
+                        "box office", "grossed", "budget", "distributor", "which studio",
+                        "who composed", "composer", "academy award", "oscars")),
 )
 SIMILAR_MARKERS = ("类似", "相似", "像", "那种", "这种", "那样", "这样", "一样的",
                    "like", "similar", "loved", "love ")
@@ -1022,6 +1028,10 @@ def extract_rating(text: str) -> float | None:
 TITLE_PREFIX_MARKERS = (r"以\s*[A-Z][A-Za-z0-9'.:!/-]*(?:\s+[A-Za-z0-9'.:!/-]+)*\s*开头",
                         r"(?:title|name)\s+starts?\s+with", r"titles?\s+that\s+start")
 EN_TITLE_RUN = r"([A-Z][A-Za-z0-9'.:!/-]*(?:\s+[A-Za-z0-9'.:!/-]+)*)"
+# A verb of taste opens a title as often as an ordinary clause ("I liked Trainspotting" vs
+# "movies I enjoyed in the 1990s"), so this pattern is kept separate: ``extract_title`` tests the
+# capture's first token before accepting it.
+TITLE_VERB_PATTERN = r"(?:like|liked|love|loved|enjoyed|watched)\s+" + EN_TITLE_RUN
 TITLE_PATTERNS = (
     r"《([^》]+)》",
     r"(?:called|叫)\s*([A-Za-z][A-Za-z0-9' .:!/-]*?)(?:\s*的|\s*$|\s*\?|，|。)",
@@ -1030,11 +1040,40 @@ TITLE_PATTERNS = (
     r"(?:find|show|get|tell me about)\s+(?:me\s+)?(?:the\s+)?(?:movie|film)\s+" + EN_TITLE_RUN,
     r"(?:movie|film)\s+called\s+" + EN_TITLE_RUN,
     r"(?:something|anything|films?|movies?)\s+(?:like|similar to)\s+" + EN_TITLE_RUN,
-    r"(?:like|love|loved)\s+" + EN_TITLE_RUN,
+    TITLE_VERB_PATTERN,
     r"(?:title|name)\s+starts?\s+with\s+" + EN_TITLE_RUN,
 )
 TITLE_CUTS = (r"\s+[-–—]\s+.*$", r"\s+anything similar.*$", r"\s+similar.*$",
               r"\s*系列.*$", r"\s+this (?:movie|film).*$")
+# The marker that makes a bare Latin run a title candidate when no TITLE_PATTERNS entry matched.
+LAST_RESORT_TITLE_MARKER = r"《|找|查|有没有|想看|is there|find\b|show me"
+# Words that open a request but are never a title. Only the run's first token is tested, so
+# "The Big Lebowski" stays a title while "Show me ..." cannot become one.
+TITLE_STOPWORDS = frozenset({"show", "find", "get", "tell", "me", "i"})
+# A clause word in the first token of a ``TITLE_VERB_PATTERN`` capture means the capture is the
+# rest of the sentence ("movies I enjoyed **in** the 1990s"), not a title. Pronouns are absent:
+# "I, Robot" starts with one.
+FUNCTION_WORDS = frozenset({
+    "a", "all", "an", "any", "as", "at", "be", "been", "but", "by", "for", "from", "had",
+    "has", "have", "how", "in", "is", "it", "its", "my", "of", "on", "our", "she", "should",
+    "some", "that", "the", "their", "them", "this", "those", "to", "was", "were", "what",
+    "when", "where", "which", "who", "why", "with", "your",
+})
+# The same test against the genre vocabulary the alias file already defines: "I enjoyed comedy
+# films from the 1990s" names Comedy, and masking "comedy films from the 1990s" as a title would
+# delete both the genre and the decade from the stated constraints.
+GENRE_TITLE_WORDS = frozenset(GENRE_ALIASES) | frozenset(
+    target.casefold() for targets in GENRE_ALIASES.values() for target in targets)
+# Nationality/language adjectives: "Recommend some Italian documentaries from the 1960s" names a
+# genre, not a director, and a director predicate would turn the request into ``1 = 0``. Kept in
+# the router, not in genre-aliases.json: those keys are genre vocabulary and are asserted against
+# the catalog enum (check_schema.py: unsupported = enum - targets - variants - keys).
+DEMONYM_STOPLIST = frozenset({
+    "italian", "french", "japanese", "chinese", "korean", "german", "british", "english",
+    "american", "indian", "spanish", "mexican", "canadian", "australian", "russian", "soviet",
+    "swedish", "danish", "norwegian", "polish", "brazilian", "argentine", "iranian",
+    "israeli", "turkish", "greek", "egyptian", "thai", "african", "european",
+})
 EN_DIRECTOR_RUN = r"([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})"
 # Genre nouns a "recommend some <Name> <genre> ..." phrase can carry, taken from the alias file so
 # the router keeps no private vocabulary. "recommend some Japanese movies" must not turn
@@ -1059,6 +1098,15 @@ def has_title_prefix(text: str) -> bool:
     return any(re.search(pattern, text, re.IGNORECASE) for pattern in TITLE_PREFIX_MARKERS)
 
 
+def opens_clause(value: str) -> bool:
+    """True when a verb capture starts with a word no title starts with."""
+    tokens = value.split()
+    if not tokens:
+        return True
+    first = normalized(tokens[0])
+    return first in FUNCTION_WORDS or first in GENRE_TITLE_WORDS
+
+
 def extract_title(text: str) -> str | None:
     for pattern in TITLE_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -1067,26 +1115,50 @@ def extract_title(text: str) -> str | None:
         value = match.group(1).strip()
         for cut in TITLE_CUTS:
             value = re.sub(cut, "", value, flags=re.IGNORECASE)
-        return value.strip() or None
+        value = value.strip()
+        if not value:
+            continue
+        # A clause tail is not a title: keep scanning and let the later patterns and the
+        # last-resort branch decide, so the stated genres/years are not masked away below.
+        if pattern == TITLE_VERB_PATTERN and opens_clause(value):
+            continue
+        return value
     # Last resort for a bare Latin title in a lookup request ("找一下 The Big Lebowski 这部片",
-    # "查一下 The Bridge on the River Kwai 这部片").
-    if re.search(r"《|找|查|有没有|想看|is there|find\b|show me", text, re.IGNORECASE):
-        run = re.search(EN_TITLE_RUN, text)
-        if run:
-            value = run.group(1).strip()
-            aliases = {normalized(name) for names in GENRE_ALIASES.values() for name in names}
-            if value and normalized(value) not in aliases:
-                return value
+    # "查一下 The Bridge on the River Kwai 这部片"). The run is searched **after** the marker: a
+    # clause such as "I really liked Trainspotting" must not become a seed title, and a
+    # sentence-shaped run ("Show me history films ...") is not a title at all.
+    marker = re.search(LAST_RESORT_TITLE_MARKER, text, re.IGNORECASE)
+    if not marker:
+        return None
+    run = re.search(EN_TITLE_RUN, text[marker.end():])
+    if not run:
+        return None
+    value = run.group(1).strip()
+    aliases = {normalized(name) for names in GENRE_ALIASES.values() for name in names}
+    first_token = normalized(value.split()[0]) if value.split() else ""
+    # ``EN_TITLE_RUN`` constrains only its first character to ``[A-Z]`` and this search carries no
+    # IGNORECASE, but it can still start inside a word, so the boundary is checked on the original
+    # text rather than on a folded copy.
+    start = marker.end() + run.start()
+    # ``str.isalnum()`` is true for Han characters, but a Han character before a Latin run is a
+    # word boundary in the sense that matters here ("查一下The Matrix"): only a Latin word interior
+    # must reject the match.
+    starts_word = (start == 0 or not text[start - 1].isalnum()
+                   or not text[start - 1].isascii())
+    if value and starts_word and first_token not in TITLE_STOPWORDS \
+            and first_token not in aliases and normalized(value) not in aliases:
+        return value
     return None
 
 
 def extract_director(text: str) -> str | None:
     """Name as typed. The catalog stores Latin director values (``Scorsese``, ``M.Mann``)."""
     for pattern in DIRECTOR_PATTERNS:
-        match = re.search(pattern, text)
-        if match:
+        for match in re.finditer(pattern, text):
             value = match.group(1).strip(" .,")
-            if value:
+            # A demonym in front of a genre noun ("Recommend some Italian documentaries from the
+            # 1960s") is not a director name; skip it and keep looking.
+            if value and normalized(value) not in DEMONYM_STOPLIST:
                 return value
     return None
 
@@ -1098,13 +1170,18 @@ def route_deterministically(case: dict) -> dict:
     category = detect_refusal(text)
     if category:
         return {"action": "refuse", "reason": category, "tool_calls": []}
-    genres = extract_genres(text)
-    years = extract_years(text)
-    rating = extract_rating(text)
     director = extract_director(text)
     title = extract_title(text)
     if title and director and normalized(title) == normalized(director):
         title = None
+    # A genre/year word inside the title is not a stated constraint: "The Addams Family - horror
+    # films from 1991 to 1992" names Horror, not Family. Mask the **returned** title string, not
+    # the raw pattern span - TITLE_CUTS already trimmed the capture to the title itself, so the
+    # rest of the sentence (here "horror ... 1991 to 1992") survives and still counts.
+    masked = text.replace(title, " ", 1) if title else text
+    genres = extract_genres(masked)
+    years = extract_years(masked)
+    rating = extract_rating(masked)
     constraints: dict = {}
     if genres:
         constraints["genres"] = genres
@@ -1505,6 +1582,29 @@ SELF_TEST_SAMPLES = {
     "genre-not-director": "Recommend some Japanese movies",
     "director-clause-zh": "推荐几部 Kurosawa 在 1950 年代拍的剧情片",
     "director-clause-en": "Recommend some Kubrick thrillers from 1958 to 1959",
+    "out-of-catalog": "《Casablanca》的票房是多少？",
+    "not-refusal-score": "movies with a user score of 8 or higher",
+    "not-refusal-music": "recommend some music documentaries from the 1970s",
+    "not-refusal-released": "movies released in 1999",
+    "not-refusal-studio": "Studio Ghibli films from the 1980s",
+    "title-region-genres": "movies like The Family Stone - comedies from 2005 to 2007",
+    "seed-title-liked": "I liked Rear Window, anything else like it?",
+    "seed-title-enjoyed": "We enjoyed Casablanca, can you suggest something similar?",
+    "seed-title-watched": "I watched Vertigo, anything else?",
+    "sentence-not-title-show": "Show me drama films from 1985 to 1986",
+    "sentence-not-title-find": "Find Comedy films from 1985 to 1986",
+    "title-clause-decade": "movies I enjoyed in the 1990s",
+    "title-clause-genre": "I enjoyed comedy films from the 1990s",
+    "title-verb-keeps-title": "I really liked Trainspotting - any similar films?",
+    "title-glued-zh": "查一下The Matrix",
+    "plural-genre": "suggest a few documentaries from the 1970s",
+    "demonym-documentaries": "Recommend some Italian documentaries from the 1960s",
+    "demonym-comedies": "Recommend some Italian comedies from the 1960s",
+    "similar-derived": "Can you find something similar to The Apartment?",
+    "similar-explicit": "Any movies like The Apartment - Comedy from 1960 to 1969?",
+    "similar-one-genre": "I liked Jaws, anything similar?",
+    "similar-many-genres": "I liked Blue Velvet, anything similar?",
+    "similar-stated-genres": "Any movies like The Apartment - comedies?",
     "resolver-cjk": "帮我找《北非谍影》这部电影",
     "resolver-latin": "帮我找《The Vikings》这部电影",
     "resolver-zh-title": "北非谍影",
@@ -1989,13 +2089,37 @@ def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor,
         else:
             for item in execution:
                 item["displayed"] = False
+            # B1.5e F-5 (R-2, owner ruling ③b2): when the text states no director slot and the seed
+            # has exactly two canonical genres, the seed's genres and its whole decade narrow the
+            # follow-up; explicit text keys still win key by key, and an empty derived pool is not
+            # widened back to "rank only". A seed with one or with three-plus canonical genres is
+            # not derived: one genre is the same-director case (Q16/Q35/Q56 pass on ranking), and
+            # ANDing Blue Velvet's Comedy+Drama+Fantasy+Psyc collapses the pool (RK-5).
+            # Q12 vs Q34 is the approved exception: both route to `seed_title` + empty constraints
+            # with a two-genre seed and cannot be told apart without reading the annotation, so the
+            # R-2 semantics win and Q12 (same director, no narrowing) is the single accepted
+            # in-sample regression. Only the route (text) and the seed row (catalog) are read here -
+            # never an annotation.
+            stated = constraints or {}
+            seed_genres = canonical_genres(seed["genres"])
+            derived: dict = {}
+            derive = not stated.get("director") and len(seed_genres) == 2
+            if derive and not stated.get("genres"):
+                derived["genres"] = seed_genres
+            if derive and "year_from" not in stated and "year_to" not in stated:
+                decade = seed["year"] - seed["year"] % 10
+                derived["year_from"], derived["year_to"] = decade, decade + 9
+            effective = {**derived, **stated}
             follow = {"name": SEED_FOLLOW_UP, "arguments": {"movie_id": seed["id"]}}
             problems, execution2, error2 = evaluate_calls([follow], schema_doc, executor,
-                                                          constraints)
+                                                          effective)
             schema_problems += problems
             execution += execution2
             called.append(follow)
             extra["seed"] = {"id": seed["id"], "title": seed["title"]}
+            extra["derived_constraints"] = derived
+            extra["effective_constraints"] = effective
+            extra["seed_genre_count"] = len(seed_genres)
             if error2:
                 error_state = error2
     elif constraints:
@@ -2309,7 +2433,7 @@ def self_test_case(case_id: str, text: str, expected_tools: list[str],
     }
 
 
-def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
+def check_semantics(executor: ToolExecutor, schema_doc: dict) -> tuple[dict, list[str]]:
     """Pure-function and catalog assertions for the B1.5c execution semantics."""
     checks: dict[str, str] = {}
     problems: list[str] = []
@@ -2319,6 +2443,12 @@ def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
         if not condition:
             problems.append(f"{label}: {detail}" if detail else label)
 
+    def seed_year_of(run: dict) -> int | None:
+        """Year of the row the seed title search resolved to (first row of the lookup)."""
+        items = run.get("execution") or []
+        rows = (items[0].get("results") or []) if items else []
+        return rows[0].get("year") if rows else None
+
     expect("canonical: Sci-Fi == Science Fiction", canonical_genres(["Sci-Fi", "Science Fiction"]) == ["Sci-Fi"])
     expect("canonical: order independent", canonical_genres(["Science Fiction", "Sci-Fi"]) == ["Sci-Fi"])
     expect("canonical: unrelated keys kept", canonical_genres(["Action", "Sci-Fi"]) == ["Action", "Sci-Fi"])
@@ -2327,6 +2457,12 @@ def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
            and one_key.rstrip().endswith("= 1)"), one_key)
     expect("genre AND retrieves both spellings", "'Sci-Fi'" in one_key and "'Science Fiction'" in one_key)
     expect("genre AND: two keys are two conditions", genre_and_sql(["Action", "Sci-Fi"]).rstrip().endswith("= 2)"))
+    # R-1: the canonical group is only worth having if the *retrieval* half unions the members.
+    # B1.5f labels `filter_movies{genres:["Music"]}` by the union (25 rows), so a regression to
+    # "only Music" must fail here rather than as an unexplainable blind-set miss.
+    expect("genre AND: Music includes Musical",
+           "'Music'" in genre_member_sql(["Music"])
+           and "'Musical'" in genre_member_sql(["Music"]), genre_member_sql(["Music"])),
     expect("director: abbreviation == full name", directors_equal("M.Mann", "Michael Mann"))
     expect("director: different initial", not directors_equal("Ant.Mann", "Michael Mann"))
     expect("director: bare surname never expands", not directors_equal("Mann", "Michael Mann"))
@@ -2347,8 +2483,12 @@ def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
            == {"year_from": 2002, "year_to": 2003})
     expect("route: genre alias file", extract_genres(SELF_TEST_SAMPLES["genre-alias"]) == ["War"])
     expect("route: no false war match", extract_genres(SELF_TEST_SAMPLES["war-boundary"]) == [])
-    expect("route: musical != music", extract_genres(SELF_TEST_SAMPLES["musical"]) == ["Musical"]
-           and extract_genres(SELF_TEST_SAMPLES["music"]) == ["Music"])
+    # B15c-5's split survives in the alias data: `musical` still targets the `Musical` enum value
+    # and `music` the `Music` value. B1.5e's R-1 canonical group folds them for retrieval and slot
+    # comparison only, which is asserted separately below.
+    expect("route: musical != music",
+           GENRE_ALIASES[SELF_TEST_SAMPLES["musical"]] == ["Musical"]
+           and GENRE_ALIASES[SELF_TEST_SAMPLES["music"]] == ["Music"])
     expect("route: Chinese genre words",
            extract_genres(SELF_TEST_SAMPLES["multi-genre"]) == ["Action", "Sci-Fi"],
            str(extract_genres(SELF_TEST_SAMPLES["multi-genre"])))
@@ -2368,6 +2508,71 @@ def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
            extract_director(SELF_TEST_SAMPLES["director-clause-en"]) == "Kubrick")
     expect("route: a genre word is not a director name",
            extract_director(SELF_TEST_SAMPLES["genre-not-director"]) is None)
+    out_of_catalog = route_deterministically(
+        self_test_case("S-OOC", SELF_TEST_SAMPLES["out-of-catalog"], []))
+    misfires = [key for key in ("not-refusal-score", "not-refusal-music", "not-refusal-released",
+                                "not-refusal-studio")
+                if detect_refusal(SELF_TEST_SAMPLES[key]) is not None]
+    expect("route: out-of-catalog request refuses without a tool",
+           out_of_catalog["action"] == "refuse" and out_of_catalog["tool_calls"] == []
+           and not misfires,
+           f"action={out_of_catalog['action']!r} misfires={misfires}")
+    title_region = route_deterministically(
+        self_test_case("S-TITLE", SELF_TEST_SAMPLES["title-region-genres"], []))
+    expect("route: genre words inside a title are not constraints",
+           title_region.get("result_constraints")
+           == {"genres": ["Comedy"], "year_from": 2005, "year_to": 2007},
+           str(title_region.get("result_constraints")))
+    seed_titles = {key: extract_title(SELF_TEST_SAMPLES[key])
+                   for key in ("seed-title-liked", "seed-title-enjoyed", "seed-title-watched")}
+    expect("route: seed title is the title, not the clause",
+           list(seed_titles.values()) == ["Rear Window", "Casablanca", "Vertigo"],
+           str(seed_titles))
+    sentence_titles = {key: extract_title(SELF_TEST_SAMPLES[key])
+                       for key in ("sentence-not-title-show", "sentence-not-title-find")}
+    expect("route: a sentence is not a title", set(sentence_titles.values()) == {None},
+           str(sentence_titles))
+    # A verb of taste also opens an ordinary clause. If such a capture became the title, the
+    # masking step in route_deterministically would delete the stated genre/years as well.
+    decade_clause = route_deterministically(
+        self_test_case("S-CLAUSE-DECADE", SELF_TEST_SAMPLES["title-clause-decade"], []))
+    expect("route: a verb clause keeps its stated years",
+           extract_title(SELF_TEST_SAMPLES["title-clause-decade"]) is None
+           and decade_clause["tool_calls"]
+           == [{"name": "filter_movies", "arguments": {"year_from": 1990, "year_to": 1999}}],
+           f"title={extract_title(SELF_TEST_SAMPLES['title-clause-decade'])!r} "
+           f"calls={decade_clause['tool_calls']}")
+    genre_clause = route_deterministically(
+        self_test_case("S-CLAUSE-GENRE", SELF_TEST_SAMPLES["title-clause-genre"], []))
+    expect("route: a verb clause keeps its stated genre and years",
+           extract_title(SELF_TEST_SAMPLES["title-clause-genre"]) is None
+           and genre_clause["tool_calls"]
+           == [{"name": "filter_movies",
+                "arguments": {"genres": ["Comedy"], "year_from": 1990, "year_to": 1999}}],
+           f"title={extract_title(SELF_TEST_SAMPLES['title-clause-genre'])!r} "
+           f"calls={genre_clause['tool_calls']}")
+    expect("route: a verb before a real title keeps the title",
+           extract_title(SELF_TEST_SAMPLES["title-verb-keeps-title"]) == "Trainspotting",
+           repr(extract_title(SELF_TEST_SAMPLES["title-verb-keeps-title"])))
+    expect("route: a Latin title glued to Chinese text",
+           extract_title(SELF_TEST_SAMPLES["title-glued-zh"]) == "The Matrix",
+           repr(extract_title(SELF_TEST_SAMPLES["title-glued-zh"])))
+    expect("route: plural genre word",
+           extract_genres(SELF_TEST_SAMPLES["plural-genre"]) == ["Documentary"],
+           str(extract_genres(SELF_TEST_SAMPLES["plural-genre"])))
+    demonym = route_deterministically(
+        self_test_case("S-DEM", SELF_TEST_SAMPLES["demonym-documentaries"], []))
+    expect("route: a demonym is not a director",
+           extract_director(SELF_TEST_SAMPLES["demonym-documentaries"]) is None
+           and extract_director(SELF_TEST_SAMPLES["demonym-comedies"]) is None
+           and extract_genres(SELF_TEST_SAMPLES["demonym-documentaries"]) == ["Documentary"]
+           and demonym["tool_calls"]
+           == [{"name": "recommend_movies",
+                "arguments": {"preferred_genres": ["Documentary"],
+                              "year_range": {"from": 1960, "to": 1969}}}],
+           str(demonym["tool_calls"]))
+    expect("route: musical and music share one canonical key",
+           canonical_genres(["Musical"]) == ["Music"], str(canonical_genres(["Musical"])))
     expect("resolver: strict JSON accepted",
            parse_resolver_candidates('{"candidates": ["A Title"]}') == ["A Title"])
     expect("resolver: extra field rejected",
@@ -2426,6 +2631,87 @@ def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
                for row in narrowed["results"])
            and narrowed["candidate_pool"] <= SIMILAR_POOL,
            f"pool={narrowed.get('candidate_pool')}")
+    derived_run = run_g1(self_test_case("S-SEED", SELF_TEST_SAMPLES["similar-derived"],
+                                        ["search_movies_by_title"]), schema_doc, executor)
+    derived = derived_run["extra"].get("derived_constraints") or {}
+    effective = derived_run["extra"].get("effective_constraints") or {}
+    followed = [row for item in derived_run["execution"][1:] for row in item.get("results", [])]
+    seed_id = (derived_run["extra"].get("seed") or {}).get("id")
+    seed_year = seed_year_of(derived_run)
+    expect("similar: derived constraints come from the seed",
+           bool(derived.get("genres"))
+           and derived_run["extra"].get("seed_genre_count") == len(derived["genres"])
+           and effective == derived and bool(followed)
+           and all(not constraint_problems(row, effective) for row in followed)
+           and all(row["id"] != seed_id for row in followed)
+           and seed_year is not None
+           and derived.get("year_from") == seed_year - seed_year % 10
+           and derived.get("year_to") == seed_year - seed_year % 10 + 9,
+           f"derived={derived} effective={effective} rows={len(followed)} seed={seed_id} "
+           f"seed_year={seed_year}")
+    explicit_run = run_g1(self_test_case("S-EXPLICIT", SELF_TEST_SAMPLES["similar-explicit"],
+                                         ["search_movies_by_title"]), schema_doc, executor)
+    explicit_extra = explicit_run["extra"]
+    expect("similar: explicit text constraints win",
+           explicit_extra.get("derived_constraints") == {}
+           and explicit_extra.get("effective_constraints")
+           == (explicit_extra.get("route") or {}).get("result_constraints"),
+           f"derived={explicit_extra.get('derived_constraints')} "
+           f"effective={explicit_extra.get('effective_constraints')}")
+    # The two gate branches of R-2 (owner ruling ③b2): a seed with one or with three-plus
+    # canonical genres must not derive anything. Without these two the `len(seed_genres) == 2`
+    # guard - the reason Q16/Q35/Q55/Q56 stay green - had no assertion at all.
+    one_genre_run = run_g1(self_test_case("S-ONE-GENRE", SELF_TEST_SAMPLES["similar-one-genre"],
+                                         ["search_movies_by_title"]), schema_doc, executor)
+    one_genre_extra = one_genre_run["extra"]
+    expect("similar: a one-genre seed derives nothing",
+           one_genre_extra.get("seed_genre_count") == 1
+           and one_genre_extra.get("derived_constraints") == {}
+           and one_genre_extra.get("effective_constraints")
+           == (one_genre_extra.get("route") or {}).get("result_constraints"),
+           f"seed_genre_count={one_genre_extra.get('seed_genre_count')} "
+           f"derived={one_genre_extra.get('derived_constraints')} "
+           f"effective={one_genre_extra.get('effective_constraints')}")
+    many_genre_run = run_g1(self_test_case("S-MANY-GENRES", SELF_TEST_SAMPLES["similar-many-genres"],
+                                           ["search_movies_by_title"]), schema_doc, executor)
+    many_genre_extra = many_genre_run["extra"]
+    expect("similar: a three-plus genre seed derives nothing",
+           (many_genre_extra.get("seed_genre_count") or 0) >= 3
+           and many_genre_extra.get("derived_constraints") == {}
+           and many_genre_extra.get("effective_constraints")
+           == (many_genre_extra.get("route") or {}).get("result_constraints"),
+           f"seed_genre_count={many_genre_extra.get('seed_genre_count')} "
+           f"derived={many_genre_extra.get('derived_constraints')} "
+           f"effective={many_genre_extra.get('effective_constraints')}")
+    # Text that names genres but no year keeps the derived decade and the stated genres: the
+    # derivation is per key (`{**derived, **stated}`), not a whole-dict replacement.
+    stated_genres_run = run_g1(
+        self_test_case("S-STATED-GENRES", SELF_TEST_SAMPLES["similar-stated-genres"],
+                       ["search_movies_by_title"]), schema_doc, executor)
+    stated_genres_extra = stated_genres_run["extra"]
+    mixed_derived = stated_genres_extra.get("derived_constraints") or {}
+    mixed_effective = stated_genres_extra.get("effective_constraints") or {}
+    mixed_stated = (stated_genres_extra.get("route") or {}).get("result_constraints") or {}
+    mixed_seed_year = seed_year_of(stated_genres_run)
+    expect("similar: stated genres keep the derived decade",
+           "genres" not in mixed_derived
+           and mixed_seed_year is not None
+           and mixed_derived.get("year_from") == mixed_seed_year - mixed_seed_year % 10
+           and mixed_derived.get("year_to") == mixed_seed_year - mixed_seed_year % 10 + 9
+           and mixed_stated.get("genres") == ["Comedy"]
+           and mixed_effective == {**mixed_derived, **mixed_stated},
+           f"derived={mixed_derived} stated={mixed_stated} effective={mixed_effective} "
+           f"seed_year={mixed_seed_year}")
+    # B15e-5 asks for the DB half too: a demonym must not turn the 1960s pool into ``1 = 0``.
+    demonym_run = run_g1(self_test_case("S-DEMONYM-DB", SELF_TEST_SAMPLES["demonym-documentaries"],
+                                        ["recommend_movies"]), schema_doc, executor)
+    demonym_rows = [row for item in demonym_run["execution"] for row in item.get("results", [])]
+    expect("recommend: a demonym phrase keeps a non-empty 1960s pool",
+           bool(demonym_rows)
+           and all(not constraint_problems(row, {"genres": ["Documentary"],
+                                              "year_from": 1960, "year_to": 1969})
+                   for row in demonym_rows),
+           f"rows={len(demonym_rows)}")
     return checks, problems
 
 
@@ -2592,7 +2878,7 @@ def run_self_test(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
                      "schema_hash": schema_doc["schema_hash"], "runs": [], "assertions": {}}
     failures: list[str] = []
 
-    semantics, problems = check_semantics(executor)
+    semantics, problems = check_semantics(executor, schema_doc)
     payload["assertions"]["semantics"] = semantics
     print(f"  semantics: {len(semantics)} checks, {len(problems)} problem(s)")
     for label, outcome in semantics.items():
