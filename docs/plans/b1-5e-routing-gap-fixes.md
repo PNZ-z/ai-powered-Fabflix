@@ -223,22 +223,22 @@ B1.5e 完成后**只能**说"B1.5d 点名的 5 条失败已被针对性修复，
 
 | ID | 条件 | 验证方式 |
 | --- | --- | --- |
-| `B15e-1` | 5 条失败逐条有对应修复点，且**只**改 `scripts/eval/tool_eval.py` + `docs/ai/aliases/genre-aliases.json` + `check_schema.py` 的组断言（+ 报告 + `docs/ai/README.md` 追加行） | diff 清单 |
-| `B15e-2` | `git diff --stat` 证明 `src/main/**`、`pom.xml`、CI、`docs/ai/tool-schema.b1-5.json`、`schema_hash`、B1.5a–B1.5d 的 fixture/报告、`check_blind_holdout.py` **零改动** | diff + hash |
-| `B15e-3` | **同时**断言两条：`B26` 掩码后 `genres == ["Horror"]`、`years == 1991–1992`；`H23` 的 `extract_title` 返回 `None` 且任务判定不变 | 断言 `A3`/`A5` + 回归记录 |
-| `B15e-4` | `B10` 类请求 `action == "refuse"` 且不调工具；`score`/`music`/`released`/`studio` 的反向断言成立（不误拒） | 断言 `A1`/`A2` |
+| `B15e-1` | 5 条失败逐条有对应修复点，且**只**改 `scripts/eval/tool_eval.py` + `docs/ai/aliases/genre-aliases.json` + `check_schema.py` 的组断言（+ 报告 + `docs/ai/README.md` 追加行） | diff 清单（**实测**：`git diff --stat` = `docs/ai/README.md`、`docs/ai/aliases/genre-aliases.json`、`scripts/eval/check_schema.py`、`scripts/eval/tool_eval.py` + 新增报告/计划/issue/日志） |
+| `B15e-2` | `git diff --stat` 证明 `src/main/**`、`pom.xml`、CI、`docs/ai/tool-schema.b1-5.json`、`schema_hash`、B1.5a–B1.5d 的 fixture/报告、`check_blind_holdout.py` **零改动** | diff + hash（**实测**：`schema_hash 712c0e34…474a` 与 `db_snapshot_hash` 未变；B1.5d fixture/checker SHA 未变） |
+| `B15e-3` | **同时**断言两条：`B26` 掩码后 `genres == ["Horror"]`、`years == 1991–1992`；`H23` 的 `extract_title` 返回 `None` 且任务判定不变 | 断言 `A3`/`A5` + 回归记录（**实测**：两条断言均绿；`H23` 在 held-out `G1` 下仍 `filter_movies{genres:["History"], 1998–1999}`、`task_success true`） |
+| `B15e-4` | `B10` 类请求 `action == "refuse"` 且不调工具；`score`/`music`/`released`/`studio` 的反向断言成立（不误拒） | 断言 `A1`/`A2`（**实测**：正/反向同条内联全绿；`B19`/`B28`/`B29` 仍 ✅，`B10` ❌→✅） |
 | `B15e-5` | **行为写清**：`documentaries` → `["Documentary"]`；`Recommend some Italian documentaries from the 1960s` → `genres == ["Documentary"]`、`director is None`（**不产生** director 槽）、DB 段不因 `1=0` 变 0 行；`Italian comedies` 同表 | 断言 `A7`/`A8` + DB 段记录 |
-| `B15e-6` | `R-1` 落码后 `B22`/`Q48`/`B05` 判定不变，且报告含**可复现 SQL**：`1948–1950 ∧ (Music∨Musical) = 25`、top-5 全 `Music`、`ChW4` 不在 top-5、`acceptable_hit = true`；`aliases_version = b1-5c-aliases/v2`；`check_schema.py` 有 `Music`/`Musical` 同组断言；旧 SHA `f7126f02…c203` → 新 SHA 已记录 | SQL + 回归 + `check_schema.py` 输出 |
+| `B15e-6` | `R-1` 落码后 `B22`/`Q48`/`B05` 判定不变，且报告含**可复现 SQL**：`1948–1950 ∧ (Music∨Musical) = 25`、top-5 全 `Music`、`ChW4` 不在 top-5、`acceptable_hit = true`；`aliases_version = b1-5c-aliases/v2`；`check_schema.py` 有 `Music`/`Musical` 同组断言；旧 SHA `f7126f02…c203` → 新 SHA 已记录 | SQL + 回归 + `check_schema.py` 输出（**实测**：新 SHA = `ab8e07dd…c104`；`Q48` 4 行 ❌→✅、`B22`/`B05` 判定不变；`check_schema.py --quiet` exit 0） |
 | `B15e-7` | `R-2` 落码（**③b2**：仅当种子 canonical genres **恰好 2** 且无 director 槽时派生 genres + 整十年；显式键逐键覆盖；空池不回退）后 `B23` 与 `Q34/Q53/Q54` 通过；`derived_constraints`/`effective_constraints`/`seed_genre_count` 出现在记录里；`annotation_guard` 全 true；派生池空**不回退** | 回归记录（**实测**：`Q34/Q53/Q54` ❌→✅；`B23` ✅ 但属 seen，仅记录；`A12` 空池回退**未实测**，见报告 §4.4/§9.9） |
 | `B15e-7b` | **零回归闸门（r3 = ③b2 + `Q12` 唯一例外）**：F-5 前后，B1.5c in-sample 中当前 `task_success=true` 的 similar 用例（`Q12`/`Q16`/`Q35`/`Q36`/`Q55`/`Q56`）中，**除主 agent 明文批准的 `Q12` 一条外全部零回归**；任何**第二条** similar 回归 → 调整派生规则并重测，仍回归则停止交主 agent。`Q12` 的批准依据 = 与 `Q34` 路由产物逐字节相同而标注相反（不读 golden 不可区分） | 前后对照表（逐条 ✅/❌；**实测** `Q16`/`Q35`/`Q36`/`Q55`/`Q56` ✅ 不变，`Q12` ✅→❌ 批准例外） |
 | `B15e-8` | 既有自测断言全绿且条数不减（基线 **43** semantics checks / 75 sentinels / 24 independence），新增断言全绿（**`A1`…`A11` 覆盖、`A12` 未做；实际 18 个新增 label，43 → 61 checks**；`A1`+`A2`、`A5`+`A6` 合并） | `--self-test` 输出（修复前/后各一份；**实测 61 checks / 0 problem / independence 47**） |
 | `B15e-9` | in-sample `G1` 前后并列，逐条列出所有判定变化（含 `Q12/Q16/Q35/Q36/Q55/Q56` 的前后状态），不隐藏回归 | 前后对照表（**实测 67/75 → 70/75**，routing 73 → 74/75） |
 | `B15e-10` | B1.5c held-out 回归只作"回归"记录，不写任何门槛结论 | 报告措辞检查（**实测 held-out `G1` 28/30**，失败 `H01`/`H16`；`H23` ✅） |
-| `B15e-11` | B1.5d fixture/报告/计划与 #74 状态未被改动；issue 正文 `Refs #74`、无 closing keyword | diff + issue 文档 |
-| `B15e-12` | 报告如实声明"B1.5e 不声称泛化；泛化待 B1.5f 一次冷跑"，并写明"`R-1` 不是等价替换，是召回扩大" | 报告 §结论 |
-| `B15e-13` | `F-1` 落地后 **`B19`/`B28`/`B29` 仍通过**（`expected_refusal=true` 三条都过 `refuse_no_tool`），`B10` 由 ❌→✅；marker 在 105 条既有 fixture 上零命中，B1.5d 上仅命中这四条 | 回归表（B1.5d 只作 seen fixture 记录，不作门槛）+ grep 记录 |
-| `B15e-14` | **B1.5e 边界**：不生成、不冻结、不运行 B1.5f；不改 `check_blind_holdout.py`；仓库内无指向 B1.5f fixture 的引用 | `git diff --stat` + `grep -r "b1-5f"` |
-| `B15e-15` | 所有报告的验收结论措辞都是"in-sample 回归"，未出现"B1.5c/B1.5d/B1.5e 已达标" | 报告措辞检查 |
+| `B15e-11` | B1.5d fixture/报告/计划与 #74 状态未被改动；issue 正文 `Refs #74`、无 closing keyword | diff + issue 文档（**实测**：B1.5a–B1.5d 文件零改动；本 issue 文档无 closing keyword） |
+| `B15e-12` | 报告如实声明"B1.5e 不声称泛化；泛化待 B1.5f 一次冷跑"，并写明"`R-1` 不是等价替换，是召回扩大" | 报告 §结论（报告头部 + §11 “结论边界”） |
+| `B15e-13` | `F-1` 落地后 **`B19`/`B28`/`B29` 仍通过**（`expected_refusal=true` 三条都过 `refuse_no_tool`），`B10` 由 ❌→✅；marker 在 105 条既有 fixture 上零命中，B1.5d 上仅命中这四条 | 回归表（B1.5d 只作 seen fixture 记录，不作门槛）+ grep 记录（**实测**：B1.5d `G1` 28/30，`B10`/`B19`/`B22`/`B23`/`B26`/`B27`/`B28`/`B29` 全部 ✅；失败仅 `B01`/`B14`） |
+| `B15e-14` | **B1.5e 边界**：不生成、不冻结、不运行 B1.5f；不改 `check_blind_holdout.py`；仓库内无指向 B1.5f fixture 的引用 | `git diff --stat` + `grep -r "b1-5f"`（**实测**：仅命中计划/issue 的边界文字，无 fixture 路径或 `blind_version`） |
+| `B15e-15` | 所有报告的验收结论措辞都是"in-sample 回归"，未出现"B1.5c/B1.5d/B1.5e 已达标" | 报告措辞检查（报告标题即写明"in-sample 回归报告，不是门槛"） |
 
 ---
 
