@@ -6,7 +6,7 @@
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文档类型 | **living spec**（运行时指令/路由规范），由 `docs-writer` 维护 |
-> | `last_updated` | **2026-11-09**（**r5**：① `find_similar_movies` 的 `results[]` **明确必须排除 seed**（§3 U3 + §4.2）；② 新增 §1.5「B1.5a 实测输入」——结构化 filter/similar 在 dense 卡片上不可用（D8 FAIL：0.4833 / 0.4167），B 路线价值来源；**r4**：数据事实修正——评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = 2001；2000 年 58 部全无评分，196–2000 共 **11,975** 部无评分），`rating_coverage_from` 一律改为 **2001**；**r3**：① 新增 §1.4「本文是 spec，不是运行时 prompt」+ compact runtime prompt 定义；② `R2-4`/`R7-1`/§4.2/§4.3 统一**年份与枚举契约**（`INVALID_ARGUMENT` vs `OUT_OF_RANGE` vs `EMPTY_RESULT`）；③ 枚举改为 **DB 派生**（当前快照 56 distinct / 61 行），不再写死 23 个；④ 数据覆盖改为 **21,087 部 / 196–2024 / 13,082 无评分（评分仅 2001+，r4 核定）**；⑤ 修复 `U5` 单轮矛盾（引入 `result_set_id`）、定义 `same_primary_genre_only`、明确中文译名策略。r2（2026-11-08）：回填 MCP / 工具调用实测证据） |
+> | `last_updated` | **2026-11-19**（**r6**：新增 §1.6「B1.5b 实测回填」（同日**判分缺陷修复后重跑**——原 69/75 = 92.0% / PASS 结论**作废**，见报告 §1.1 / R-7）——运行时 prompt 实测（`b1-5b-inline/v1`、`prompt_eval_count` 1,265–1,284 tokens，`WU-8` 仍待定稿）、工具行为实测（确定性路由 **62/75 = 82.7%，未达 ≥90% 门槛 → FAIL**，带同集 caveat / 纯 LLM 52.0% / G2 回放 50.7%、接地 75/75、seed 排除成立）、三项 **P1 评测口径披露**（similar/recommend 执行器是评测 stand-in、`result_constraints` 判分循环、澄清只验形态）、以及实测暴露的三处契约缺口（多值 `genres[]` 的 AND/OR 未定义、`year_from.maximum` 与 `OUT_OF_RANGE` 互斥、中文译名/人名缩写/类型变体三类别名缺口）；**r5**：① `find_similar_movies` 的 `results[]` **明确必须排除 seed**（§3 U3 + §4.2）；② 新增 §1.5「B1.5a 实测输入」——结构化 filter/similar 在 dense 卡片上不可用（D8 FAIL：0.4833 / 0.4167），B 路线价值来源；**r4**：数据事实修正——评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = 2001；2000 年 58 部全无评分，196–2000 共 **11,975** 部无评分），`rating_coverage_from` 一律改为 **2001**；**r3**：① 新增 §1.4「本文是 spec，不是运行时 prompt」+ compact runtime prompt 定义；② `R2-4`/`R7-1`/§4.2/§4.3 统一**年份与枚举契约**（`INVALID_ARGUMENT` vs `OUT_OF_RANGE` vs `EMPTY_RESULT`）；③ 枚举改为 **DB 派生**（当前快照 56 distinct / 61 行），不再写死 23 个；④ 数据覆盖改为 **21,087 部 / 196–2024 / 13,082 无评分（评分仅 2001+，r4 核定）**；⑤ 修复 `U5` 单轮矛盾（引入 `result_set_id`）、定义 `same_primary_genre_only`、明确中文译名策略。r2（2026-11-08）：回填 MCP / 工具调用实测证据） |
 > | `applies_to` | **B1.5b 工具/路由评测**（`docs/plans/b1-5b-tool-routing.md`）、**B1.5a 卡片评测**（`docs/plans/b1-5a-movie-card-embeddings.md`）、总纲 `docs/plans/b1-5-movie-retrieval-eval.md`；B-① 电影检索/推荐功能（计划中，**未开始**）；`docs/architecture/movie-cards.md`（卡片字段与本文工具返回值同源）；机器可读契约 `docs/ai/tool-schema.b1-5.json` |
 > | 基线 | `main` @ `85d4675`（PR #68 合并后） |
 > | 批准状态 | 🟡 **未批准**：本文件与 B1.5 计划、`movie-cards.md`、issue 草稿同批送 oracle / 用户 |
@@ -69,7 +69,7 @@
 | token 预算（估算，非实测） | 纯指令部分 **≤ 350 tokens**；5 工具 schema 约 **500 tokens**（已实测口径）；**总 prompt 目标 ≤ 900 tokens** |
 | 裁剪规则 | 超出预算时按顺序裁：先删示例 → 再合并拒绝类别为一行 → 最后才压缩输出约束（**不得**删输出约束中的“六字段不得改写”） |
 | 版本化 | prompt 变更必须 bump `runtime-prompt/vN` 并记入 §8 变更清单；报告/日志必须记录所用版本，否则“同一模型两次结果不一致”无法归因 |
-| 与评测的关系 | B1.5b 的 G0–G3 **共用同一份** `runtime-prompt/v1`；只改变服务端行为，不改变 prompt（否则无法归因） |
+| 与评测的关系 | B1.5b 的 G0–G3 **共用同一份** `runtime-prompt/v1`；只改变服务端行为，不改变 prompt（否则无法归因）。**2026-11-19 实测偏差（见 §1.6）**：实际落地的是评测脚手架内的 `b1-5b-inline/v1`（两句英文指令，`prompt_sha256` 已记录），**不是**本行要求的 `runtime-prompt/v1`；三个变体确实共用同一份 prompt，归因前提仍成立，但 `runtime-prompt/v1` 这个产物本身**仍未定稿**（`WU-8`） |
 
 ---
 
@@ -82,6 +82,39 @@
 - **对本文的含义**：`U2`（筛选）、`U3`（相似）、`U4`（推荐）**必须由结构化工具（SQL + 服务端校验）承担**，不得指望 embedding 检索；`U1`（片名）也不需要用向量（普通 `LIKE`/全文检索更便宜、更准）。这正是 **B 路线**（`docs/plans/b1-5b-tool-routing.md`）的价值来源。
 - **相似结果的 seed 排除**：B1.5a 的 `similar` 15/15 的 top-5 里都出现了 seed 本身；因此本文的 `find_similar_movies` 明确要求 **`results[]` 不含 seed**（§3 U3、§4.2），否则“相似片 = 它自己”会被当成有效结果。
 - **不越界**：本节只记录实测事实与对契约的含义；**不**声称 B1.5b 已实施、**不**改任何判定阈值（D8 阈值仍为 80%，未达标即未达标）。
+
+### 1.6 B1.5b 实测回填（2026-11-19，B 路线）
+
+> **来源**：`docs/ai/reports/b1-5b-tool-routing.md`（75 例 × G0/G1/G2，`schema_hash 8e72f741…a567`、`db_snapshot_hash 8b16c047…f925`、模型 `qwen2.5:7b`；**本版为 2026-11-19 判分缺陷修复后重跑，G1 结论 = FAIL**）。本节只回填**实测到的运行时事实与契约偏差**，不改任何阈值、不声称 B-① 已实施。
+
+**运行时 prompt（实测）**
+
+- 评测使用的是 **`b1-5b-inline/v1`**（sha256 `58c8b708…2310`），**不是** §1.4 定义的 `runtime-prompt/v1`：正文是**两句英文指令**（只从工具结果作答 / 不编造字段 / 用用户语言），工具契约经 Ollama `tools` 字段传入，未在 prompt 里重写。
+- `prompt_eval_count` 实测 **1,265–1,284** tokens（system + 5 工具 schema + 用户问题），高于 §1.4 的 ≤900 估算。`WU-8`（`runtime-prompt/v1` 由谁定稿、如何测）**仍待定稿**。
+
+**工具行为（实测成立的）**
+
+- **服务端强制方向在路由层有效，但任务级未达门槛**：确定性路由形态（模型调用 = **0**）下路由正确 **74/75 = 98.7%**；分意图任务级成功 = 拒绝 **6/6**、澄清 **4/4**、多槽位 **5/5**、筛选 **19/20**、片名 **12/15**、偏好推荐 **9/10**、相似 **7/15** → 任务级 **62/75 = 82.7%**，**未达 ≥90% 门槛（FAIL：门槛为 ≥68/75，差 6 例 / 7.3pp）**，且仍是**同集 in-sample** 结果（见下）。失败 13 条：8 条由评测 stand-in 执行器造成、3 条中文译名别名缺口（Q21–Q23）、1 条枚举语义变体（Q11）、1 条“澄清 vs 任务成功”口径冲突（Q57）。
+- **接地零容忍成立**：三变体 **75/75**；无编造 id/title/rating；`rating = null` 的 133 行未被渲染为 `0`；0 genre 的 3 行未被跳字段或编造。
+- **`find_similar_movies.results[]` 排除 seed 成立**：15/15 similar 用例 `seed_excluded = True`（T14 显式验证：seed `tt0482571` 不在展示行中）。
+- **纯 LLM 自选工具（G0）只 52.0%**，与 D-9“不得作为交付形态”一致；**只加服务端 schema 校验（G2，回放 G0）为 50.7%，无改善** → 参数形状校验不能替代路由与重试（G3 未测）。
+
+**实测暴露的契约缺口（本文当前写法未覆盖）**
+
+- **多值 `genres[]` 的 AND/OR 语义未定义**：评测执行器按 **AND** 实现（`HAVING COUNT(DISTINCT g.name) = len(genres)`），而 Q11 的 golden 谓词是 **OR**（`Sci-Fi` 457 部 / `Science Fiction` 2 部）→ Q11 在三种形态下都 0 行。§4.2 目前只写了“取值域来自 DB 派生枚举”。
+- **`year_from.maximum = 2024` 与 §3.1「超出覆盖 → `OUT_OF_RANGE` + `coverage`」互斥**：2030 年在 schema 层即非法，服务端校验只能回 `INVALID_ARGUMENT`（G2 的 T10 因此从“解释覆盖”退化为错误码死路）。两者需在契约层裁定（本回填不改 fixture）。
+- **别名缺口已实测**：中文译名（Q21–Q23 全 0 命中，印证 `WU-9`）、人名缩写（`Michael Mann` vs 库内 `M.Mann`，Q36 因此违反导演约束）、类型语义变体（`Sci-Fi` / `Science Fiction`，Q11）。
+
+**评测口径的 P1 披露（引用本节任何数字时必须同时出现）**
+
+- **相似/推荐执行器是评测 stand-in**：`find_similar_movies` 按“共享类型数 / 年份接近度 / 评分”排序、`recommend_movies` 按偏好过滤（多类型 **OR**）+ 评分排序，二者都**没有生产实现**（`OPEN-b5`）。因此 `similar 7/15`、`recommend 9/10` 只表示“在替身执行器下命中 golden 可接受集合”，**不代表**生产相似/推荐信号（例如 golden 使用的“同导演”）已实现。
+- **`result_constraints` 判分是自洽循环**：三个变体都只有 **8** 例被计分（similar 类的同导演等约束多数在查询文本里没有字面表述 → `unscored`），且“约束是否被文本表述”与“约束是否被满足”用的是**同一套正则**，没有独立复核 → 只能作自洽性证据。
+- **澄清只验形态**：`ask_one_clarifying_question` 只检查“只问一个问题 / 未调工具 / 无 schema 问题”，**不检查提问内容是否命中真正歧义点** → “澄清 4/4”不能读成“澄清问得对”。
+
+**G1 caveat（必须与任何 82.7% 引用同时出现）**
+
+- G1 的规则（拒绝词典、类型别名、年代解析、种子解析）是在**同一批 75 条 fixture** 上开发调优的 → 82.7% 是 **in-sample** 数字，**不是** held-out 泛化估计；B-① 生产实现必须用独立验证集/真实用户查询复测，且**不得**据此声称“B-① 已交付”“已跨过 ≥90% 门槛”（**它没有跨过**）或“将达 82.7%”。
+- G1 的答案是**服务端模板串**（无模型生成），所以本回填不对“话术质量”作任何结论。
 
 
 ## 2. LLM 路由规则（运行时策略）
@@ -417,6 +450,7 @@ War, Weird, Western
 | 2026-11-09 | **修订 r3（拆分后的契约收敛）**：① 新增 **§1.4 本文是 spec、不是运行时 prompt**，并定义 compact `runtime-prompt/v1`（组成/预算/裁剪规则/版本化）；② 年份与枚举契约统一：`INVALID_ARGUMENT`（类型/语法/未知字段/枚举外值）/ **`OUT_OF_RANGE` + `coverage`**（超出 196–2024）/ `EMPTY_RESULT` + `coverage`（含 `rating_coverage_from`）三态互斥，删除“越界 = `INVALID_ARGUMENT`”与“越界 = 空列表”两套互斥说法（`R2-4`、`R7-1`、§4.2、§4.3）；③ `GenreEnum` 改为 **DB 派生** + 当前快照（56 distinct / 61 行）+ 规范化规则，不再写死 23 个；④ 数据覆盖改为 **21,087 / 196–2024 / 13,082 无评分 / 评分仅 2001+**（r4 核定：2000 年 0 部有评分）（`U2` 、§4.2）；⑤ `U5` 单轮矛盾修复（`result_set_id` 或显式 `movie_ids`）、`same_primary_genre_only` 确定性定义、中文译名策略（无别名表 → 不保证命中）；⑥ §4.5 明确 `docs/ai/tool-schema.b1-5.json` 为**评测期契约**、实施后以注解为真值 + 一致性测试；⑦ §5 `id` 改为不透明 `VARCHAR(10)` | B1.5a/b 拆分（B-2/B-3/B-7 修复）；未建 issue | **是**：错误码语义由两套合并为一套且新增 `OUT_OF_RANGE`；枚举由 23 个固定值改为 DB 派生 |
 | 2026-11-09 | **数据事实修正 r4**：评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = 2001、2000 年 0 部有评分、196–2000 共 11,975 部无评分）；`R2-4`/`R3-2`/`R7-1`/§3 边界/§4.2/`U4` 的“2000 年及以后 / 2000+”统一改为 **2001 年及以后 / 2001+**，`rating_coverage_from` 与 `coverage.rating_coverage_from` 改为 **2001**；fixture 版本引用改为 `b1.5-tools/v2` | B1.5a/b 数据事实修正 | **是**（对外行为：错误的“2000 起有评分”会让模型把 2000 年片当作可评分过滤对象；本修正只收紧事实边界，不改变错误码语义） |
 | 2026-11-09 | **修订 r5（B1.5a 实测输入 + seed 排除）**：① §3 `U3` 与 §4.2 明确 **`find_similar_movies.results[]` 必须排除 seed 本身**（seed 只在 `seed` 字段返回）；② 新增 **§1.5**：B1.5a 实测（D8 FAIL，`bge-m3` 0.4833 / `qwen3` 0.4167）显示片名类可用、**结构化 filter / similar / 推荐不可用** → `U1`–`U4` 必须由结构化工具承担，B 路线价值来源；③ 不改任何阈值、不声称 B1.5b 已实施 | B1.5a 报告 + 三路 review 回填 | **是**（`find_similar_movies` 返回字段语义收紧：结果不得包含 seed） |
+| 2026-11-19 | **修订 r6（B1.5b 实测回填；含同日判分缺陷修复后的数字修正）**：① 新增 **§1.6**：运行时 prompt 实测（评测用 `b1-5b-inline/v1` 而非 `runtime-prompt/v1`；`prompt_eval_count` 1,265–1,284 tokens > ≤900 估算 → `WU-8` 仍待定稿）；② 工具行为实测（确定性路由 **62/75 = 82.7%，未达 ≥90% → FAIL**（**同集**；原 69/75 = 92.0% / PASS **作废**，原因是 `scripts/eval/tool_eval.py` 曾把 `acceptable_movie_ids` 写死为空列表）、纯 LLM 52.0%、G2 回放 50.7%、接地 75/75、seed 排除 15/15、`rating:null` 未转 0）；③ 三项 **P1 评测口径披露**：similar/recommend 执行器为评测 stand-in、`result_constraints` 判分循环（仅 8 例）、澄清只验形态；④ 实测暴露的三处契约缺口（多值 `genres[]` AND/OR 未定义、`year_from.maximum=2024` 与 `OUT_OF_RANGE` 互斥、中文译名/人名缩写/类型变体别名缺口）；⑤ **不改阈值、不改 fixture、不声称 B-① 已实施**，并明确 82.7% 不是 held-out 泛化估计、未跨 ≥90% 门槛 | B1.5b 报告（`docs/ai/reports/b1-5b-tool-routing.md`）+ issue #72 | **否**（仅记录实测与偏差；工具契约与错误码语义未改） |
 
 ---
 

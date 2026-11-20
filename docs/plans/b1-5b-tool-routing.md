@@ -1,11 +1,11 @@
 # B1.5b — 结构化工具 / 工具调用路由评测（B 路线）
 
-> **文档状态：🟢 已批准（2026-11-10，主 agent）/ 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) / 待实施（r7 = 回填 issue #72 编号与 URL；`OPEN-b1` = **≥90%**、`OPEN-b4` 只留可选 G3；G1/G2/G0 必做不变）— 计划已获批且 issue 已建，但 **B1.5b 尚未开始实施**（无脚本、无报告、无评测数字）。**
+> **文档状态：🟢 已批准（2026-11-10，主 agent）/ 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) / 评测已完成（2026-11-19：**G1 任务级 62/75 = 82.7%，未达 ≥90% 门槛 → FAIL**；报告已出 = `docs/ai/reports/b1-5b-tool-routing.md`）（r8 = 评测结果回填；`OPEN-b1` = **≥90%**、`OPEN-b4` 只留可选 G3；G1/G2/G0 口径不变）——**评测已跑完并出报告，但门槛未过、issue #72 仍 OPEN，后续修复另跟踪；不声称 B-① 已交付或已开始。**
 >
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文档类型 | 计划 / 方案（评测 + 质量结论；**只做 B 路线**） |
-> | `last_updated` | **2026-11-10**（**r7：回填 GitHub issue #72（编号/URL/milestone）— 状态 = 已批准 / 已建 issue / 待实施**；不改实验方案本身，**仍未实施**（无脚本、无报告、未运行任何变体）。r6：主 agent 裁定计划通过——`OPEN-b1` 关闭为交付候选形态任务级成功率 **≥90%**；`OPEN-b4` 只保留 **G3（本期可选/不要求，未做须写“未测”）**；`G1`/`G2`/`G0` 仍为必做、seed 排除与 A 路线输入（§1.4）保留。r5：回填 B1.5a 实测输入——A 路线 D8 **FAIL**（0.4833 / 0.4167）、片名强 / filter·similar 弱 → B 路线价值来源；`find_similar_movies` 结果**必须排除 seed**（`ai-user-workflows.md` r5 已收紧契约）。r4：G1 由“可选”改为**必做**、`OPEN-b4` 只保留 G3、`required`/`anyOf` 口径写清。r3：拆分自 `docs/plans/b1-5-movie-retrieval-eval.md` r2；同日按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 重写） |
+> | `last_updated` | **2026-11-19**（**r8：评测结果回填**——B1.5b 已实施并出报告；**G1 = 62/75 = 82.7%（FAIL，未达 ≥90%）**、G0 52.0%、G2 50.7%、G3 未测；因 `scripts/eval/tool_eval.py` 的 `acceptable_movie_ids` 判分缺陷，上一版 92.0%/PASS 作废；不改阈值、不改分母、不改 fixture；**issue #72 保持 OPEN**；不声称 B-① 已交付。r7：回填 GitHub issue #72（编号/URL/milestone）。r6：主 agent 裁定计划通过——`OPEN-b1` 关闭为交付候选形态任务级成功率 **≥90%**；`OPEN-b4` 只保留 **G3（本期可选/不要求，未做须写“未测”）**；`G1`/`G2`/`G0` 仍为必做、seed 排除与 A 路线输入（§1.4）保留。r5：回填 B1.5a 实测输入——A 路线 D8 **FAIL**（0.4833 / 0.4167）、片名强 / filter·similar 弱 → B 路线价值来源；`find_similar_movies` 结果**必须排除 seed**（`ai-user-workflows.md` r5 已收紧契约）。r4：G1 由“可选”改为**必做**、`OPEN-b4` 只保留 G3、`required`/`anyOf` 口径写清。r3：拆分自 `docs/plans/b1-5-movie-retrieval-eval.md` r2；同日按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 重写） |
 > | 基线 | `main` @ `85d4675`（PR #68 合并后） |
 > | 上级 | `docs/plans/b1-5-movie-retrieval-eval.md`（umbrella / 决策备忘录：共享数据集、共享指标、决策标准） |
 > | 兄弟 | `docs/plans/b1-5a-movie-card-embeddings.md`（**A 路线**：卡片 embedding；本文件**不碰 embedding**） |
@@ -14,7 +14,7 @@
 > | 评测契约产物 | **`docs/ai/tool-schema.b1-5.json`（机器可读 schema fixture，本次已创建）**、`docs/ai/README.md`（三个 hash 的算法）、`docs/ai/golden-set.schema.json`、计划中定义的 `docs/ai/golden/queries.b1-5.json`（与 B1.5a 共享 60 条）与 `docs/ai/golden/tool-cases.b1-5.json`（15 条） |
 > | 实测证据 | 12 条工具调用基线（`7/12 = 58%`，`.pi/artifacts/scout-b1-5-mcp.md` §实测 2–3）；DB 快照 2026-11-09（`fabflix-mysql` 3307）；模型事实 2026-11-09 `/api/tags`；**A 路线实测（2026-11-09）= `docs/ai/reports/b1-5a-embedding-eval.md`（D8 FAIL）** |
 > | GitHub issue | ✅ **已创建：[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)** — milestone **#3 `Phase 3 — AI-powered platform`**、**无 labels**（2026-11-10 由 `github-operator` 创建）；规范记录 = `docs/issues/issue-72-b1-5b-tool-routing.md`（原草稿已改名回填编号） |
-> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 尚未开始实施**（B1.5a 已完成，本路线为下一步；本节记录的是**批准与 issue 状态**，不代表任何脚本、报告或评测数字已存在） |
+> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 评测已完成（2026-11-19，**G1 82.7% FAIL**，报告已出）**；本节记录的是**批准 + issue + 实测结果**状态，**不代表**任何生产实现、B-① 交付或门槛达标 |
 
 ---
 
@@ -163,6 +163,8 @@
 
 **硬门槛（用户已批准 D-9）**：**G0 的纯 LLM 路由不得作为交付形态**（基线 58% 已证明）。报告必须写明“提议的交付形态 = 确定性路由 + 受控填充（LLM 只填槽/受控选择）”，并给出该形态的实测任务级成功率。**该数字只能来自 G1（确定性路由前置），不能用 G2 代指**。**门槛数值 = ≥90%（`OPEN-b1` 已关闭，2026-11-10 主 agent 裁定）**；未达则按 §11 “G2 仍达不到 90%” 的回退处理，不得下调阈值或换分母。
 
+> **2026-11-19 实测结果**：**G1 = 62/75 = 82.7% → 未达 ≥90%，门槛检查不通过（FAIL）**；G0 52.0%、G2 50.7%、G3 未测。阈值、分母（75）、fixture 均**未调整**；失败归因与回退选项见报告 §7 / §13，后续修复（别名表、种子消歧、生产相似信号 + 独立 held-out 集）**另立 issue 跟踪**，不写在本计划内、也不声称 B-① 已开始。
+
 ---
 
 ## 7. 确定性路由设计（被评测的对象）
@@ -202,6 +204,8 @@
 
 ## 9. 验收条件（B1.5b）
 
+> **实测对照见报告 §12（`B15b-1`…`B15b-10`）**：`B15b-4` / `B15b-5` 为**部分满足**，`B15b-8` 的数字**未过门槛（82.7% < 90% → FAIL）**，其余为已满足。本表为计划层面的条件定义，**不因实测结果而放宽**。
+
 | ID | 条件 | 验证方式 |
 | --- | --- | --- |
 | **B15b-1** | `docs/ai/tool-schema.b1-5.json` 存在且满足：`enum` 由 DB 派生、**`required`/`anyOf` 显式**（`search_movies_by_title`/`find_similar_movies`/`get_movie_card` 用 `required`；`filter_movies`/`recommend_movies` 用对象级 `anyOf` 表达“至少一个条件”）、`additionalProperties:false`、数值 `min`/`max`；`schema_hash` 已记录 | 文件评审 + hash 复算 |
@@ -228,6 +232,8 @@
 | `docs/architecture/ai-user-workflows.md` | 更新：回填实测的契约行为、覆盖率、runtime prompt 版本 |
 | `docs/plans/b1-5-movie-retrieval-eval.md` | 更新：umbrella 回填 B 路线结论 |
 
+> **实施回填（2026-11-19）**：上表文件已按计划落地 —— `scripts/eval/tool_eval.py`、`scripts/eval/check_schema.py`、`docs/ai/golden/queries.b1-5.json`（复用 B1.5a）、`docs/ai/golden/tool-cases.b1-5.json`、`docs/ai/golden/query-routing.b1-5.json`、`docs/ai/reports/b1-5b-tool-routing.md` 均存在；G0/G1/G2 已跑（G3 未测）；`ai-user-workflows.md` §1.6 与 umbrella 已回填。**仍未提交的仅是 `scripts/eval/tool_eval.py`（含 `acceptable_movie_ids` 判分修复）**，见报告 §13 R-5，提交由主 agent 处理；本路线**不落任何生产代码**。
+
 **不得修改**：B1.5a 的报告与脚本、`README.md`、任何 `src/**`、`pom.xml`、CI、B0/B1 已批准文档历史段。
 
 ---
@@ -252,10 +258,10 @@
 | ID | 问题 | 状态 |
 | --- | --- | --- |
 | `OPEN-b1` | 交付候选形态的任务级成功率门槛是否被接受 | 🟢 **已关闭（2026-11-10，主 agent 裁定）**：门槛 = **≥90%**（与 B1.5a 同一任务级口径）；G0 纯 LLM 路由实测 **58%（7/12）不得作为交付形态**；该数字只能由 G1 产生 |
-| `OPEN-b2` | 端到端 p95 目标（继承 D8"先实测后定"） | 🟡 待实测 |
-| `OPEN-b3` | 别名映射表（中文类型词 → enum；`Sci-Fi`↔`Science Fiction`）的**具体词表**与维护者 | 🟡 待实现时定稿；**中文片名译名别名表仍未批准**（同 B1.5a `OPEN-a3`） |
+| `OPEN-b2` | 端到端 p95 目标（继承 D8"先实测后定"） | 🟡 待实测（热 p50/p95 已记录，**冷启动未测**，见报告 §13 R-6） |
+| `OPEN-b3` | 别名映射表（中文类型词 → enum；`Sci-Fi`↔`Science Fiction`）的**具体词表**与维护者 | 🟡 待实现时定稿（已实测三类别名缺口：中文译名 Q21–Q23、人名缩写 Q36、类型变体 Q11，见报告 §7 / §13 R-1）；**中文片名译名别名表仍未批准**（同 B1.5a `OPEN-a3`） |
 | `OPEN-b4` | **G3 是否纳入本次范围**（时间预算）；G1 已定为必做，不在本项内 | 🟢 **已裁定（2026-11-10，主 agent）**：**本期可选 / 不要求**；G3 未做须在报告写“**未测**”，不得用 G2 数字代指；**G1/G2/G0 仍必做** |
-| `OPEN-b5` | `same_primary_genre_only` 是否保留（见 `ai-user-workflows.md` §4.2 的确定性定义） | 🟡 待复核 |
+| `OPEN-b5` | `same_primary_genre_only` 是否保留（见 `ai-user-workflows.md` §4.2 的确定性定义） | 🟡 待复核（评测中相似/推荐执行器为 **stand-in**，未实现"同导演"等生产信号） |
 
 ---
 
@@ -264,9 +270,9 @@
 | 来源 | 内容 | 状态 |
 | --- | --- | --- |
 | oracle | 2026-11-09 提出 9 项阻塞（B-1…B-9）→ r3 已逐项修复；同日 **delta 复核**再提 2 项（G1 不能是可选的 / `required` 与 `anyOf` 语义）→ **r4 已修**，条件已在 r4/r5 文档中满足（G1 必做、`anyOf` 口径）；2026-11-10 delta 条件由主 agent 复核确认已满足 | 🟢 条件已满足（不声称 oracle 已批准 r5/r6 全文） |
-| 主 agent | **2026-11-10 裁定**：`OPEN-b1` 关闭为 **≥90%**；`OPEN-b4` 只留 **G3（可选/不要求）**；**G1/G2/G0 必做**；**批准本计划**；同日由 `github-operator` 创建 **issue #72**（milestone #3、无 labels） | 🟢 已批准 / 已建 issue #72 / 待实施 |
+| 主 agent | **2026-11-10 裁定**：`OPEN-b1` 关闭为 **≥90%**；`OPEN-b4` 只留 **G3（可选/不要求）**；**G1/G2/G0 必做**；**批准本计划**；同日由 `github-operator` 创建 **issue #72**（milestone #3、无 labels）。**2026-11-19**：评测已执行并出报告（**G1 62/75 = 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测）；判分缺陷修复使 92.0%/PASS 作废；**issue #72 保持 OPEN**，后续修复另跟踪 | 🟢 已批准 / 已建 issue #72 / **评测已完成（G1 FAIL）** |
 
-> 本文件**不声称**：任何变体已运行（除 12 条 G0 基线 7/12）、MCP 已实现或端点可达、schema_hash 已由脚本复核、oracle 已批准 r5/r6/r7 全文、**B1.5b 已开始或已完成（无脚本、无报告、无评测数字）**。**可以声称的事实**：GitHub issue **#72 已创建**（2026-11-10，milestone #3、无 labels；状态以远端为准）。
+> 本文件**不声称**：MCP 已实现或端点可公开访问、oracle 已批准 r5/r6/r7/r8 全文、**B-① 已交付或已开始**；也不声称 **G1 的 82.7% 是 held-out 泛化估计或已达到 ≥90% 门槛（没有达到）**、或相似/推荐能力已实现（执行器为评测 stand-in）。**可以声称的事实**：GitHub issue **#72 已创建**（2026-11-10；状态以远端为准，**本文件不声称已关闭**）；G0/G1/G2 已实测且共用同一 `schema_hash`；报告已存在；G3 与冷启动延迟未测。
 
 ---
 
@@ -280,4 +286,5 @@
 | **r5** | 2026-11-09 | **回填 A 路线实测输入（不改本路线方案）**：新增 §1.4（B1.5a D8 FAIL 0.4833/0.4167、片名强/filter·similar 弱 → B 路线价值来源）+ §2.2 的 `find_similar_movies.results[]` **必须排除 seed**；状态明确为“**尚未开始**”；G1 必做、schema/`anyOf` 口径、阈值（`OPEN-b1`）均不变 |
 | **r5** | 2026-11-09 | **数据事实修正**：评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = 2001、2000 年 58 部全无评分、196–2000 共 **11,975** 部无评分）；§2.2 快照、§3.1 `rating_coverage_from`、§7 S3 覆盖检查、§11 风险表同步；fixture 版本引用改为 **`b1.5-tools/v2`**（`schema_hash` 因 `min_rating.description` 文本修正而变化） |
 | **r6** | 2026-11-10 | **状态推进：🟡 待复核 → 🟢 已批准（主 agent）/ 待建 issue**（不改实验方案本身）。① §12 `OPEN-b1` **关闭**：交付候选形态任务级成功率门槛 = **≥90%**（同一任务级口径；G0 的 58% 不得交付），并同步 §1.4 / §3.3 / §6；② §12 `OPEN-b4` **只留 G3**：本期**可选/不要求**，未做须写“未测”；③ 重申 **G1/G2/G0 必做**、seed 排除与 A 路线输入不变、**不实现 MCP server / 不改 `src/main` / CI 不依赖 PC**；④ §13 记录 delta 条件已满足与主 agent 批准；**仍不声称已实施、已运行或已建 issue** |
-| **r7** | 2026-11-10 | **回填 GitHub issue（不改实验方案）**：issue 已由 `github-operator` 创建 = **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（milestone **#3**、**无 labels**），规范记录改名为 `docs/issues/issue-72-b1-5b-tool-routing.md`；状态由“待建 issue”改为 **已批准 / 已建 issue #72 / 待实施**，并同步文件头（第 3/16/17 行）、§13 与本节；**未实施、未运行任何变体、无报告**，§12 的 `OPEN-b2`/`OPEN-b3`/`OPEN-b5` 仍为实施期待定项 |
+| **r7** | 2026-11-10 | **回填 GitHub issue（不改实验方案）**：issue 已由 `github-operator` 创建 = **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（milestone **#3**、**无 labels**），规范记录改名为 `docs/issues/issue-72-b1-5b-tool-routing.md`；状态由“待建 issue”改为 **已批准 / 已建 issue #72 / 待实施**，并同步文件头（第 3/16/17 行）、§13 与本节；§12 的 `OPEN-b2`/`OPEN-b3`/`OPEN-b5` 仍为实施期待定项 |
+| **r8** | 2026-11-19 | **评测结果回填（不改阈值/分母/fixture）**：① 状态由“待实施”改为 **🟢 已批准 / issue #72 / 评测已完成（G1 82.7% FAIL；报告已出）**，同步文件头（第 3/8/17 行）、§10（实施回填）、§12（`OPEN-b2`/`OPEN-b3`/`OPEN-b5` 补实测证据指向）、§13、本节；② **实测数字**：G0 **39/75 = 52.0%**、G1 **62/75 = 82.7%（未达 ≥90% → FAIL）**、G2 **38/75 = 50.7%**（回放 G0，`model_calls = 0`）、**G3 未测**；全量口径保留（任务级成功率为主 + 意图/工具/槽位/接地/拒绝/失败模式）；③ **数字变更原因**：`scripts/eval/tool_eval.py` 的 query 分支曾把 `acceptable_movie_ids` 写死为空列表，修复后 92.0%/PASS **作废**（报告 §13 R-7）；④ 明确 **G1 的 82.7% 为同集 in-sample、非 held-out 泛化估计**；相似/推荐执行器为评测 stand-in；⑤ **issue #72 保持 OPEN**（未达 AC），后续修复另跟踪；**不声称 B-① 已交付/已开始** |

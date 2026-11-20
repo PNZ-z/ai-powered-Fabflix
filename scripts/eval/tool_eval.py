@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""B1.5b tool-routing evaluation harness — stage 1 skeleton (stdlib only, D-4).
+"""B1.5b tool-routing evaluation harness (stdlib only, D-4).
 
 What this file measures: whether a variant selects the right tool, fills the right slots,
-refuses when it must, and keeps arguments inside ``docs/ai/tool-schema.b1-5.json``. It does
-**not** measure answer prose quality, latency percentiles or the full 75-case set in this
-stage: stage 1 is the skeleton plus a ``--limit``-bounded smoke run, and the full G0/G1/G2 run
-is a separate, deliberately approved step (``--allow-full-run`` is required for it).
+refuses when it must, keeps arguments inside ``docs/ai/tool-schema.b1-5.json``, and whether the
+executed rows are grounded in the catalog. Stage 2 adds the full 60 + 15 run, the G1 second hop
+(seed resolution), grounding re-check, latency percentiles and G2's replay of G0's calls.
 
 Variants (plan ``docs/plans/b1-5b-tool-routing.md`` §5)
 ------------------------------------------------------
@@ -17,23 +16,40 @@ Variants (plan ``docs/plans/b1-5b-tool-routing.md`` §5)
 ``G3``  **not implemented this period** (``OPEN-b4`` = optional / not required). Asking for it
         exits 2 and says "not measured" instead of silently substituting G2.
 
-Tool execution coverage in stage 1
-----------------------------------
-``search_movies_by_title`` / ``filter_movies`` / ``get_movie_card`` run read-only SQL so the smoke
-run produces real rows and real coverage states. ``find_similar_movies`` and ``recommend_movies``
-are recorded but **not executed**: their ranking and ``similarity_reason`` semantics are an
-implementation decision that belongs to the production issue, not to this evaluation skeleton.
-Cases that need them are stored with ``execution: "deferred"`` and never counted as passed.
+Tool execution coverage
+-----------------------
+``search_movies_by_title`` / ``filter_movies`` / ``get_movie_card`` run read-only SQL.
+``find_similar_movies`` and ``recommend_movies`` run a **deterministic evaluation stand-in** so the
+15 ``similar_movies`` and 10 ``recommend_by_preference`` cases can be measured at all:
+
+* ``recommend_movies`` filters by the explicit preferences it receives (genres / year range /
+  rating / director / seed ids) and orders by rating, which is what the tool description says it
+does. The tool's arguments are the user's constraints, so no extra semantics are invented.
+* ``find_similar_movies`` ranks candidates sharing at least one seed genre by (shared genre count
+desc, |year difference| asc, rating desc) and never returns the seed. User-stated genres, years
+and rating are then enforced **server-side** as result constraints (``R7-2``: a stated condition
+may not be silently dropped), because the tool schema has no parameters to carry them.
+
+**The ranking weights above are an evaluation stand-in, not the approved production ranking.**
+This file contains no production code; the production ``find_similar_movies`` / ``recommend_movies``
+ranking remains the decision of the implementation issue (``OPEN-b5``). The report states the
+stand-in and reports routing-level numbers separately from task-level numbers.
 
 ``--self-test`` feeds scripted tool calls through the G0/G2 scoring path. It exercises the
 plumbing (validation, enum mapping, coverage states, scoring) without a model and is labelled
 SELF-TEST: those records are NOT a model measurement.
 
+``G2 --reuse-g0 G0.json`` replays G0's recorded calls instead of calling the model again, so G2
+differs from G0 **only** by the server-side layer (one ablation variable, no second sampling).
+
 Usage
 -----
     python3 scripts/eval/tool_eval.py --dry-run
-    python3 scripts/eval/tool_eval.py --variant G1 --cases tool --limit 3 --ids T01,T11
-    python3 scripts/eval/tool_eval.py --variant G0 --cases tool --limit 3 --base-url http://host:11434
+    python3 scripts/eval/tool_eval.py --variant G1 --cases both --allow-full-run --out G1.json
+    python3 scripts/eval/tool_eval.py --variant G0 --cases both --allow-full-run \\
+        --base-url http://host:11434 --out G0.json
+    python3 scripts/eval/tool_eval.py --variant G2 --cases both --allow-full-run \\
+        --reuse-g0 G0.json --out G2.json
     python3 scripts/eval/tool_eval.py --variant G3            # exits 2: not measured
 
 Exit code 0 = the requested mode finished, 2 = refused / unavailable input.
@@ -68,7 +84,9 @@ DEFAULT_MODEL = "qwen2.5:7b"
 DEFAULT_BASE_URL = os.environ.get("EVAL_OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_TIMEOUT_S = 180.0
 TEMPERATURE = 0
-PROMPT_ID = "stage1-inline/v1"
+# The prompt text below is unchanged from the stage-1 skeleton; only the id was renamed now that
+# the harness carries the measurement stage. The report records prompt_sha256, not only the id.
+PROMPT_ID = "b1-5b-inline/v1"
 PROMPT_TEXT = (
     "You are the movie catalog assistant of Fabflix. You answer only from the results of the "
     "provided tools and never invent titles, years, directors, genres, stars, ratings or movie "
@@ -101,17 +119,27 @@ GENRE_ALIASES = {
 }
 TRANSACTION_PATTERNS = (r"买.{0,20}票", r"退.{0,4}款", r"下.{0,4}单", r"付.{0,4}款")
 REFUSAL_RULES = (
-    ("plot", ("剧情", "讲了什么", "讲什么", "故事", "plot", "what is it about", "synopsis")),
+    # "剧情" alone is also the Drama genre word ("剧情片"), so the plot branch needs a plot verb.
+    ("plot", ("剧情是什么", "剧情介绍", "剧情简介", "剧情如何", "讲了什么", "讲什么",
+              "故事梗概", "故事讲了", "plot", "what is it about", "synopsis")),
     ("transaction", ("买票", "购票", "下单", "支付", "退款", "订单", "ticket", "refund", "checkout")),
     ("internal", ("项目", "开发文档", "用了什么模型", "系统提示", "工具定义", "system prompt",
                   "tool definition", "which model")),
     ("external", ("豆瓣", "imdb", "rotten tomatoes", "烂番茄")),
 )
-SIMILAR_MARKERS = ("类似", "相似", "像", "like", "similar", "loved", "love ")
+SIMILAR_MARKERS = ("类似", "相似", "像", "那种", "这种", "那样", "这样", "一样的",
+                   "like", "similar", "loved", "love ")
 RECOMMEND_MARKERS = ("推荐", "recommend", "suggest")
 CHINESE_DECADES = {"五十": 1950, "六十": 1960, "七十": 1970, "八十": 1980, "九十": 1990, "二十": 2020}
 COVERAGE = {"year_min": YEAR_MIN, "year_max": YEAR_MAX,
             "rating_coverage_from": RATING_COVERAGE_FROM}
+# Optional follow-up of the deterministic router: resolve a title, then use its id as the seed.
+SEED_FOLLOW_UP = "find_similar_movies"
+# Candidate pool for the find_similar_movies stand-in before result constraints are applied.
+SIMILAR_POOL = 300
+# Seed lookup is a server-side step, so it may ask for the schema maximum instead of the
+# user-facing default of 5 (the tool description allows a server-chosen limit).
+SEED_SEARCH_LIMIT = 10
 
 
 class EvalError(Exception):
@@ -157,11 +185,21 @@ def build_cases(cases_doc: dict, routing_doc: dict, selection: str,
     if selection in ("queries", "both"):
         queries = {query["id"]: query for query in load_json(QUERIES_PATH)["queries"]}
         for entry in routing_doc["annotations"]:
+            query = queries[entry["query_id"]]
+            acceptable_ids = query.get("acceptable_movie_ids", [])
+            if not acceptable_ids:
+                # B1.5a froze an acceptable set for every query. Scoring without it silently
+                # turned task success into "returned any row", which is how Q12/Q16/Q35/Q55/Q56
+                # were reported as successes while missing the golden set.
+                raise EvalError(
+                    f"{entry['query_id']} has no acceptable_movie_ids in "
+                    f"{QUERIES_PATH.relative_to(REPO_ROOT)}; task-level success cannot be scored"
+                )
             cases.append({
                 "case_id": entry["query_id"],
                 "kind": "query",
-                "text": queries[entry["query_id"]]["query"],
-                "lang": queries[entry["query_id"]]["lang"],
+                "text": query["query"],
+                "lang": query["lang"],
                 "intent": entry["intent"],
                 "expected_tools": entry["expected_tools"],
                 "required_slots": entry["required_slots"],
@@ -171,7 +209,7 @@ def build_cases(cases_doc: dict, routing_doc: dict, selection: str,
                 "expected_behavior": ("refuse_no_tool" if entry["expected_refusal"]
                                       else "call_tools_and_answer"),
                 "expected_error_code": "NONE",
-                "acceptable_movie_ids": [],
+                "acceptable_movie_ids": acceptable_ids,
             })
     if ids:
         if isinstance(ids, str):
@@ -217,6 +255,24 @@ class OllamaClient:
         started = time.perf_counter()
         response = self._post("/api/chat", payload)
         return response, (time.perf_counter() - started) * 1000.0
+
+    def tags(self) -> dict[str, str]:
+        """model name -> digest, so the report can pin the model it actually measured."""
+        request = urllib.request.Request(self.base_url + "/api/tags", method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            raise EvalError(f"cannot reach {request.full_url}: {exc}") from exc
+        return {model["name"]: model.get("digest") for model in payload.get("models", [])}
+
+
+def _replayed_digest(replay: dict) -> str | None:
+    for record in replay.values():
+        digest = record.get("model_digest")
+        if digest:
+            return digest
+    return None
 
 
 def parse_tool_calls(message: dict) -> list[dict]:
@@ -349,7 +405,7 @@ def coverage_state(arguments: dict) -> tuple[str | None, dict]:
 
 
 # --------------------------------------------------------------------------------------
-# Tool execution (read-only SQL; two tools deferred, see the module docstring)
+# Tool execution (read-only SQL; see the module docstring for the two stand-ins)
 # --------------------------------------------------------------------------------------
 
 MOVIE_COLUMNS = """m.id, m.title, m.year, m.director,
@@ -359,14 +415,62 @@ MOVIE_COLUMNS = """m.id, m.title, m.year, m.director,
         r.rating"""
 
 
+def constraint_problems(row: dict, constraints: dict | None) -> list[str]:
+    """Result-constraint violations of one row (``result_constraint_vocabulary``).
+
+    ``genres`` is read as "the row must carry at least one of the listed genres": catalog rows
+    carry several genres, so a subset reading would reject correct rows (e.g. Q13's
+    ``Action``/``Sci-Fi`` window returns rows that also carry ``Adventure``).
+    """
+    if not constraints:
+        return []
+    problems: list[str] = []
+    genres = constraints.get("genres")
+    if genres:
+        row_genres = {normalized(genre) for genre in row["genres"]}
+        if not row_genres & {normalized(genre) for genre in genres}:
+            problems.append(f"genres {row['genres']} share none of {genres}")
+    if isinstance(constraints.get("year_from"), int) and row["year"] < constraints["year_from"]:
+        problems.append(f"year {row['year']} < {constraints['year_from']}")
+    if isinstance(constraints.get("year_to"), int) and row["year"] > constraints["year_to"]:
+        problems.append(f"year {row['year']} > {constraints['year_to']}")
+    if constraints.get("min_rating") is not None:
+        rating = row["rating"]
+        if rating is None or rating + 1e-9 < float(constraints["min_rating"]):
+            problems.append(f"rating {row['rating']} < {constraints['min_rating']}")
+    director = constraints.get("director")
+    if director and normalized(row["director"]) != normalized(director):
+        problems.append(f"director {row['director']!r} != {director!r}")
+    return problems
+
+
+def constraint_sql(constraints: dict | None) -> list[str]:
+    """SQL predicates for the user-stated result conditions (server-side enforcement)."""
+    if not constraints:
+        return []
+    clauses: list[str] = []
+    genres = constraints.get("genres")
+    if genres:
+        quoted = ",".join("'" + str(genre).replace("'", "''") + "'" for genre in genres)
+        clauses.append(f"m.id IN (SELECT gm.movie_id FROM genres_in_movies gm JOIN genres g "
+                       f"ON g.id = gm.genre_id WHERE g.name IN ({quoted}))")
+    if isinstance(constraints.get("year_from"), int):
+        clauses.append(f"m.year >= {constraints['year_from']}")
+    if isinstance(constraints.get("year_to"), int):
+        clauses.append(f"m.year <= {constraints['year_to']}")
+    if constraints.get("min_rating") is not None:
+        clauses.append(f"r.rating >= {float(constraints['min_rating'])}")
+    if constraints.get("director"):
+        director = str(constraints["director"]).replace("'", "''")
+        clauses.append(f"m.director = '{director}'")
+    return clauses
+
+
 class ToolExecutor:
     def __init__(self, mysql: ReadOnlyMysql | None) -> None:
         self.mysql = mysql
 
-    def execute(self, name: str, arguments: dict) -> dict:
-        if name in ("find_similar_movies", "recommend_movies"):
-            return {"status": "deferred",
-                    "reason": "ranking semantics belong to the production issue; not executed in stage 1"}
+    def execute(self, name: str, arguments: dict, constraints: dict | None = None) -> dict:
         if self.mysql is None:
             return {"status": "not_executed", "reason": "--skip-db"}
         if name == "search_movies_by_title":
@@ -375,12 +479,17 @@ class ToolExecutor:
             return self._filter(arguments)
         if name == "get_movie_card":
             return self._card(arguments)
+        if name == "find_similar_movies":
+            return self._similar(arguments, constraints)
+        if name == "recommend_movies":
+            return self._recommend(arguments, constraints)
         return {"status": "error", "error": "INVALID_ARGUMENT", "fields": {"field": "tool"}}
 
     def _rows(self, sql: str) -> list[dict]:
         return [
             {"id": row[0], "title": row[1], "year": int(row[2]), "director": row[3],
-             "genres": [g for g in (row[4] or "").split(",") if g],
+             # the mysql CLI prints the string NULL for a missing value, not an empty field
+             "genres": [] if row[4] in ("NULL", "") else [g for g in row[4].split(",") if g],
              "rating": None if row[5] in ("NULL", "") else float(row[5])}
             for row in self.mysql.select(sql)
         ]
@@ -433,6 +542,108 @@ class ToolExecutor:
             return {"status": "NOT_FOUND", "results": []}
         return {"status": "OK", "results": rows}
 
+    def _similar(self, arguments: dict, constraints: dict | None) -> dict:
+        """Evaluation stand-in: shared-genre + near-year ranking, seed always excluded."""
+        seed_id = str(arguments.get("movie_id", "")).replace("'", "''")
+        seed_rows = self._rows(f"SELECT {MOVIE_COLUMNS} FROM movies m "
+                               f"LEFT JOIN ratings r ON r.movie_id = m.id WHERE m.id = '{seed_id}'")
+        if not seed_rows:
+            return {"status": "NOT_FOUND", "results": [], "seed": None,
+                    "reason": "movie_id is not a catalog id"}
+        seed = seed_rows[0]
+        seed_genres = sorted(seed["genres"])
+        if arguments.get("same_primary_genre_only") and seed_genres:
+            seed_genres = seed_genres[:1]
+        if not seed_genres:
+            return {"status": "EMPTY_RESULT", "results": [], "seed": seed,
+                    "seed_excluded": True, "reason": "seed has no catalog genre"}
+        quoted = ",".join("'" + genre.replace("'", "''") + "'" for genre in seed_genres)
+        limit = int(arguments.get("limit", SAMPLED_DEFAULT_LIMIT))
+        overlap = (f"(SELECT COUNT(DISTINCT g.name) FROM genres_in_movies gm JOIN genres g "
+                   f"ON g.id = gm.genre_id WHERE gm.movie_id = m.id AND g.name IN ({quoted}))")
+        # User-stated conditions are part of the candidate query, not a post-hoc cut: otherwise
+        # the ranking pool fills with rows the user excluded (R7-2).
+        constraint_where = constraint_sql(constraints)
+        sql = (f"SELECT {MOVIE_COLUMNS}, {overlap} AS overlap "
+               f"FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
+               f"WHERE m.id <> '{seed_id}' AND EXISTS (SELECT 1 FROM genres_in_movies gm "
+               f"JOIN genres g ON g.id = gm.genre_id WHERE gm.movie_id = m.id "
+               f"AND g.name IN ({quoted}))"
+               + "".join(f" AND {clause}" for clause in constraint_where) +
+               f" ORDER BY overlap DESC, ABS(m.year - {seed['year']}), r.rating IS NULL, "
+               f"r.rating DESC, m.title LIMIT {SIMILAR_POOL}")
+        pool = self._rows(sql)
+        ranked = [row for row in pool if not constraint_problems(row, constraints)]
+        rows = ranked[:limit]
+        return {
+            "status": "OK" if rows else "EMPTY_RESULT",
+            "results": rows,
+            "seed": seed,
+            "seed_excluded": all(row["id"] != seed["id"] for row in rows),
+            "candidate_pool": len(pool),
+            "constraints_applied": constraints or {},
+            "ranking": "shared genre count desc, |year diff| asc, rating desc "
+                       "(evaluation stand-in)",
+        }
+
+    def _recommend(self, arguments: dict, constraints: dict | None) -> dict:
+        """Filter by the explicit preferences the call carries; order by rating."""
+        where = []
+        preferred = arguments.get("preferred_genres") or []
+        if preferred:
+            quoted = ",".join("'" + str(genre).replace("'", "''") + "'" for genre in preferred)
+            where.append(f"m.id IN (SELECT gm.movie_id FROM genres_in_movies gm JOIN genres g "
+                         f"ON g.id = gm.genre_id WHERE g.name IN ({quoted}))")
+        year_range = arguments.get("year_range")
+        if isinstance(year_range, dict):
+            if isinstance(year_range.get("from"), int):
+                where.append(f"m.year >= {year_range['from']}")
+            if isinstance(year_range.get("to"), int):
+                where.append(f"m.year <= {year_range['to']}")
+        if arguments.get("min_rating") is not None:
+            where.append(f"r.rating >= {float(arguments['min_rating'])}")
+        if arguments.get("director"):
+            director = str(arguments["director"]).replace("'", "''")
+            where.append(f"m.director = '{director}'")
+        seeds = [str(seed).replace("'", "''") for seed in arguments.get("seed_movie_ids") or []]
+        if seeds and arguments.get("exclude_seed", True):
+            quoted_seeds = ",".join("'" + seed + "'" for seed in seeds)
+            where.append(f"m.id NOT IN ({quoted_seeds})")
+        limit = int(arguments.get("limit", SAMPLED_DEFAULT_LIMIT))
+        sql = f"SELECT {MOVIE_COLUMNS} FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += f" ORDER BY r.rating IS NULL, r.rating DESC, m.title LIMIT {limit}"
+        rows = [row for row in self._rows(sql) if not constraint_problems(row, constraints)]
+        return {"status": "OK" if rows else "EMPTY_RESULT", "results": rows,
+                "applied_preferences": {key: value for key, value in arguments.items()
+                                        if key != "limit"},
+                "ranking": "rating desc (evaluation stand-in)"}
+
+    def ground(self, rows: list[dict]) -> tuple[bool, list[str]]:
+        """Re-read every displayed row from the catalog and compare all six card fields."""
+        if not rows or self.mysql is None:
+            return True, []
+        ids = sorted({str(row["id"]).replace("'", "''") for row in rows})
+        quoted = ",".join("'" + movie_id + "'" for movie_id in ids)
+        stored = {row["id"]: row for row in
+                  self._rows(f"SELECT {MOVIE_COLUMNS} FROM movies m "
+                             f"LEFT JOIN ratings r ON r.movie_id = m.id "
+                             f"WHERE m.id IN ({quoted})")}
+        problems: list[str] = []
+        for row in rows:
+            truth = stored.get(row["id"])
+            if truth is None:
+                problems.append(f"{row['id']}: not in catalog")
+                continue
+            for field in ("title", "year", "director", "rating"):
+                if row[field] != truth[field]:
+                    problems.append(f"{row['id']}.{field}: {row[field]!r} != {truth[field]!r}")
+            if {normalized(genre) for genre in row["genres"]} != \
+                    {normalized(genre) for genre in truth["genres"]}:
+                problems.append(f"{row['id']}.genres: {row['genres']} != {truth['genres']}")
+        return not problems, problems
+
 
 # --------------------------------------------------------------------------------------
 # G1 deterministic router
@@ -474,6 +685,11 @@ def extract_years(text: str) -> dict:
     if explicit_decade:
         start = int(explicit_decade.group(1))
         slots["year_from"], slots["year_to"] = start, start + 9
+    short_decade = re.search(r"(?<!\d)(\d{2})\s*年代", text)
+    if short_decade:
+        decade = int(short_decade.group(1))
+        start = 1900 + decade if decade >= 30 else 2000 + decade
+        slots["year_from"], slots["year_to"] = start, start + 9
     between = re.search(r"(?:from|between)\s+(\d{4})\s*(?:to|and)\s+(\d{4})", text, re.IGNORECASE)
     if between:
         slots["year_from"], slots["year_to"] = int(between.group(1)), int(between.group(2))
@@ -481,8 +697,16 @@ def extract_years(text: str) -> dict:
         re.search(r"after\s+(\d{4})", text, re.IGNORECASE)
     if after:
         slots.setdefault("year_from", int(after.group(1)))
+        # Open-ended above: the catalog ends at YEAR_MAX, so the range is the coverage window.
+        slots.setdefault("year_to", YEAR_MAX)
     if "year_from" in slots and "year_to" in slots and slots["year_from"] > slots["year_to"]:
         slots["year_from"], slots["year_to"] = slots["year_to"], slots["year_from"]
+    if not slots:
+        # One stated year narrows to that year alone (T11: 2005 年 = year_from/year_to 2005).
+        single = re.search(r"(?<!\d)(\d{4})\s*年", text) or \
+            re.search(r"\bin\s+(\d{4})\b", text, re.IGNORECASE)
+        if single and YEAR_MIN <= int(single.group(1)) <= YEAR_MAX:
+            slots["year_from"] = slots["year_to"] = int(single.group(1))
     return slots
 
 
@@ -497,36 +721,105 @@ def extract_rating(text: str) -> float | None:
     return None
 
 
+TITLE_PREFIX_MARKERS = (r"以\s*[A-Z][A-Za-z0-9'.:!/-]*(?:\s+[A-Za-z0-9'.:!/-]+)*\s*开头",
+                        r"(?:title|name)\s+starts?\s+with", r"titles?\s+that\s+start")
+EN_TITLE_RUN = r"([A-Z][A-Za-z0-9'.:!/-]*(?:\s+[A-Za-z0-9'.:!/-]+)*)"
+TITLE_PATTERNS = (
+    r"《([^》]+)》",
+    r"(?:called|叫)\s*([A-Za-z][A-Za-z0-9' .:!/-]*?)(?:\s*的|\s*$|\s*\?|，|。)",
+    r"以\s*" + EN_TITLE_RUN + r"\s*开头",
+    EN_TITLE_RUN + r"\s*系列",
+    r"(?:find|show|get|tell me about)\s+(?:me\s+)?(?:the\s+)?(?:movie|film)\s+" + EN_TITLE_RUN,
+    r"(?:movie|film)\s+called\s+" + EN_TITLE_RUN,
+    r"(?:something|anything|films?|movies?)\s+(?:like|similar to)\s+" + EN_TITLE_RUN,
+    r"(?:like|love|loved)\s+" + EN_TITLE_RUN,
+    r"(?:title|name)\s+starts?\s+with\s+" + EN_TITLE_RUN,
+)
+TITLE_CUTS = (r"\s+[-–—]\s+.*$", r"\s+anything similar.*$", r"\s+similar.*$",
+              r"\s*系列.*$", r"\s+this (?:movie|film).*$")
+DIRECTOR_PATTERNS = (
+    r"(?:directed by|director)\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
+    r"(?:films?|movies?)\s+by\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
+    r"\bby\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
+    r"([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s*(?:执导|导演)",
+    r"(?:推荐|想看|找)\s*(?:几部|一些)?\s*([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s*的",
+)
+
+
+def has_title_prefix(text: str) -> bool:
+    return any(re.search(pattern, text, re.IGNORECASE) for pattern in TITLE_PREFIX_MARKERS)
+
+
 def extract_title(text: str) -> str | None:
-    quoted = re.search(r"《([^》]+)》", text)
-    if quoted:
-        return quoted.group(1).strip()
-    called = re.search(r"(?:called|叫)\s*([A-Za-z][A-Za-z0-9' .:!/-]*?)(?:\s*的|\s*$|\s*\?|，|。)", text)
-    if called:
-        return called.group(1).strip()
-    starts = re.search(r"starts? with\s+([A-Za-z][A-Za-z0-9' .:!/-]*)$", text, re.IGNORECASE)
-    if starts:
-        return starts.group(1).strip()
+    for pattern in TITLE_PATTERNS:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            continue
+        value = match.group(1).strip()
+        for cut in TITLE_CUTS:
+            value = re.sub(cut, "", value, flags=re.IGNORECASE)
+        return value.strip() or None
+    # Last resort for a bare Latin title in a lookup request ("找一下 The Big Lebowski 这部片").
+    if re.search(r"《|找|有没有|想看|is there|find\b|show me", text, re.IGNORECASE):
+        run = re.search(EN_TITLE_RUN, text)
+        if run:
+            value = run.group(1).strip()
+            aliases = {normalized(name) for names in GENRE_ALIASES.values() for name in names}
+            if value and normalized(value) not in aliases:
+                return value
+    return None
+
+
+def extract_director(text: str) -> str | None:
+    """Name as typed. The catalog stores Latin director values (``Scorsese``, ``M.Mann``)."""
+    for pattern in DIRECTOR_PATTERNS:
+        match = re.search(pattern, text)
+        if match:
+            value = match.group(1).strip(" .,")
+            if value:
+                return value
     return None
 
 
 def route_deterministically(case: dict) -> dict:
-    """Return the controlled action for one case: refuse / clarify / tool call (no model)."""
+    """Controlled action for one case: refuse / clarify / coverage / tool plan (no model)."""
     text = case["text"]
+    lowered = text.lower()
     category = detect_refusal(text)
     if category:
         return {"action": "refuse", "reason": category, "tool_calls": []}
-    title = extract_title(text)
-    similar = any(marker in text.lower() for marker in SIMILAR_MARKERS)
-    if similar and title:
-        return {"action": "tools", "tool_calls": [
-            {"name": "search_movies_by_title", "arguments": {"query": title}},
-        ], "requires_seed": title}
     genres = extract_genres(text)
     years = extract_years(text)
     rating = extract_rating(text)
-    if any(marker in text.lower() for marker in RECOMMEND_MARKERS):
-        preferences = {}
+    director = extract_director(text)
+    title = extract_title(text)
+    if title and director and normalized(title) == normalized(director):
+        title = None
+    constraints: dict = {}
+    if genres:
+        constraints["genres"] = genres
+    if "year_from" in years:
+        constraints["year_from"] = years["year_from"]
+    if "year_to" in years:
+        constraints["year_to"] = years["year_to"]
+    if rating is not None:
+        constraints["min_rating"] = rating
+    similar = any(marker in lowered for marker in SIMILAR_MARKERS)
+    recommend = any(marker in lowered for marker in RECOMMEND_MARKERS)
+
+    if similar and title:
+        # find_similar_movies has no genre/year/rating parameter: the stated conditions are
+        # enforced server-side as result constraints (R7-2), a person alias table is not approved.
+        unsupported = {"director": director} if director else {}
+        return {"action": "tools",
+                "tool_calls": [{"name": "search_movies_by_title",
+                                "arguments": {"query": title, "limit": SEED_SEARCH_LIMIT}}],
+                "follow_up": SEED_FOLLOW_UP,
+                "seed_title": title,
+                "result_constraints": dict(constraints),
+                "unsupported_constraints": unsupported}
+    if recommend:
+        preferences: dict = {}
         if genres:
             preferences["preferred_genres"] = genres
         if "year_from" in years or "year_to" in years:
@@ -534,15 +827,24 @@ def route_deterministically(case: dict) -> dict:
                                          "to": years.get("year_to", YEAR_MAX)}
         if rating is not None:
             preferences["min_rating"] = rating
+        if director:
+            preferences["director"] = director
         if not preferences:
             return {"action": "clarify", "question": "genre / decade / rating?", "tool_calls": []}
-        state, meta = coverage_state(preferences)
+        state, meta = coverage_state({"year_range": preferences.get("year_range"),
+                                      "min_rating": preferences.get("min_rating")})
         if state == "OUT_OF_RANGE":
             return {"action": "explain_coverage", "error_state": state, "meta": meta,
                     "candidate_arguments": preferences, "tool_calls": []}
-        return {"action": "tools", "tool_calls": [
-            {"name": "recommend_movies", "arguments": preferences}]}
-    filters = {}
+        return {"action": "tools",
+                "tool_calls": [{"name": "recommend_movies", "arguments": preferences}],
+                "result_constraints": dict(constraints)}
+    if has_title_prefix(text) and title:
+        return {"action": "tools",
+                "tool_calls": [{"name": "search_movies_by_title",
+                                "arguments": {"query": title}}],
+                "result_constraints": dict(constraints)}
+    filters: dict = {}
     if genres:
         filters["genres"] = genres
     if "year_from" in years:
@@ -556,10 +858,12 @@ def route_deterministically(case: dict) -> dict:
         if state == "OUT_OF_RANGE":
             return {"action": "explain_coverage", "error_state": state, "meta": meta,
                     "candidate_arguments": filters, "tool_calls": []}
-        return {"action": "tools", "tool_calls": [{"name": "filter_movies", "arguments": filters}]}
+        return {"action": "tools",
+                "tool_calls": [{"name": "filter_movies", "arguments": filters}]}
     if title:
-        return {"action": "tools", "tool_calls": [
-            {"name": "search_movies_by_title", "arguments": {"query": title}}]}
+        return {"action": "tools",
+                "tool_calls": [{"name": "search_movies_by_title",
+                                "arguments": {"query": title}}]}
     return {"action": "clarify", "question": "which movie intent?", "tool_calls": []}
 
 
@@ -587,7 +891,10 @@ def slots_match(case: dict, called: list[dict]) -> tuple[bool, list[str]]:
                     candidate_problems.append(f"seed_title: {search.get('query')!r} != {value!r}")
                 continue
             tool = ("recommend_movies" if key in
-                    ("preferred_genres", "year_range", "director") else "filter_movies")
+                    ("preferred_genres", "year_range", "director")
+                    or ("recommend_movies" in case["expected_tools"]
+                        and "filter_movies" not in case["expected_tools"])
+                    else "filter_movies")
             if key == "query":
                 tool = "search_movies_by_title"
             arguments = by_tool.get(tool, {})
@@ -614,8 +921,34 @@ def slots_match(case: dict, called: list[dict]) -> tuple[bool, list[str]]:
     return False, problems
 
 
+def text_constraints(text: str) -> dict:
+    """The result conditions the user actually stated, derived from the text alone.
+
+    A variant can only be required to honour what the query says. Annotation constraints that
+    the text does not state (a golden "neighbourhood" window, a person name behind a similar
+    film) are reported separately instead of being scored as misses.
+    """
+    constraints: dict = {}
+    genres = extract_genres(text)
+    if genres:
+        constraints["genres"] = genres
+    years = extract_years(text)
+    if "year_from" in years:
+        constraints["year_from"] = years["year_from"]
+    if "year_to" in years:
+        constraints["year_to"] = years["year_to"]
+    rating = extract_rating(text)
+    if rating is not None:
+        constraints["min_rating"] = rating
+    director = extract_director(text)
+    if director:
+        constraints["director"] = director
+    return constraints
+
+
 def score_case(case: dict, called: list[dict], schema_problems: list[str],
-               execution: list[dict], behavior: str, error_state: str | None) -> dict:
+               execution: list[dict], behavior: str, error_state: str | None,
+               executor: ToolExecutor) -> dict:
     expected_tools = case["expected_tools"]
     called_names = [call["name"] for call in called]
     if expected_tools:
@@ -637,8 +970,17 @@ def score_case(case: dict, called: list[dict], schema_problems: list[str],
         behavior_ok = tools_ok
     deferred = any(item.get("status") == "deferred" for item in execution)
     expected_ids = set(case.get("acceptable_movie_ids", []))
-    returned_ids = {row["id"] for item in execution for row in item.get("results", [])}
+    rows = [row for item in execution if item.get("displayed", True)
+            for row in item.get("results", [])]
+    returned_ids = {row["id"] for row in rows}
     accepted_hit = bool(expected_ids & returned_ids) if expected_ids else None
+    constraints = case.get("result_constraints") or {}
+    stated = text_constraints(case["text"])
+    scored = {key: value for key, value in constraints.items() if key in stated}
+    constraint_violations = [f"{row['id']} {row['title']}: {problem}"
+                             for row in rows
+                             for problem in constraint_problems(row, scored)]
+    grounding_ok, grounding_problems = executor.ground(rows)
     return {
         "tools_expected": expected_tools,
         "tools_called": called_names,
@@ -652,11 +994,84 @@ def score_case(case: dict, called: list[dict], schema_problems: list[str],
         "error_state_expected": case["expected_error_code"],
         "error_state_observed": error_state,
         "acceptable_hit": accepted_hit,
+        "rows_returned": len(rows),
+        "seed_excluded": all(item.get("seed_excluded", True) for item in execution),
+        "result_constraints": constraints,
+        "result_constraints_scored": scored,
+        "result_constraints_unscored": sorted(set(constraints) - set(stated)),
+        "result_constraint_violations": constraint_violations,
+        "result_constraint_ok": None if not scored else not constraint_violations,
+        "grounding_ok": grounding_ok,
+        "grounding_problems": grounding_problems,
         "execution_deferred": deferred,
-        "grounding": "not_checked (stage 1)",
         "passed": bool(tools_ok and tools_complete and slots_ok and not schema_problems
                        and behavior_ok and not deferred),
     }
+
+
+def is_task_success(case: dict, record: dict) -> bool:
+    """Plan §6 task-level success: the right call, executed and grounded, nothing invented.
+
+    Refusal / clarification / coverage cases have no rows: their task success is the required
+    behaviour itself (a refusal with no tool call, one question, the expected error state).
+    """
+    expected = case["expected_behavior"]
+    if expected == "refuse_no_tool":
+        return bool(record["behavior_ok"]) and not record["tools_called"]
+    if expected == "ask_one_clarifying_question":
+        return bool(record["behavior_ok"]) and not record["schema_problems"]
+    if expected == "explain_coverage_limit":
+        return record["error_state_observed"] == case["expected_error_code"]
+    if not record["passed"] or record["execution_deferred"]:
+        return False
+    if record["rows_returned"] < 1 or record["grounding_ok"] is False:
+        return False
+    if record["result_constraint_ok"] is False:
+        return False
+    if record["acceptable_hit"] is False:
+        return False
+    return True
+
+
+def failure_modes(case: dict, record: dict) -> list[str]:
+    """Plan §6 failure taxonomy, limited to what the harness can observe."""
+    modes: list[str] = []
+    expected = set(case["expected_tools"])
+    called = set(record["tools_called"])
+    if not called and expected:
+        modes.append("no_tool_call")
+    if called - expected:
+        modes.append("wrong_tool" if not called & expected else "extra_tool")
+    if expected - called and called:
+        modes.append("incomplete_tool_sequence")
+    if record["schema_problems"]:
+        modes.append("enum_language" if any("not in enum" in problem
+                                            for problem in record["schema_problems"])
+                     else "bad_args")
+    if not record["slots_ok"]:
+        modes.append("slot_mismatch")
+    if case["expected_refusal"] and called:
+        modes.append("under_refusal")
+    if not case["expected_tools"] and called and not case["expected_refusal"]:
+        modes.append("unrequested_tool")
+    if case["expected_error_code"] != "NONE" \
+            and record["error_state_observed"] != case["expected_error_code"]:
+        modes.append("coverage_confusion")
+    if case["expected_behavior"] == "ask_one_clarifying_question" and not record["behavior_ok"]:
+        modes.append("no_clarification")
+    if record["prose_id_hallucinations"]:
+        modes.append("hallucinated_id")
+    if record["result_constraint_ok"] is False:
+        modes.append("result_constraint_violation")
+    if record["grounding_ok"] is False:
+        modes.append("grounding_violation")
+    if record["acceptable_hit"] is False:
+        modes.append("acceptable_set_miss")
+    if case["expected_behavior"] == "call_tools_and_answer" and record["rows_returned"] == 0:
+        modes.append("empty_result")
+    if record["execution_deferred"]:
+        modes.append("not_executed")
+    return modes
 
 
 # --------------------------------------------------------------------------------------
@@ -707,38 +1122,149 @@ def run_g0(case: dict, client: OllamaClient, model: str, tools: list[dict]) -> d
     }
 
 
+def evaluate_calls(called: list[dict], schema_doc: dict, executor: ToolExecutor,
+                   constraints: dict | None = None,
+                   reject_invalid: bool = False) -> tuple[list[str], list[dict], str | None]:
+    schema_problems: list[str] = []
+    execution: list[dict] = []
+    error_state = None
+    for call in called:
+        problems = [f"{call['name']}: {problem}" for problem in
+                    validate_call(schema_doc, call["name"], call["arguments"])]
+        schema_problems.extend(problems)
+        if problems and reject_invalid:
+            # G2: the server refuses the arguments instead of executing them (plan §5).
+            execution.append({"status": "INVALID_ARGUMENT", "results": [],
+                              "problems": problems})
+            error_state = "INVALID_ARGUMENT"
+            continue
+        state, _meta = coverage_state(call["arguments"])
+        if state:
+            error_state = state
+        execution.append(executor.execute(call["name"], call["arguments"], constraints))
+    if called and error_state is None:
+        for item in execution:
+            if item.get("status") in ("EMPTY_RESULT", "OUT_OF_RANGE", "NOT_FOUND", "error"):
+                error_state = item["status"]
+                break
+    return schema_problems, execution, error_state
+
+
+def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor) -> dict:
+    """Deterministic route, plus the seed hop when the plan needs a movie id first."""
+    route = route_deterministically(case)
+    extra: dict = {"route": {key: value for key, value in route.items() if key != "tool_calls"},
+                   "latency_ms": 0.0, "model_calls": 0}
+    action = route["action"]
+    if action == "refuse":
+        return {"called": [], "execution": [], "schema_problems": [], "behavior": "refuse",
+                "error_state": None,
+                "extra": {**extra, "answer": f"[refusal: {route['reason']}]"}}
+    if action == "clarify":
+        return {"called": [], "execution": [], "schema_problems": [], "behavior": "clarify",
+                "error_state": None,
+                "extra": {**extra, "answer": f"[one question: {route['question']}]"}}
+    if action == "explain_coverage":
+        return {"called": [], "execution": [], "schema_problems": [],
+                "behavior": "explain_coverage", "error_state": route["error_state"],
+                "extra": {**extra,
+                          "answer": f"[coverage {route['error_state']} {route['meta']}]",
+                          "candidate_arguments": route["candidate_arguments"]}}
+
+    constraints = route.get("result_constraints") or None
+    called = list(route["tool_calls"])
+    schema_problems, execution, error_state = evaluate_calls(called, schema_doc, executor,
+                                                             constraints)
+    behavior = "tools"
+    rows = [row for item in execution for row in item.get("results", [])]
+    if route.get("follow_up") == SEED_FOLLOW_UP:
+        candidates = [row for row in rows
+                      if normalized(row["title"]) == normalized(route["seed_title"])] or rows
+        if constraints and constraints.get("year_from") is not None \
+                and constraints.get("year_from") == constraints.get("year_to"):
+            narrowed = [row for row in candidates if row["year"] == constraints["year_from"]]
+            candidates = narrowed or candidates
+        seed = candidates[0] if len(candidates) == 1 else None
+        if seed is None:
+            # R2-3: more than one plausible title - list candidates and ask, do not guess.
+            behavior = "clarify"
+            extra["disambiguation_candidates"] = [
+                {"id": row["id"], "title": row["title"], "year": row["year"]}
+                for row in candidates[:3]]
+            extra["answer"] = "[seed unresolved: candidates listed + one question]"
+        else:
+            for item in execution:
+                item["displayed"] = False
+            follow = {"name": SEED_FOLLOW_UP, "arguments": {"movie_id": seed["id"]}}
+            problems, execution2, error2 = evaluate_calls([follow], schema_doc, executor,
+                                                          constraints)
+            schema_problems += problems
+            execution += execution2
+            called.append(follow)
+            extra["seed"] = {"id": seed["id"], "title": seed["title"]}
+            if error2:
+                error_state = error2
+    elif constraints:
+        # A stated condition the tool cannot carry (a genre next to a title prefix) is applied
+        # to the returned rows server-side instead of being dropped (R7-2).
+        for item in execution:
+            if item.get("results"):
+                item["results"] = [row for row in item["results"]
+                                   if not constraint_problems(row, constraints)]
+                item["constraints_applied"] = constraints
+                if not item["results"] and item.get("status") == "OK":
+                    item["status"] = "EMPTY_RESULT"
+                    error_state = "EMPTY_RESULT"
+        rows = [row for item in execution for row in item.get("results", [])]
+    if behavior == "tools" and len(rows) > 1 \
+            and called and called[-1]["name"] == "search_movies_by_title":
+        behavior = "clarify"
+        extra["disambiguation_candidates"] = [
+            {"id": row["id"], "title": row["title"], "year": row["year"]} for row in rows[:3]]
+        extra["answer"] = "[multi-hit title: candidates listed + one question]"
+    extra.setdefault("answer", f"[server-rendered {len(rows)} rows]")
+    return {"called": called, "execution": execution, "schema_problems": schema_problems,
+            "behavior": behavior, "error_state": error_state, "extra": extra}
+
+
 def run_case(case: dict, variant: str, client: OllamaClient | None, model: str,
-             schema_doc: dict, executor: ToolExecutor) -> dict:
+             schema_doc: dict, executor: ToolExecutor,
+             replay: dict | None = None) -> dict:
     tools = schema_doc["tools"]
-    record: dict = {"case_id": case["case_id"], "variant": variant, "query": case["text"]}
+    record: dict = {"case_id": case["case_id"], "kind": case["kind"],
+                    "intent": case["intent"], "variant": variant, "query": case["text"]}
     behavior = "answer"
     error_state = None
     called: list[dict] = []
     execution: list[dict] = []
+    schema_problems: list[str] = []
 
     if variant == "G1":
-        route = route_deterministically(case)
-        record["route"] = {key: value for key, value in route.items()
-                           if key not in ("tool_calls",)}
-        behavior = {"refuse": "refuse", "clarify": "clarify", "tools": "tools",
-                    "explain_coverage": "explain_coverage"}[route["action"]]
-        called = route["tool_calls"]
-        record["latency_ms"] = 0.0
-        if behavior == "refuse":
-            record["answer"] = f"[refusal: {route['reason']}]"
-        elif behavior == "explain_coverage":
-            error_state = route["error_state"]
-            record["answer"] = (f"[coverage: {route['error_state']} {route['meta']}, "
-                                f"args not expressible: {route['candidate_arguments']}]")
+        result = run_g1(case, schema_doc, executor)
+        called = result["called"]
+        execution = result["execution"]
+        schema_problems = result["schema_problems"]
+        behavior = result["behavior"]
+        error_state = result["error_state"]
+        record.update(result["extra"])
     else:
-        if client is None:
-            raise EvalError("G0/G2 need an Ollama endpoint; pass --base-url")
-        g0 = run_g0(case, client, model, tools)
-        called = g0["tool_calls"]
+        if replay is not None:
+            # G2 replays G0's recorded calls: the server layer is the only changed variable.
+            called = [{"name": call["name"], "arguments": dict(call["arguments"])}
+                      for call in replay["tool_calls"]]
+            record.update({"latency_ms": replay.get("latency_ms"),
+                           "answer": replay.get("answer", ""), "reused_from": "G0",
+                           "prompt_eval_count": replay.get("prompt_eval_count"),
+                           "eval_count": replay.get("eval_count"), "model_calls": 0})
+        else:
+            if client is None:
+                raise EvalError("G0/G2 need an Ollama endpoint; pass --base-url")
+            g0 = run_g0(case, client, model, tools)
+            called = g0["tool_calls"]
+            record.update({"latency_ms": g0["latency_ms"], "answer": g0["content"],
+                           "prompt_eval_count": g0["prompt_eval_count"],
+                           "eval_count": g0["eval_count"], "model_calls": 1})
         behavior = "tools" if called else "answer"
-        record.update({"latency_ms": g0["latency_ms"], "answer": g0["content"],
-                       "prompt_eval_count": g0["prompt_eval_count"],
-                       "eval_count": g0["eval_count"]})
         if variant == "G2" and called:
             mapped: list[dict] = []
             for call in called:
@@ -753,23 +1279,19 @@ def run_case(case: dict, variant: str, client: OllamaClient | None, model: str,
                 mapped.append({"name": call["name"], "arguments": arguments})
             called = mapped
             record["mapped_tool_calls"] = mapped
+        schema_problems, execution, error_state = evaluate_calls(
+            called, schema_doc, executor, reject_invalid=(variant == "G2"))
 
-    schema_problems: list[str] = []
-    for call in called:
-        schema_problems.extend(f"{call['name']}: {problem}" for problem in
-                               validate_call(schema_doc, call["name"], call["arguments"]))
-        state, _meta = coverage_state(call["arguments"])
-        if state:
-            error_state = state
-        execution.append(executor.execute(call["name"], call["arguments"]))
     record["tool_calls"] = called
     record["execution"] = execution
-    if called and error_state is None:
-        for item in execution:
-            if item.get("status") in ("EMPTY_RESULT", "OUT_OF_RANGE", "NOT_FOUND", "error"):
-                error_state = item["status"]
-                break
-    record.update(score_case(case, called, schema_problems, execution, behavior, error_state))
+    record.update(score_case(case, called, schema_problems, execution, behavior, error_state,
+                             executor))
+    returned_ids = {row["id"] for item in execution for row in item.get("results", [])}
+    record["prose_id_hallucinations"] = sorted(
+        {match for match in re.findall(r"\btt\d{5,}\b", record.get("answer") or "")}
+        - returned_ids)
+    record["failure_modes"] = failure_modes(case, record)
+    record["task_success"] = is_task_success(case, record)
     return record
 
 
@@ -794,7 +1316,7 @@ def print_dry_run(schema_doc: dict, cases_doc: dict, routing_doc: dict) -> None:
     print("variants:          G0 pure LLM / G1 deterministic / G2 G0 + server validation "
           "/ G3 not measured")
     print("execution:         search_movies_by_title, filter_movies, get_movie_card (SQL); "
-          "find_similar_movies, recommend_movies deferred")
+          "find_similar_movies, recommend_movies via deterministic evaluation stand-in")
     print("\ncase plan (first 15):")
     for case in build_cases(cases_doc, routing_doc, "both", None)[:15]:
         print(f"  {case['case_id']:<4} {case['kind']:<6} {case['expected_behavior']:<28} "
@@ -802,17 +1324,51 @@ def print_dry_run(schema_doc: dict, cases_doc: dict, routing_doc: dict) -> None:
     print("\ndry run: no network call, no SQL, no evaluation run.")
 
 
+def percentile(values: list[float], fraction: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, int(round(fraction * (len(ordered) - 1)))))
+    return round(ordered[index], 1)
+
+
 def summarise(records: list[dict]) -> dict:
-    total = len(records)
+    latencies = [record["latency_ms"] for record in records
+                 if isinstance(record.get("latency_ms"), (int, float))
+                 and record["latency_ms"] > 0]
+    modes: dict[str, int] = {}
+    for record in records:
+        for mode in record["failure_modes"]:
+            modes[mode] = modes.get(mode, 0) + 1
+
+    def block(subset: list[dict]) -> dict:
+        return {"cases": len(subset),
+                "task_success": sum(1 for r in subset if r["task_success"]),
+                "passed": sum(1 for r in subset if r["passed"])}
+
     return {
-        "cases": total,
+        "cases": len(records),
+        "task_success": sum(1 for r in records if r["task_success"]),
         "tools_ok": sum(1 for r in records if r["tools_ok"]),
         "tools_complete": sum(1 for r in records if r["tools_complete"]),
         "slots_ok": sum(1 for r in records if r["slots_ok"]),
         "schema_ok": sum(1 for r in records if r["schema_ok"]),
         "behavior_ok": sum(1 for r in records if r["behavior_ok"]),
         "passed": sum(1 for r in records if r["passed"]),
+        "grounding_ok": sum(1 for r in records if r["grounding_ok"]),
+        "result_constraints_checked": sum(1 for r in records
+                                          if r["result_constraint_ok"] is not None),
+        "result_constraints_ok": sum(1 for r in records if r["result_constraint_ok"]),
         "deferred": sum(1 for r in records if r["execution_deferred"]),
+        "model_calls": sum(int(r.get("model_calls", 0)) for r in records),
+        "latency_samples": len(latencies),
+        "latency_p50_ms": percentile(latencies, 0.5),
+        "latency_p95_ms": percentile(latencies, 0.95),
+        "failure_modes": dict(sorted(modes.items(), key=lambda item: -item[1])),
+        "by_kind": {kind: block([r for r in records if r["kind"] == kind])
+                    for kind in sorted({r["kind"] for r in records})},
+        "by_intent": {intent: block([r for r in records if r["intent"] == intent])
+                      for intent in sorted({r["intent"] for r in records})},
     }
 
 
@@ -855,38 +1411,59 @@ def run_variant(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
         cases = cases[: args.limit]
     if len(cases) > args.full_run_threshold and not args.allow_full_run:
         raise EvalError(
-            f"refusing to evaluate {len(cases)} cases: stage 1 is a smoke run. Use --limit, or "
-            f"--allow-full-run once the full run is approved."
+            f"refusing to evaluate {len(cases)} cases above --full-run-threshold "
+            f"{args.full_run_threshold}: use --limit, or --allow-full-run once the full run is "
+            f"approved."
         )
+    replay: dict[str, dict] = {}
+    if args.reuse_g0:
+        if args.variant != "G2":
+            raise EvalError("--reuse-g0 only applies to --variant G2")
+        replay = {record["case_id"]: record
+                  for record in load_json(Path(args.reuse_g0))["records"]}
+        missing = [case["case_id"] for case in cases if case["case_id"] not in replay]
+        if missing:
+            raise EvalError(f"{args.reuse_g0} has no G0 record for {missing[:5]}")
     client = None
-    if args.variant in ("G0", "G2"):
+    if args.variant in ("G0", "G2") and not replay:
         client = OllamaClient(args.base_url, timeout_s=args.timeout)
     executor = ToolExecutor(None if args.skip_db else ReadOnlyMysql())
-    records = [run_case(case, args.variant, client, args.model, schema_doc, executor)
+    model_digest = (client.tags().get(args.model) if client else _replayed_digest(replay))
+    records = [run_case(case, args.variant, client, args.model, schema_doc, executor,
+                        replay.get(case["case_id"]))
                for case in cases]
+    for record in records:
+        record["model_digest"] = model_digest
     summary = summarise(records)
     payload = {
         "variant": args.variant,
         "contract_version": schema_doc["contract_version"],
         "schema_hash": schema_doc["schema_hash"],
-        "model": args.model if client else None,
+        "model": args.model if args.variant in ("G0", "G2") else None,
+        "model_digest": model_digest,
         "base_url": args.base_url if client else None,
         "temperature": TEMPERATURE,
         "prompt_id": PROMPT_ID,
         "prompt_sha256": hashlib.sha256(PROMPT_TEXT.encode()).hexdigest(),
+        "db_snapshot": cases_doc.get("snapshot"),
+        "reused_from": args.reuse_g0,
         "summary": summary,
         "records": records,
     }
     print(f"variant {args.variant}: {summary}")
     for record in records:
-        print(f"  {record['case_id']:<4} passed={record['passed']!s:<5} "
+        print(f"  {record['case_id']:<4} task={record['task_success']!s:<5} "
+              f"routing={record['passed']!s:<5} "
               f"tools={record['tool_calls'] and [c['name'] for c in record['tool_calls']]} "
               f"slots_ok={record['slots_ok']} schema_ok={record['schema_ok']} "
-              f"behavior_ok={record['behavior_ok']} error={record['error_state_observed']}")
+              f"behavior_ok={record['behavior_ok']} rows={record['rows_returned']} "
+              f"error={record['error_state_observed']}")
         if record["slot_problems"]:
             print(f"        slot problems: {record['slot_problems']}")
         if record["schema_problems"]:
             print(f"        schema problems: {record['schema_problems']}")
+        if record["failure_modes"]:
+            print(f"        failure modes: {record['failure_modes']}")
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -915,6 +1492,9 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S)
     parser.add_argument("--skip-db", action="store_true", help="no SQL; execution is recorded as skipped")
+    parser.add_argument("--reuse-g0",
+                        help="G2 only: replay the tool calls recorded in this G0 JSON instead of "
+                             "calling the model again")
     parser.add_argument("--out", help="write the run record as JSON to this path")
     args = parser.parse_args()
 
