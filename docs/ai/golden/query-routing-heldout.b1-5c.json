@@ -1,0 +1,560 @@
+{
+  "$comment": "B1.5c held-out routing annotations. Binds the held-out queries file by SHA-256 (never the frozen queries.b1-5.json) and the current v3 tool contract.",
+  "routing_version": "b1-5c-routing/v1",
+  "annotates": {
+    "file": "docs/ai/golden/queries-heldout.b1-5c.json",
+    "heldout_version": "b1-5c-heldout/v1",
+    "sha256": "d471c57a3b27d93f499003573ad690b08580691e911fe5127e35b76cd191abe4"
+  },
+  "schema_contract": {
+    "file": "docs/ai/tool-schema.b1-5.json",
+    "contract_version": "b1.5-tools/v3",
+    "schema_hash": "712c0e34c37b6de140c13fcc7d3de15e67ac1f131f2bb6e8751a4f5e4df3474a"
+  },
+  "slot_vocabulary": {
+    "query": "search_movies_by_title.query - catalog English original title; for a CJK title this is the resolved English form produced by G1-T step 2-3",
+    "year": "search_movies_by_title.year - optional disambiguation year from the query (must be inside the 196-2024 coverage)",
+    "genres": "filter_movies.genres[] - values from the derived genre enum",
+    "year_from": "filter_movies.year_from - inclusive integer year",
+    "year_to": "filter_movies.year_to - inclusive integer year",
+    "min_rating": "filter_movies.min_rating - number 0-10",
+    "preferred_genres": "recommend_movies.preferred_genres[] - values from the derived genre enum",
+    "year_range": "recommend_movies.year_range = {\"from\": int, \"to\": int}",
+    "director": "recommend_movies.director - the value stored in the catalog",
+    "seed_title": "routing-level slot: the seed title that find_similar_movies needs; resolved to a catalog row before find_similar_movies.movie_id may be set (a CJK title only resolves through G1-T step 2-3)"
+  },
+  "result_constraint_vocabulary": {
+    "genres": "answer/results must be limited to these enum values (canonicalized, AND over distinct canonical keys)",
+    "year_from": "answer/results must be limited to this inclusive lower year bound",
+    "year_to": "answer/results must be limited to this inclusive upper year bound",
+    "min_rating": "answer/results must be limited to this inclusive minimum rating",
+    "director": "answer/results must be limited to this stored director value (person-normalization equality, no surname expansion)"
+  },
+  "annotations": [
+    {
+      "query_id": "H01",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Shawshank Redemption' | rows=1 | ids=FDa10",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Shawshank Redemption"
+      },
+      "accept_alternative_slots": [
+        {
+          "query": "Shawshank Redemption"
+        }
+      ],
+      "allows_clarification": false,
+      "notes": "中文译名检索（肖申克的救赎 → The Shawshank Redemption，快照 id FDa10，1994，Drama，无评分）。这是 C4=D 的 G1-T 主用例：G1-T 必须先把中文片名解析成目录英文原名并把解析结果送进 search_movies_by_title.query；G1（无解析层）只能把中文原样送出，因此必然失败，这是 held-out G1 的理论上限 28/30 的来源之一。别名表冻结为空（C10），所以解析只能来自 LLM 候选 + 目录校验。该片同时是无评分（rating IS NULL）边界样本。"
+    },
+    {
+      "query_id": "H02",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1950 AND year <= 1959 AND genres ⊇ {History} | rows=11 | ids=ELM35,JN12,EMr10,RcF20,AG65,EMr13,JnD31,EMr15,RiF18,LNm14,SeL1",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1950,
+        "year_to": 1959
+      },
+      "allows_clarification": false,
+      "notes": "类型 + 年代双槽位筛选；History 是 B1.5b 冻结集从未用过的优先类型（215 部），1950 年代窗口把它收窄到 11 部，可接受集合 = 该窗口全集（无需排序）。中文类型词“历史”必须在服务端映射成 enum 值 History（aliases/genre-aliases.json）。"
+    },
+    {
+      "query_id": "H03",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1960 AND year <= 1965 AND genres ⊇ {History} | rows=9 | ids=AG70,OP31,SK5,MBo10,MBo11,MBo12,RoA22,RCo35,TGA2",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1960,
+        "year_to": 1965
+      },
+      "allows_clarification": false,
+      "notes": "显式年份区间 + 类型；可接受集合 = 1960–1965（含两端）内的 History 全集，共 9 部，实际年份落在 1960–1964，没有 1965 年的 History 片 → 区间实现成半开区间 [1960,1965) 时结果恰好相同，端点的包含性由 H02/H13/H15 的单年或整十年窗口单独覆盖。"
+    },
+    {
+      "query_id": "H04",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1955 AND year <= 1957 AND genres ⊇ {History} AND id NOT IN (RiF18) | rows=4 | ids=AG65,EMr13,JnD31,EMr15",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "The Vikings"
+      },
+      "result_constraints": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1955,
+        "year_to": 1957
+      },
+      "allows_clarification": false,
+      "notes": "多槽位相似：种子片名 + 类型 + 年份窗口。种子 RiF18（The Vikings 1957）由 search_movies_by_title 解析，find_similar_movies.movie_id 不得由模型编造；结果先按类型+年份收窄再排序，并排除种子 → 可接受集合 = 该窗口内除种子外的 4 部。只加“同导演优先”排序而不收窄的反例（计划 §6.2 / scout §3.2）在此条上会失败。"
+    },
+    {
+      "query_id": "H05",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1971 AND year <= 1972 AND genres ⊇ {Fantasy} AND id NOT IN (RoS100) | rows=9 | ids=RAl62,JJA5,JqD7,IHk10,WSt10,JLT27,FF14,JIv11,LJe2",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Bedknobs and Broomsticks"
+      },
+      "result_constraints": {
+        "genres": [
+          "Fantasy"
+        ],
+        "year_from": 1971,
+        "year_to": 1972
+      },
+      "allows_clarification": false,
+      "notes": "种子片名 + 类型 + 两年窗口；可接受集合 = 1971–1972 奇幻片全集去掉种子（9 部）。Fantasy 是 B1.5b 从未用过的优先类型（492 部）。"
+    },
+    {
+      "query_id": "H06",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'B.Wilder' AND year >= 1950 AND year <= 1959 AND genres ⊇ {Comedy} | rows=3 | ids=BW10,BW12,BW16",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Comedy"
+        ],
+        "year_range": {
+          "from": 1950,
+          "to": 1959
+        },
+        "director": "B.Wilder"
+      },
+      "allows_clarification": false,
+      "notes": "导演 + 年代区间 + 类型三槽位推荐；B.Wilder 是库内缩写式（22 部），按 person-normalization.json 只允许“姓同 + 首字母一致”的等价（B.Wilder ↔ Billy Wilder），不得扩展成任意 Wilder 姓氏。可接受集合 = 1950 年代 3 部喜剧（Stalag 17 / The Seven Year Itch / Some Like It Hot）。"
+    },
+    {
+      "query_id": "H07",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": true,
+      "golden_predicate": "predicate: no catalog lookup - ticketing is out of scope (refuse, no tool call) | rows=0 | ids=(none)",
+      "expected_tools": [],
+      "required_slots": {},
+      "allows_clarification": false,
+      "notes": "越界请求（购票交易）：目录只有片名/年份/导演/类型/主演/评分，没有场次与票务，必须在不调用任何工具的情况下拒绝。"
+    },
+    {
+      "query_id": "H08",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'King Kong' | rows=2 | ids=EBS50,IGu29",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "King Kong"
+      },
+      "allows_clarification": true,
+      "notes": "重名片名且查询没有任何消歧线索（年份/导演/主演都没写）：快照里 title='King Kong' 有 2 行（1933 Schoedsack EBS50 / 1976 Guillermin IGu29）。按 R2-3 不得任选其一，正确行为 = 列出这两行候选（片名+年份+导演）+ 只问一个问题。allows_clarification=true 表示这种澄清式回答也算严格任务成功，但主口径仍要求可接受集合命中；两条都计入 /30。"
+    },
+    {
+      "query_id": "H09",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Casablanca' | rows=1 | ids=C127",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Casablanca"
+      },
+      "allows_clarification": false,
+      "notes": "精确片名 + 0 类型边界：C127（Casablanca 1942，Curtiz）没有任何 genre 行、也没有评分。标题命中不依赖 genres，所以正确实现必须返回它，不能因为类型/评分为空就丢弃；这是 3,318 部 0 类型片与 13,082 部无评分片的代表样本。"
+    },
+    {
+      "query_id": "H10",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2004 AND year <= 2005 AND genres ⊇ {War} AND rating >= 8 | rows=5 | ids=tt0413833,tt0470985,tt0455927,tt0482444,tt0436971",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "War"
+        ],
+        "year_from": 2004,
+        "year_to": 2005,
+        "min_rating": 8
+      },
+      "allows_clarification": false,
+      "notes": "三槽位筛选（类型 + 年份区间 + 最低评分）；War 是 B1.5b 从未用过的优先类型（125 部，其中 124 部在 2000 年代），评分只覆盖 2001+ 所以本窗口可用。可接受集合 = 5 部纪录片式战争片；评分按数值比较（不是字符串）。"
+    },
+    {
+      "query_id": "H11",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Thing' AND year = 1951 | rows=1 | ids=CNy1",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Thing",
+        "year": 1951
+      },
+      "allows_clarification": false,
+      "notes": "重名片名 + 年份线索：title='The Thing' 有 2 行（1951 Nyby CNy1 / 1982 Carpenter ICa9），查询给了 1951，所以不需要澄清，可接受集合只有 CNy1。这条同时测 search_movies_by_title.year 的消歧用法（v3 里 year 只是形状校验，1951 在覆盖区间内）。"
+    },
+    {
+      "query_id": "H12",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Bridge on the River Kwai' | rows=1 | ids=DL12",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Bridge on the River Kwai"
+      },
+      "allows_clarification": false,
+      "notes": "长片名精确检索（DL12，1957，Lean，Adventure）。片名里有 \"the\"，测试实现不能把冠词当停用词删掉（删掉后 exact 命中会退化为 prefix/substring 噪声）。"
+    },
+    {
+      "query_id": "H13",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2006 AND year <= 2006 AND genres ⊇ {War} | rows=11 | ids=tt0389557,tt0444182,tt0496294,tt0450680,tt0485922,tt0481390,tt0498380,tt0462002,tt0468094,tt0470082,tt0482567",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "War"
+        ],
+        "year_from": 2006,
+        "year_to": 2006
+      },
+      "allows_clarification": false,
+      "notes": "单年窗口（year_from = year_to = 2006）+ 优先类型 War；11 部全集即答案。单年窗口是“年代解析”与“显式年份”之间的边界形态，容易实现成整十年。"
+    },
+    {
+      "query_id": "H14",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1961 AND year <= 1962 AND genres ⊇ {Fantasy} | rows=4 | ids=JDh5,LHM3,LB25,AMg7",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Fantasy"
+        ],
+        "year_from": 1961,
+        "year_to": 1962
+      },
+      "allows_clarification": false,
+      "notes": "Fantasy + 两年窗口 → 4 部全集（Babes in Toyland / Batman / El Angel Exterminador / The Golden Arrow）。小池用例用来暴露“截断发生在收窄之前”的问题（SIMILAR_POOL 类缺陷）。"
+    },
+    {
+      "query_id": "H15",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1994 AND year <= 1994 AND genres ⊇ {History} | rows=5 | ids=PlT60,KHt1,PaC20,LMg10,NHy10",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1994,
+        "year_to": 1994
+      },
+      "allows_clarification": false,
+      "notes": "1990 年代切片 1/3（1990s 在计划 §8.3-4 要求 3–5 条）：单年 + History → 5 部全集。1990 年代有 2,370 部真实数据，未被 B1.5b 的 filter 用例覆盖。"
+    },
+    {
+      "query_id": "H16",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1976 AND year <= 1978 AND genres ⊇ {Fantasy} AND id NOT IN (RD5) | rows=14 | ids=GNe5,RHf10,PHt13,GC52,RoS112,BFo13,TiG2,KCo22,KRu10,RAl75,NoT15,NOs35,DeJ10,ERr33",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Superman"
+      },
+      "result_constraints": {
+        "genres": [
+          "Fantasy"
+        ],
+        "year_from": 1976,
+        "year_to": 1978
+      },
+      "allows_clarification": false,
+      "notes": "中文译名作为相似种子（超人 → Superman）：这是 C4=D 的第二条 CJK 用例，也是 held-out 里唯一把中文解析结果当 find_similar_movies 种子的用例。注意 title='Superman' 还有 1948 年 Bennet 那行（SGB60），1976–1978 窗口把它排除，所以解析 + 约束共同消歧到 RD5。可接受集合 = 1976–1978 奇幻片全集去掉种子（14 部）。G1 无法解析中文，此条在 G1 下必然失败。"
+    },
+    {
+      "query_id": "H17",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1998 AND year <= 1999 AND genres ⊇ {History} AND id NOT IN (SKa10) | rows=10 | ids=MKy15,FZe23,XWZ15,RWc10,Fro28,JgW10,ASv10,PMz10,LBe20,PvL5",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Elizabeth"
+      },
+      "result_constraints": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1998,
+        "year_to": 1999
+      },
+      "allows_clarification": false,
+      "notes": "1990 年代切片 2/3：种子 SKa10（Elizabeth 1998）+ History + 两年窗口 → 可接受集合 = 该窗口 11 部去掉种子（10 部）。"
+    },
+    {
+      "query_id": "H18",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Hitchcock' AND year >= 1940 AND year <= 1949 AND genres ⊇ {Thriller} | rows=9 | ids=H34,H36,H37,H39,H38,H42,H43,H44,H45",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Thriller"
+        ],
+        "year_range": {
+          "from": 1940,
+          "to": 1949
+        },
+        "director": "Hitchcock"
+      },
+      "allows_clarification": false,
+      "notes": "导演 + 年代区间 + 类型；Hitchcock 在库内只有单一字符串（83 部，无缩写式），是“单字符串导演优先”的样本。1940 年代惊悚片 9 部即全集（Foreign Correspondent / Suspicion / Saboteur / Shadow of a Doubt / Lifeboat / Spellbound / Notorious / The Paradine Case / Rope）。"
+    },
+    {
+      "query_id": "H19",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": true,
+      "golden_predicate": "predicate: no catalog lookup - payment support is out of scope (refuse, no tool call) | rows=0 | ids=(none)",
+      "expected_tools": [],
+      "required_slots": {},
+      "allows_clarification": false,
+      "notes": "越界请求（支付方式）：与电影目录无关，必须拒绝且不调用工具。"
+    },
+    {
+      "query_id": "H20",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Fly' | rows=2 | ids=KuN14,DCr20",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Fly"
+      },
+      "allows_clarification": true,
+      "notes": "重名片名且无线索：title='The Fly' 有 2 行（1958 K.Neumann KuN14 / 1986 Cronenberg DCr20）。正确行为 = 列出两行候选 + 只问一个问题（R2-3）。allows_clarification=true 表示澄清式回答算严格任务成功，两条都计入 /30。"
+    },
+    {
+      "query_id": "H21",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Amadeus' | rows=1 | ids=MF8",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Amadeus"
+      },
+      "allows_clarification": false,
+      "notes": "英文精确片名（MF8，1983，Forman，Biography）。1980 年代样本，同时验证英文查询不需要任何翻译步骤（G1 与 G1-T 的 model_calls 都必须是 0）。"
+    },
+    {
+      "query_id": "H22",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1958 AND year <= 1959 AND genres ⊇ {Fantasy} | rows=10 | ids=InB20,RCu10,NJu12,LFo10,RoS70,RoS65,HeL30,RCu12,IrR32,RoS68",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Fantasy"
+        ],
+        "year_from": 1958,
+        "year_to": 1959
+      },
+      "allows_clarification": false,
+      "notes": "英文类型词 + 两年窗口 → 10 部全集；测试 \"Fantasy\" 直接命中 enum 值（不经别名表）且窗口端点包含。"
+    },
+    {
+      "query_id": "H23",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1998 AND year <= 1999 AND genres ⊇ {History} | rows=11 | ids=SKa10,MKy15,FZe23,XWZ15,RWc10,Fro28,JgW10,ASv10,PMz10,LBe20,PvL5",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "History"
+        ],
+        "year_from": 1998,
+        "year_to": 1999
+      },
+      "allows_clarification": false,
+      "notes": "1990 年代切片 3/3：History 1998–1999 → 11 部全集（与 H17 的窗口相同，但 H17 是相似用例且排除种子，两者的可接受集合按计划 §8.3 不与冻结 75 条冲突）。"
+    },
+    {
+      "query_id": "H24",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2008 AND year <= 2009 AND genres ⊇ {Sport} AND rating >= 6 | rows=3 | ids=tt0405393,tt0469903,tt0483746",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Sport"
+        ],
+        "year_from": 2008,
+        "year_to": 2009,
+        "min_rating": 6
+      },
+      "allows_clarification": false,
+      "notes": "三槽位筛选（Sport + 两年窗口 + 最低评分）→ 3 部全集。Sport 是 B1.5b 从未用过的优先类型（103 部，其中 100 部在 2000 年代）；\"Sports\" 复数必须在别名表里归一到 enum 值 Sport。"
+    },
+    {
+      "query_id": "H25",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1953 AND year <= 1954 AND genres ⊇ {Sci-Fi} AND id NOT IN (GDo37) | rows=9 | ids=JA5,EuL10,ByH13,JA13,ToT10,HLS10,WCM32,xTu10,RiF13",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Them!"
+      },
+      "result_constraints": {
+        "genres": [
+          "Sci-Fi"
+        ],
+        "year_from": 1953,
+        "year_to": 1954
+      },
+      "allows_clarification": false,
+      "notes": "多槽位相似（种子 + 类型 + 两年窗口）；可接受集合 = 1953–1954 科幻片全集去掉种子（9 部）。种子片名带感叹号，测试片名归一不能剥标点。"
+    },
+    {
+      "query_id": "H26",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1970 AND year <= 1979 AND genres ⊇ {Mystery} AND id NOT IN (RoP8) | rows=11 | ids=BCl1,HbR5,JCn6,ArP15,PWr3,HbR8,DS36,RBe2,RMe12,BCl4,RSf20",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Chinatown"
+      },
+      "result_constraints": {
+        "genres": [
+          "Mystery"
+        ],
+        "year_from": 1970,
+        "year_to": 1979
+      },
+      "allows_clarification": false,
+      "notes": "种子 RoP8（Chinatown 1974）+ Mystery + 1970 年代 → 可接受集合 = 12 部去掉种子（11 部）。是 held-out 里唯一的整十年窗口相似用例。"
+    },
+    {
+      "query_id": "H27",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1950 AND year <= 1954 AND genres ⊇ {Noir} AND id NOT IN (HGC17) | rows=8 | ids=OP18,RCl5,NR7,HGC16,DBy4,MC11,IH18,EGU30",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Les Diaboliques"
+      },
+      "result_constraints": {
+        "genres": [
+          "Noir"
+        ],
+        "year_from": 1950,
+        "year_to": 1954
+      },
+      "allows_clarification": false,
+      "notes": "种子 HGC17（Les Diaboliques 1954）+ Noir（别名 \"film noir\" → Noir）+ 窗口 → 可接受集合 = 9 部去掉种子（8 部）。种子里含 \"Les Diaboliques\" 的法文重音/拼写，测试 exact 优先命中而不是靠 substring 撞到别的片。"
+    },
+    {
+      "query_id": "H28",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Hitchcock' AND year >= 1958 AND year <= 1959 AND genres ⊇ {Thriller} | rows=8 | ids=H67,H66,H68,H65,H71,H70,H69,H72",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Thriller"
+        ],
+        "year_range": {
+          "from": 1958,
+          "to": 1959
+        },
+        "director": "Hitchcock"
+      },
+      "allows_clarification": false,
+      "notes": "英文推荐用例：导演 + 两年区间 + 类型 → 8 部全集（含 Vertigo / North by Northwest，也含 Hitchcock 电视剧集行，标注按库内实数给全，不按“名气”筛）。"
+    },
+    {
+      "query_id": "H29",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": true,
+      "golden_predicate": "predicate: no catalog lookup - runtime is not a catalog field (refuse, no tool call) | rows=0 | ids=(none)",
+      "expected_tools": [],
+      "required_slots": {},
+      "allows_clarification": false,
+      "notes": "越界请求（片长）：目录字段只有 id/title/year/director/genres/stars/rating，没有时长，必须拒绝而不是编造数字。"
+    },
+    {
+      "query_id": "H30",
+      "intent": "clarify_or_refuse",
+      "expected_refusal": true,
+      "golden_predicate": "predicate: no catalog lookup - review generation is out of scope (refuse, no tool call) | rows=0 | ids=(none)",
+      "expected_tools": [],
+      "required_slots": {},
+      "allows_clarification": false,
+      "notes": "越界请求（生成影评）：系统只从工具结果回答、不做创作，必须拒绝。注意片名 Psycho 本身是重名的（H73 1960 / GvS12 1998），但拒绝行为与片名解析无关。"
+    }
+  ]
+}

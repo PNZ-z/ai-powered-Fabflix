@@ -1,0 +1,41 @@
+{
+  "$comment": "B1.5c query-time title alias table. FROZEN EMPTY (decision C10): no Chinese translated title is pre-seeded, so a cold G1-T run can only recover a CJK title through the LLM candidate step + catalog verification. Entries are produced at run time by the resolver and are recorded with the evidence that produced them; they are never evaluation seeds.",
+  "aliases_version": "b1-5c-title-aliases/v1",
+  "created": "2026-11-19",
+  "entries": [],
+  "entry_schema": {
+    "zh_title": {
+      "type": "string",
+      "description": "the user-visible Chinese title, as resolved"
+    },
+    "movie_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10,
+      "description": "catalog id the title was verified against (VARCHAR(10), no assumed prefix)"
+    },
+    "source": {
+      "type": "string",
+      "description": "what produced the candidate: 'llm-candidate' | 'catalog-exact' | 'catalog-prefix' | 'manual-review'; a run-time resolver record is required"
+    },
+    "verified_by": {
+      "type": "string",
+      "description": "the exact command or SQL that proved the mapping against the catalog, e.g. SELECT id,title,year FROM movies WHERE title = 'Rear Window'"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "rules": [
+    "An entry may only be written after the candidate passed catalog verification (exact match preferred, prefix match second); unverified candidates are never stored.",
+    "Every entry carries source + verified_by + verified_at; an entry without them is invalid and check_schema.py rejects non-empty entries that lack the fields.",
+    "The table is frozen empty for the B1.5c measurement (C10). Choosing to pre-seed entries would bump aliases_version and invalidate the case for using that run as generalization evidence.",
+    "Held-out CJK cases must not appear here: scripts/eval/check_heldout.py asserts both held-out CJK titles are absent, before and after the run."
+  ],
+  "notes": [
+    "C10 (main agent, 2026-11-19): freeze empty. Q21-Q23 (黑客帝国 / 阿甘正传 / 泰坦尼克号) must NOT be pre-seeded; Chinese recovery may only come from G1-T step 2 (LLM candidates) plus step 3 (catalog verification).",
+    "No external alias data (Wikidata/TMDB/IMDb akas) is used: that data source plus its licence is still unapproved (WU-9 in docs/architecture/ai-user-workflows.md §9).",
+    "The resolver cache is a run artifact (.pi/artifacts/), not this file: within-run reuse never changes what this table contains."
+  ]
+}

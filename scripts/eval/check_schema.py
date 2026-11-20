@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
-"""Validate the B1.5b fixtures: tool schema, tool cases and query routing annotations.
+"""Validate the B1.5b/B1.5c fixtures: tool schema, tool cases, query routing and alias files.
 
-Stdlib only (user-approved D-4). Four independent checks:
+Stdlib only (user-approved D-4). Five independent checks:
 
 1. ``docs/ai/tool-schema.b1-5.json`` — the single machine-readable contract: five tools,
    ``additionalProperties: false``, ``required`` vs object-level ``anyOf`` per tool, numeric
    ``minimum``/``maximum``, a derived genre ``enum``, and a ``schema_hash`` recomputed from
-   ``tools[]`` (``docs/ai/README.md`` §2.3).
+   ``tools[]`` (``docs/ai/README.md`` §2.3). Since ``b1.5-tools/v3`` the year arguments are
+   **shape only** (``type: integer``, ``minimum: 0``, no ``maximum``): the 196–2024 coverage is a
+   server-side check that returns ``OUT_OF_RANGE``, so schema boundary and coverage boundary are
+   asserted separately (``YEAR_SCHEMA_MIN`` vs ``YEAR_MIN``/``YEAR_MAX``).
 2. ``docs/ai/golden/tool-cases.b1-5.json`` — 15 cases (6 refusal / 4 clarification / 5
    multi_slot), validated against ``docs/ai/golden-set.schema.json`` (``$defs/toolCaseSet``),
    with every ``acceptable_movie_ids`` entry present in the catalog.
 3. ``docs/ai/golden/query-routing.b1-5.json`` — routing expectations for the 60 queries frozen
    by B1.5a, keyed by ``query_id``. The file records the SHA-256 of
    ``docs/ai/golden/queries.b1-5.json`` and this checker asserts it: B1.5b must not change the
-   frozen golden set, otherwise the A/B comparison stops being pairable.
-4. The genre ``enum`` is compared with ``SELECT DISTINCT name FROM genres`` so a hand-edited
+   frozen golden set, otherwise the A/B comparison stops being pairable. Its ``schema_contract``
+   was frozen against ``b1.5-tools/v2`` and may lag the current contract version.
+4. ``docs/ai/aliases/*.json`` — the genre alias table (targets must be enum values, ``unsupported``
+   must be exactly ``enum - targets - canonical variants``), the person normalization rules
+   (including the Q17 ``Steven Spielberg`` = 5 vs ``Spielberg`` = 29 assertion) and the title alias
+   table (frozen empty, C10, with ``verified_by``/``source`` fields documented).
+5. The genre ``enum`` is compared with ``SELECT DISTINCT name FROM genres`` so a hand-edited
    enum cannot drift from the database (skipped with ``--skip-db``).
 
 The script is read-only: it issues ``SELECT`` statements through the ``mysql`` CLI.
@@ -33,6 +41,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +54,9 @@ GOLDEN_SCHEMA_PATH = REPO_ROOT / "docs" / "ai" / "golden-set.schema.json"
 QUERIES_PATH = REPO_ROOT / "docs" / "ai" / "golden" / "queries.b1-5.json"
 TOOL_CASES_PATH = REPO_ROOT / "docs" / "ai" / "golden" / "tool-cases.b1-5.json"
 ROUTING_PATH = REPO_ROOT / "docs" / "ai" / "golden" / "query-routing.b1-5.json"
+GENRE_ALIASES_PATH = REPO_ROOT / "docs" / "ai" / "aliases" / "genre-aliases.json"
+PERSON_NORMALIZATION_PATH = REPO_ROOT / "docs" / "ai" / "aliases" / "person-normalization.json"
+TITLE_ALIASES_PATH = REPO_ROOT / "docs" / "ai" / "aliases" / "title-aliases.json"
 
 TOOL_NAMES = (
     "search_movies_by_title",
@@ -72,10 +84,26 @@ LIMIT_MAX = {
     "recommend_movies": 20,
 }
 ERROR_STATES = ("INVALID_ARGUMENT", "OUT_OF_RANGE", "EMPTY_RESULT")
+# Coverage (server-side) boundary: what the snapshot actually contains. Used for the routing
+# annotations, the db_snapshot block and the tool-case OUT_OF_RANGE reasoning.
 YEAR_MIN = 196
 YEAR_MAX = 2024
+# Schema (shape) boundary: since b1.5-tools/v3 the year arguments only assert "non-negative
+# integer"; a year outside the coverage is rejected by the server with OUT_OF_RANGE, not by the
+# schema (plan §5.2: only the INVALID_ARGUMENT / OUT_OF_RANGE / EMPTY_RESULT triad being mutually
+# exclusive and reachable makes the coverage contract testable).
+YEAR_SCHEMA_MIN = 0
+YEAR_SCHEMA_PATHS = (
+    ("search_movies_by_title", ("year",)),
+    ("filter_movies", ("year_from", "year_to")),
+    ("recommend_movies", ("year_range.from", "year_range.to")),
+)
 RATING_COVERAGE_FROM = 2001
 EXPECTED_GENRE_COUNT = 56
+# ``docs/ai/golden/query-routing.b1-5.json`` is frozen (B1.5b) and binds the contract it was
+# annotated against; it may legitimately lag the current contract_version.
+FROZEN_ROUTING_CONTRACTS = {("b1.5-tools/v2",
+                             "8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567")}
 
 CATEGORY_COUNTS = {"refusal": 6, "clarification": 4, "multi_slot": 5}
 TOOL_CASE_IDS = [f"T{i:02d}" for i in range(1, 16)]
@@ -190,18 +218,31 @@ def check_tool_schema(schema_doc: dict, mysql: ReadOnlyMysql | None) -> list[str
                 errors.append(f"{name}.{key}: property without a type")
 
     by_name = _tools_by_name(schema_doc)
-    for name in ("filter_movies", "recommend_movies"):
-        for key in ("year_from", "year_to"):
-            spec = by_name[name]["parameters"]["properties"].get(key)
-            if spec is None:
+    for tool_name, paths in YEAR_SCHEMA_PATHS:
+        properties = by_name[tool_name]["parameters"]["properties"]
+        for path in paths:
+            spec = properties
+            for part in path.split("."):
+                spec = spec["properties"][part] if "properties" in spec else spec[part]
+            if spec.get("type") != "integer":
+                errors.append(f"{tool_name}.{path}: year arguments must stay `type: integer`")
+            if spec.get("minimum") != YEAR_SCHEMA_MIN:
+                errors.append(
+                    f"{tool_name}.{path}: schema minimum {spec.get('minimum')!r} != "
+                    f"{YEAR_SCHEMA_MIN} (shape boundary, not the {YEAR_MIN}-{YEAR_MAX} coverage)"
+                )
+            if "maximum" in spec:
+                errors.append(
+                    f"{tool_name}.{path}: must not carry `maximum` - the schema validates shape "
+                    f"and the server decides the {YEAR_MIN}-{YEAR_MAX} coverage (OUT_OF_RANGE)"
+                )
+    expected_year_paths = {f"{tool}.{path}" for tool, paths in YEAR_SCHEMA_PATHS for path in paths}
+    for tool_name, function in by_name.items():
+        for key, spec in function["parameters"]["properties"].items():
+            if not isinstance(spec, dict) or spec.get("type") != "integer":
                 continue
-            if (spec.get("minimum"), spec.get("maximum")) != (YEAR_MIN, YEAR_MAX):
-                errors.append(f"{name}.{key}: bounds {(spec.get('minimum'), spec.get('maximum'))}"
-                              f" != ({YEAR_MIN}, {YEAR_MAX})")
-    year_range = by_name["recommend_movies"]["parameters"]["properties"]["year_range"]
-    for key, spec in year_range["properties"].items():
-        if (spec.get("minimum"), spec.get("maximum")) != (YEAR_MIN, YEAR_MAX):
-            errors.append(f"recommend_movies.year_range.{key}: bounds are not {YEAR_MIN}-{YEAR_MAX}")
+            if key in ("year", "year_from", "year_to") and f"{tool_name}.{key}" not in expected_year_paths:
+                errors.append(f"{tool_name}.{key}: unexpected year argument outside YEAR_SCHEMA_PATHS")
     for name in ("filter_movies", "recommend_movies"):
         spec = by_name[name]["parameters"]["properties"]["min_rating"]
         if (spec.get("minimum"), spec.get("maximum")) != (0, 10):
@@ -233,7 +274,10 @@ def check_tool_schema(schema_doc: dict, mysql: ReadOnlyMysql | None) -> list[str
 
     snapshot = schema_doc.get("db_snapshot", {})
     if (snapshot.get("year_min"), snapshot.get("year_max")) != (YEAR_MIN, YEAR_MAX):
-        errors.append("db_snapshot year bounds do not match the year contract")
+        errors.append(
+            f"db_snapshot year bounds {(snapshot.get('year_min'), snapshot.get('year_max'))} do not "
+            f"match the {YEAR_MIN}-{YEAR_MAX} coverage contract"
+        )
     if snapshot.get("ratings_covered_from_year") != RATING_COVERAGE_FROM:
         errors.append(f"db_snapshot.ratings_covered_from_year != {RATING_COVERAGE_FROM}")
     if snapshot.get("genre_distinct_names") != len(enum):
@@ -304,9 +348,12 @@ def check_tool_cases(cases_doc: dict, schema_doc: dict, golden_schema: dict,
             if behavior == "explain_coverage_limit" and error_code == "EMPTY_RESULT" and not tools:
                 errors.append(f"{cid}: EMPTY_RESULT coverage can only come from a tool result")
             if error_code == "OUT_OF_RANGE" and tools:
+                # Since b1.5-tools/v3 a schema-valid call may carry an out-of-coverage year (the server
+                # answers OUT_OF_RANGE), so this is an expectation of the frozen B1.5b annotation:
+                # T10 explains the coverage limit without calling a tool.
                 errors.append(
-                    f"{cid}: an out-of-coverage year cannot be expressed in a schema-valid tool "
-                    f"call (year bounds stop at {YEAR_MAX}); expect no tools"
+                    f"{cid}: the frozen annotation explains OUT_OF_RANGE without a tool call; "
+                    f"expected no tools (any of {list(tools)} would also be schema-valid since v3)"
                 )
         elif category == "multi_slot":
             if behavior != "call_tools_and_answer":
@@ -402,10 +449,13 @@ def check_routing(routing_doc: dict, queries_doc: dict, schema_doc: dict) -> lis
     if annotates.get("golden_version") != queries_doc.get("golden_version"):
         errors.append("annotates.golden_version differs from queries.b1-5.json")
     contract = routing_doc.get("schema_contract", {})
-    if contract.get("schema_hash") != schema_doc.get("schema_hash"):
-        errors.append("schema_contract.schema_hash differs from tool-schema.b1-5.json")
-    if contract.get("contract_version") != schema_doc.get("contract_version"):
-        errors.append("schema_contract.contract_version differs from tool-schema.b1-5.json")
+    recorded = (contract.get("contract_version"), contract.get("schema_hash"))
+    current = (schema_doc.get("contract_version"), schema_doc.get("schema_hash"))
+    if recorded != current and recorded not in FROZEN_ROUTING_CONTRACTS:
+        errors.append(
+            f"schema_contract {recorded} is neither the current contract {current} nor a recorded "
+            f"frozen contract {sorted(FROZEN_ROUTING_CONTRACTS)}"
+        )
 
     vocabulary = routing_doc.get("slot_vocabulary", {})
     documented = set(vocabulary)
@@ -512,6 +562,183 @@ def check_routing(routing_doc: dict, queries_doc: dict, schema_doc: dict) -> lis
     return errors
 
 
+# --------------------------------------------------------------------------------------
+# 4. alias and normalization data files (B1.5c)
+# --------------------------------------------------------------------------------------
+
+# B15c-5: the four genres the frozen 75 never exercised, plus the Musical/Music split, must be
+# reachable through aliases; Sci-Fi and Science Fiction must share one canonical key.
+PRIORITY_GENRE_TARGETS = ("Fantasy", "History", "Sport", "War")
+MUSICAL_SPLIT = {"musical": ["Musical"], "musicals": ["Musical"],
+                 "音乐剧": ["Musical"], "歌舞": ["Musical"],
+                 "音乐": ["Music"], "music": ["Music"]}
+Q17_ASSERTION = {"left": "Steven Spielberg", "left_rows": 5, "right": "Spielberg", "right_rows": 29}
+PERSON_ASSERTION_IDS = ("q17-spielberg-not-equal", "initial-abbreviation-equal",
+                        "bare-surname-not-equal")
+
+
+def check_genre_aliases(alias_doc: dict, schema_doc: dict) -> list[str]:
+    errors: list[str] = []
+    if not re.match(r"^b1-5c-aliases/v[0-9]+$", alias_doc.get("aliases_version", "")):
+        errors.append(f"genre-aliases aliases_version {alias_doc.get('aliases_version')!r} is not vN")
+
+    enum = set(genre_enum(schema_doc))
+    aliases = alias_doc.get("aliases") or {}
+    groups = alias_doc.get("canonical_groups") or []
+    unsupported = alias_doc.get("unsupported") or []
+    if not isinstance(aliases, dict) or not aliases:
+        return errors + ["genre-aliases: `aliases` must be a non-empty object"]
+
+    targets: set[str] = set()
+    for term, values in aliases.items():
+        if term != term.strip() or (term.isascii() and term != term.lower()):
+            errors.append(f"genre-aliases: alias key {term!r} must be stripped and lowercase")
+        if not isinstance(values, list) or not values:
+            errors.append(f"genre-aliases: alias {term!r} must map to a non-empty list")
+            continue
+        for value in values:
+            if value not in enum:
+                errors.append(f"genre-aliases: alias {term!r} targets {value!r}, not an enum value")
+            targets.add(value)
+
+    canonical_keys: set[str] = set()
+    variants: set[str] = set()
+    for index, group in enumerate(groups):
+        if not isinstance(group, list) or len(group) < 2:
+            errors.append(f"genre-aliases: canonical_groups[{index}] must list at least two values")
+            continue
+        if len(set(group)) != len(group):
+            errors.append(f"genre-aliases: canonical_groups[{index}] contains duplicates")
+        for value in group:
+            if value not in enum:
+                errors.append(f"genre-aliases: canonical group value {value!r} is not an enum value")
+        canonical_keys.add(group[0])
+        variants |= set(group[1:])
+    if variants & canonical_keys:
+        errors.append(
+            f"genre-aliases: {sorted(variants & canonical_keys)} are both a canonical key and a variant"
+        )
+
+    if len(set(unsupported)) != len(unsupported):
+        errors.append("genre-aliases: `unsupported` contains duplicates")
+    for name in unsupported:
+        if name not in enum:
+            errors.append(f"genre-aliases: unsupported value {name!r} is not an enum value")
+        if name in targets:
+            errors.append(
+                f"genre-aliases: {name!r} is declared unsupported but is also an alias target"
+            )
+        if name in variants or name in canonical_keys:
+            errors.append(
+                f"genre-aliases: {name!r} is declared unsupported but appears in canonical_groups"
+            )
+    expected_unsupported = enum - targets - variants - canonical_keys
+    if set(unsupported) != expected_unsupported:
+        errors.append(
+            f"genre-aliases: unsupported {len(unsupported)} names != enum - alias targets - canonical "
+            f"variants ({len(expected_unsupported)}); missing {sorted(expected_unsupported - set(unsupported))}, "
+            f"unexpected {sorted(set(unsupported) - expected_unsupported)}"
+        )
+
+    for genre in PRIORITY_GENRE_TARGETS:
+        if genre not in targets:
+            errors.append(f"genre-aliases: priority genre {genre!r} has no alias target")
+    for term, expected in MUSICAL_SPLIT.items():
+        if aliases.get(term) != expected:
+            errors.append(
+                f"genre-aliases: {term!r} maps to {aliases.get(term)!r}, expected {expected} "
+                f"(Musical and Music are different catalog genres)"
+            )
+    if not any({"Sci-Fi", "Science Fiction"} <= set(group) for group in groups):
+        errors.append("genre-aliases: 'Sci-Fi' and 'Science Fiction' must share a canonical group")
+    return errors
+
+
+def check_person_normalization(person_doc: dict, mysql: ReadOnlyMysql | None) -> list[str]:
+    errors: list[str] = []
+    if not re.match(r"^b1-5c-person-normalization/v[0-9]+$",
+                    person_doc.get("normalization_version", "")):
+        errors.append(
+            f"person-normalization normalization_version "
+            f"{person_doc.get('normalization_version')!r} is not vN"
+        )
+    rule_ids = {rule.get("id") for rule in person_doc.get("rules", [])}
+    for required in ("tilde_to_space", "casefold", "initial_abbreviation_equivalence",
+                     "surname_expansion_prohibited"):
+        if required not in rule_ids:
+            errors.append(f"person-normalization: missing rule {required!r}")
+    prohibited = {rule.get("id") for rule in person_doc.get("rules", []) if rule.get("applies") is False}
+    if prohibited != {"surname_expansion_prohibited"}:
+        errors.append(
+            f"person-normalization: only surname_expansion_prohibited may be applies=false, got "
+            f"{sorted(prohibited)}"
+        )
+    assertions = {item.get("id"): item for item in person_doc.get("assertions", [])}
+    for assertion_id in PERSON_ASSERTION_IDS:
+        if assertion_id not in assertions:
+            errors.append(f"person-normalization: missing assertion {assertion_id!r}")
+    q17 = assertions.get("q17-spielberg-not-equal", {})
+    observed = (q17.get("left"), q17.get("left_rows"), q17.get("right"), q17.get("right_rows"),
+                q17.get("equal"))
+    expected = (Q17_ASSERTION["left"], Q17_ASSERTION["left_rows"], Q17_ASSERTION["right"],
+                Q17_ASSERTION["right_rows"], False)
+    if observed != expected:
+        errors.append(f"person-normalization: Q17 assertion {observed} != {expected}")
+    if assertions.get("initial-abbreviation-equal", {}).get("equal") is not True:
+        errors.append("person-normalization: 'M.Mann' vs 'Michael Mann' must be recorded as equal")
+    if assertions.get("bare-surname-not-equal", {}).get("equal") is not False:
+        errors.append("person-normalization: the bare surname must be recorded as not equal")
+
+    if mysql is not None:
+        for key, value, recorded_rows in (
+            ("left", Q17_ASSERTION["left"], Q17_ASSERTION["left_rows"]),
+            ("right", Q17_ASSERTION["right"], Q17_ASSERTION["right_rows"]),
+            ("left", assertions.get("initial-abbreviation-equal", {}).get("left"),
+             assertions.get("initial-abbreviation-equal", {}).get("left_rows")),
+            ("right", assertions.get("initial-abbreviation-equal", {}).get("right"),
+             assertions.get("initial-abbreviation-equal", {}).get("right_rows")),
+        ):
+            if not isinstance(value, str) or not isinstance(recorded_rows, int):
+                errors.append(f"person-normalization: assertion {key} value {value!r} is incomplete")
+                continue
+            live = int(mysql.select(
+                f"SELECT COUNT(*) FROM movies WHERE director = '{value.replace(chr(39), chr(39) * 2)}'"
+            )[0][0])
+            if live != recorded_rows:
+                errors.append(
+                    f"person-normalization: recorded {recorded_rows} rows for director {value!r}, "
+                    f"the catalog has {live}"
+                )
+        if int(mysql.select("SELECT COUNT(*) FROM movies WHERE director = 'Steven Spielberg'")[0][0]) \
+                == int(mysql.select("SELECT COUNT(*) FROM movies WHERE director = 'Spielberg'")[0][0]):
+            errors.append(
+                "person-normalization: 'Steven Spielberg' and 'Spielberg' return the same row count; "
+                "the Q17 5-vs-29 evidence no longer separates them"
+            )
+    return errors
+
+
+def check_title_aliases(title_doc: dict) -> list[str]:
+    errors: list[str] = []
+    if not re.match(r"^b1-5c-title-aliases/v[0-9]+$", title_doc.get("aliases_version", "")):
+        errors.append(f"title-aliases aliases_version {title_doc.get('aliases_version')!r} is not vN")
+    entry_schema = title_doc.get("entry_schema", {})
+    for key in ("zh_title", "movie_id", "source", "verified_by"):
+        if key not in entry_schema:
+            errors.append(f"title-aliases: entry_schema does not document {key!r}")
+    entries = title_doc.get("entries")
+    if entries != []:
+        errors.append(
+            f"title-aliases.entries must be the empty list (decision C10 froze the table empty before "
+            f"the measurement); found {len(entries or [])} entries"
+        )
+    for index, entry in enumerate(entries or []):
+        for key in ("zh_title", "movie_id", "source", "verified_by"):
+            if not entry.get(key):
+                errors.append(f"title-aliases.entries[{index}]: missing {key!r}")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--skip-db", action="store_true",
@@ -524,6 +751,9 @@ def main() -> int:
     queries_doc = load_json(QUERIES_PATH)
     cases_doc = load_json(TOOL_CASES_PATH)
     routing_doc = load_json(ROUTING_PATH)
+    genre_aliases_doc = load_json(GENRE_ALIASES_PATH)
+    person_doc = load_json(PERSON_NORMALIZATION_PATH)
+    title_aliases_doc = load_json(TITLE_ALIASES_PATH)
 
     mysql = None if args.skip_db else ReadOnlyMysql()
 
@@ -531,6 +761,9 @@ def main() -> int:
     errors.extend(check_tool_schema(schema_doc, mysql))
     errors.extend(check_tool_cases(cases_doc, schema_doc, golden_schema, queries_doc, mysql))
     errors.extend(check_routing(routing_doc, queries_doc, schema_doc))
+    errors.extend(check_genre_aliases(genre_aliases_doc, schema_doc))
+    errors.extend(check_person_normalization(person_doc, mysql))
+    errors.extend(check_title_aliases(title_aliases_doc))
 
     print(f"contract_version: {schema_doc.get('contract_version')}")
     print(f"schema_hash:      {schema_doc.get('schema_hash')} (recomputed "
@@ -544,13 +777,20 @@ def main() -> int:
           f"{routing_doc.get('annotates', {}).get('sha256')})")
     print(f"sha256 {TOOL_CASES_PATH.relative_to(REPO_ROOT)}: {sha256_of(TOOL_CASES_PATH)}")
     print(f"sha256 {ROUTING_PATH.relative_to(REPO_ROOT)}: {sha256_of(ROUTING_PATH)}")
+    print(f"genre aliases:    {len(genre_aliases_doc.get('aliases', {}))} terms -> "
+          f"{len({v for values in genre_aliases_doc.get('aliases', {}).values() for v in values})} "
+          f"targets, {len(genre_aliases_doc.get('canonical_groups', []))} canonical group(s), "
+          f"{len(genre_aliases_doc.get('unsupported', []))} unsupported")
+    print(f"title aliases:    {len(title_aliases_doc.get('entries', []))} entries "
+          f"({title_aliases_doc.get('aliases_version')})")
 
     if errors:
         print(f"\nFAILED ({len(errors)} problems):")
         for error in errors:
             print(f"  - {error}")
         return 1
-    print("\nOK: tool schema, tool cases, routing annotations and the golden-set hash are valid.")
+    print("\nOK: tool schema, tool cases, routing annotations, alias files and the golden-set hash "
+          "are valid.")
     return 0
 
 

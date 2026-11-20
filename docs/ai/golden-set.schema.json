@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://fabflix.local/schemas/b1-5-golden-set.json",
   "title": "B1.5 golden set (queries + tool cases)",
-  "description": "Machine-readable schema for the B1.5 evaluation fixtures. The 60 shared queries are used by B1.5a (embedding retrieval) and B1.5b (tool routing); the 15 tool cases are B1.5b only. Positive cases MUST be verified against the recorded database snapshot before the fixture is frozen.",
+  "description": "Machine-readable schema for the B1.5 evaluation fixtures. The 60 shared queries are used by B1.5a (embedding retrieval) and B1.5b (tool routing); the 15 tool cases are B1.5b only; the 30 held-out queries (H01-H30) are B1.5c only and live in their own file with their own version. Positive cases MUST be verified against the recorded database snapshot before the fixture is frozen.",
   "oneOf": [
     { "$ref": "#/$defs/querySet" },
+    { "$ref": "#/$defs/heldoutQuerySet" },
     { "$ref": "#/$defs/toolCaseSet" }
   ],
   "$defs": {
@@ -113,6 +114,62 @@
         "golden_version": { "type": "string", "pattern": "^b1-5-golden/v[0-9]+$" },
         "snapshot": { "$ref": "#/$defs/snapshotRef" },
         "queries": { "type": "array", "minItems": 60, "maxItems": 60, "items": { "$ref": "#/$defs/queryCase" } }
+      }
+    },
+    "heldoutQueryCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "track", "query", "lang", "intent", "acceptable_movie_ids", "labeling_note", "snapshot_row_refs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^H(0[1-9]|[12][0-9]|30)$" },
+        "track": { "$ref": "#/$defs/track" },
+        "query": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "lang": { "$ref": "#/$defs/lang" },
+        "intent": { "$ref": "#/$defs/intent" },
+        "acceptable_movie_ids": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 25,
+          "items": { "$ref": "#/$defs/movieId" },
+          "uniqueItems": true,
+          "description": "Accepted-result set. Empty only for refusal cases (intent clarify_or_refuse with expects_no_match)."
+        },
+        "labeling_note": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Why these results are acceptable for this held-out query."
+        },
+        "snapshot_row_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 5 },
+          "description": "Executable predicate + row count + ids, then the read-only verification note."
+        },
+        "expects_no_match": { "type": "boolean", "default": false, "description": "True only for refusal cases: no tool call, no result rows." },
+        "cjk_title": {
+          "type": "boolean",
+          "default": false,
+          "description": "True when the title slot is a Chinese translated title that only G1-T can resolve; the title must NOT be pre-seeded in docs/ai/aliases/title-aliases.json."
+        },
+        "allows_clarification": {
+          "type": "boolean",
+          "default": false,
+          "description": "True when listing the acceptable candidates plus exactly one question is also a strict task success (ambiguous title with no disambiguating clue in the query text); the strict acceptable-set hit remains the primary reading."
+        },
+        "multi_slot": { "type": "boolean", "default": false, "description": "Cross-mark only: the case combines three or more slots and is counted separately from its intent." }
+      }
+    },
+    "heldoutQuerySet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heldout_version", "snapshot", "queries"],
+      "properties": {
+        "$comment": { "type": "string" },
+        "heldout_version": { "type": "string", "pattern": "^b1-5c-heldout/v[0-9]+$" },
+        "created": { "type": "string", "format": "date" },
+        "snapshot": { "$ref": "#/$defs/snapshotRef" },
+        "quota": { "type": "object", "description": "Recorded plan quota (tracks/intents/multi_slot/cjk_title); scripts/eval/check_heldout.py recomputes and compares it." },
+        "queries": { "type": "array", "minItems": 30, "maxItems": 30, "items": { "$ref": "#/$defs/heldoutQueryCase" } }
       }
     },
     "toolCaseSet": {
