@@ -217,7 +217,7 @@
 1. **held-out `G1` 已经是 28/30**：in-sample 的 4 类失败（Q34/Q53/Q54 的“无文本约束的相似”、Q48 的 `Musical`/`Music`、Q57 的澄清口径）在 held-out **没有对应样本**——held-out 的 7 条 similar 全部在查询文本里声明了类型 + 年份窗口（其 `result_constraints` 逐个都带 `genres` + `year_from/year_to`），所以“先收窄后排序”总能生效；held-out 也没有 “musicals” 这类触发 `Musical`/`Music` 矛盾的查询。**结论：held-out 对“相似类无约束查询”与“类型拆分矛盾”这两类风险的覆盖为 0，30/30 不覆盖它们。**
 2. **n=30、单人标注**：Wilson 区间宽（30/30 的下界 88.6%）；标注由单一标注人完成（`OPEN-U3` 口径），只排除规则污染，不排除标注偏差。
 3. **held-out 的 `G1-T` 净增量只有 2 条**：中文解析的 `parse_success`/`wrong_movie` 都建立在 n=2 上，**不能**当作中文解析能力估计，也不能反过来读成“中文解析已过关”。
-4. **held-out 不是盲测**：这 30 条在阶段 1c 中已被用于修复规则——H18 的查询文本由“悬疑片”改为“惊悚片”（并重算 3 处冻结 SHA），H06/H12/H18/H24/H28 的路由词（`推荐几部 <Name>`、`Recommend some <Name> <genre>`、`查一下`、`rated at least N`）与 H16 的年份窗口消歧，都是**在看过这些 held-out 用例之后**补的；当时的 7/30 小样本也已跑过（阶段 1c 报告 §3.4）。因此 `G1-T` 30/30 与 `G1` 28/30 都是 **post-fix regression on a seen fixture**；要声称“held-out ≥90% 是泛化结果”，必须另建**未参与任何规则修复**的 blind holdout 重跑（**尚未做**）。这与“不得用 in-sample 当门槛”是同一个问题的两面。
+4. **held-out 不是盲测**：这 30 条在阶段 1c 中已被用于修复规则——H18 的查询文本由“悬疑片”改为“惊悚片”（并重算 3 处冻结 SHA），H06/H12/H18/H24/H28 的路由词（`推荐几部 <Name>`、`Recommend some <Name> <genre>`、`查一下`、`rated at least N`）与 H16 的年份窗口消歧，都是**在看过这些 held-out 用例之后**补的；当时的 7/30 小样本也已跑过（阶段 1c 报告 §3.4）。因此 `G1-T` 30/30 与 `G1` 28/30 都是 **post-fix regression on a seen fixture**；要声称“held-out ≥90% 是泛化结果”，必须另建**未参与任何规则修复**的 blind holdout 重跑（**尚未做**）。这与“不得用 in-sample 当门槛”是同一个问题的两面。**〔2026-11-20 回填（只加链接，不改本节结论）：B1.5d blind holdout 已执行 —— `G1-T`（冷）25/30 = 83.3%（Wilson [66.4%, 92.7%]）< 27/30 → **FAIL**，即本节所指的“泛化 ≥90%”已被证伪；详见 `docs/ai/reports/b1-5d-blind-holdout.md`。〕**
 
 ### 7.2 未测 / 未做
 
