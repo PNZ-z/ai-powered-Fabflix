@@ -1,0 +1,1088 @@
+{
+  "$comment": "B1.5b routing annotations for the 60 queries frozen by B1.5a. This file is additive: docs/ai/golden/queries.b1-5.json is NOT modified, so the B1.5a golden_version and SHA-256 stay valid and A/B results remain pairable by query_id.",
+  "routing_version": "b1-5-routing/v1",
+  "annotates": {
+    "file": "docs/ai/golden/queries.b1-5.json",
+    "golden_version": "b1-5-golden/v1",
+    "sha256": "0c2f4c5e2eed33333b804487ddb9473f9fb25362c4271cb7ba5c1d3ac22be079"
+  },
+  "schema_contract": {
+    "file": "docs/ai/tool-schema.b1-5.json",
+    "contract_version": "b1.5-tools/v2",
+    "schema_hash": "8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567"
+  },
+  "slot_vocabulary": {
+    "query": "search_movies_by_title.query - the title fragment exactly as the user typed it (no translation)",
+    "genres": "filter_movies.genres[] - values from the derived genre enum",
+    "year_from": "filter_movies.year_from - inclusive integer year",
+    "year_to": "filter_movies.year_to - inclusive integer year",
+    "min_rating": "filter_movies.min_rating - number 0-10",
+    "preferred_genres": "recommend_movies.preferred_genres[] - values from the derived genre enum",
+    "year_range": "recommend_movies.year_range = {\"from\": int, \"to\": int}",
+    "director": "recommend_movies.director - the value stored in the catalog",
+    "seed_title": "routing-level slot: title that must be resolved with search_movies_by_title before find_similar_movies.movie_id may be set"
+  },
+  "result_constraint_vocabulary": {
+    "genres": "answer/results must be limited to these enum values",
+    "year_from": "answer/results must be limited to this inclusive lower year bound",
+    "year_to": "answer/results must be limited to this inclusive upper year bound",
+    "min_rating": "answer/results must be limited to this inclusive minimum rating",
+    "director": "answer/results must be limited to this stored director value"
+  },
+  "annotations": [
+    {
+      "query_id": "Q01",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Matrix' | rows=1 | ids=AWw10",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Matrix"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q02",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Chief Zabu' | rows=1 | ids=tt0094859",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Chief Zabu"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q03",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title LIKE 'Before%' AND genres ⊇ {Romance} | rows=4 | ids=RLl15,RLl21,tt0439878,tt0443465",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Before"
+      },
+      "result_constraints": {
+        "genres": [
+          "Romance"
+        ]
+      },
+      "notes": "Title prefix lookup plus a genre constraint that search_movies_by_title cannot express as an argument; the constraint belongs in the answer filter, and the golden predicate already shows all 4 prefix hits satisfy it."
+    },
+    {
+      "query_id": "Q04",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title LIKE 'Toy Story%' | rows=3 | ids=ILt15,ILt18,tt0435761",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Toy Story"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q05",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Crime} | rows=14 | ids=ArP5,DaM15,GDo78,GDo81,GuL10,INw50,JD17,JHe10,JLo17,JTh10,JWe12,JqB38,LM110,PY4",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Crime"
+        ],
+        "year_from": 1960,
+        "year_to": 1969
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q06",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Animation} | rows=7 | ids=CJo40,CJo50,GgD10,JfH10,SBg10,WRe10,WRe20",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Animation"
+        ],
+        "year_from": 1960,
+        "year_to": 1969
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q07",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Comedy, Romance} | rows=11 | ids=AMc10,ChS10,ChS13,GiC10,HJ5,JTo5,MBl5,PWr14,RbR10,WHu17,xSz10",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Comedy",
+          "Romance"
+        ],
+        "year_from": 1980,
+        "year_to": 1989
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q08",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Crime, Thriller} | rows=3 | ids=MM33,PK22,WoP17",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Crime",
+          "Thriller"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q09",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Mystery} AND rating >= 8.0 | rows=12 | ids=tt0166924,tt0327056,tt0329474,tt0330954,tt0338564,tt0353969,tt0371392,tt0376968,tt0440963,tt0462239,tt0469833,tt0482571",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Mystery"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q10",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Drama} AND rating >= 7.5 | rows=8 | ids=tt0176694,tt0331312,tt0381957,tt0406282,tt0439724,tt0446792,tt0453562,tt0469152",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Drama"
+        ],
+        "year_from": 2010,
+        "year_to": 2019,
+        "min_rating": 7.5
+      },
+      "accept_alternative_slots": [
+        {
+          "genres": [
+            "Drama"
+          ],
+          "year_from": 2010,
+          "min_rating": 7.5
+        }
+      ],
+      "notes": "Two acceptable slot readings: the labelled decade reading and the open-ended reading of the same phrasing (\"2010 年以后\" / \"2020 年以后\" / \"科幻\"). Both are recorded so exact-match scoring does not punish the open reading."
+    },
+    {
+      "query_id": "Q11",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2020 AND year <= 2024 AND genres ⊇ {Sci-Fi} OR ⊇ {Science Fiction} | rows=2 | ids=tt9000001,tt9000002",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Sci-Fi"
+        ],
+        "year_from": 2020,
+        "year_to": 2024
+      },
+      "accept_alternative_slots": [
+        {
+          "genres": [
+            "Science Fiction"
+          ],
+          "year_from": 2020,
+          "year_to": 2024
+        }
+      ],
+      "notes": "Two acceptable slot readings: the labelled decade reading and the open-ended reading of the same phrasing (\"2010 年以后\" / \"2020 年以后\" / \"科幻\"). Both are recorded so exact-match scoring does not punish the open reading."
+    },
+    {
+      "query_id": "Q12",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director IN ('Tarantino', 'Quentin Tarantino') AND id NOT IN (QTa3) | rows=5 | ids=QTa1,QTa6,tt0361748,tt0378194,tt0401792",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Pulp Fiction"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title; find_similar_movies.movie_id may never be produced by the model, and results must exclude the seed."
+    },
+    {
+      "query_id": "Q13",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Action, Sci-Fi} AND id NOT IN (JCm20) | rows=3 | ids=DCn10,IWo40,JCm5",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Terminator 2"
+      },
+      "result_constraints": {
+        "genres": [
+          "Action",
+          "Sci-Fi"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q14",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Thriller, Action} AND id NOT IN (DFi17) | rows=3 | ids=ADv17,JDB10,LBe10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "The Game"
+      },
+      "result_constraints": {
+        "genres": [
+          "Thriller",
+          "Action"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q15",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1988 AND year <= 1989 AND genres ⊇ {Comedy, Romance} AND id NOT IN (RbR10) | rows=3 | ids=AMc10,PWr14,xSz10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "When Harry Met Sally"
+      },
+      "result_constraints": {
+        "genres": [
+          "Comedy",
+          "Romance"
+        ],
+        "year_from": 1988,
+        "year_to": 1989
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q16",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Zemeckis' AND genres ⊇ {Sci-Fi} AND id NOT IN (RZe5) | rows=3 | ids=RZe12,RZe14,RZe20",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Back to the Future"
+      },
+      "result_constraints": {
+        "genres": [
+          "Sci-Fi"
+        ]
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q17",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Steven Spielberg' | rows=5 | ids=tt0181689,tt0212720,tt0264464,tt0362227,tt0408306",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "director": "Steven Spielberg"
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q18",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Adventure} AND rating >= 8.0 | rows=8 | ids=tt0319061,tt0361748,tt0367495,tt0379557,tt0381061,tt0450259,tt0460394,tt0471291",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Adventure"
+        ],
+        "year_range": {
+          "from": 2000,
+          "to": 2009
+        },
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q19",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Action} | rows=10 | ids=ADg10,BS15,BS8,DZu12,IBa20,JiA15,JiA18,QTa3,SnT28,WhR10",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Comedy",
+          "Action"
+        ],
+        "year_range": {
+          "from": 1990,
+          "to": 1999
+        }
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q20",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Animation} | rows=20 | ids=ARv10,BMs10,DBl10,DBl12,DBl13,FrB13,FrB17,GaT3,GaT7,Ilt1,KGC10,KOt10,KYo1,RBa7,RBa8,RLa2,RZe10,WRe35,WRe38,WRe40",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Animation"
+        ],
+        "year_range": {
+          "from": 1980,
+          "to": 1989
+        }
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q21",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Matrix' | rows=1 | ids=AWw10",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "黑客帝国"
+      },
+      "notes": "Chinese translated title only; the catalog stores English original titles and no alias table is approved (U1). The tool must receive the text as typed - self-translating the title into English is a defect. EMPTY_RESULT plus a request for the English original is the contract outcome, so the golden acceptable id stays unreachable; that is recorded as a measured failure, not excused (B1.5a convention)."
+    },
+    {
+      "query_id": "Q22",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Forrest Gump' | rows=1 | ids=RZe19",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "阿甘正传"
+      },
+      "notes": "Chinese translated title only; the catalog stores English original titles and no alias table is approved (U1). The tool must receive the text as typed - self-translating the title into English is a defect. EMPTY_RESULT plus a request for the English original is the contract outcome, so the golden acceptable id stays unreachable; that is recorded as a measured failure, not excused (B1.5a convention)."
+    },
+    {
+      "query_id": "Q23",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Titanic' AND year = 1997 | rows=1 | ids=JCm28",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "泰坦尼克号"
+      },
+      "notes": "Chinese translated title only; the catalog stores English original titles and no alias table is approved (U1). The tool must receive the text as typed - self-translating the title into English is a defect. EMPTY_RESULT plus a request for the English original is the contract outcome, so the golden acceptable id stays unreachable; that is recorded as a measured failure, not excused (B1.5a convention)."
+    },
+    {
+      "query_id": "Q24",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Infernal Affairs' | rows=1 | ids=tt0338564",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Infernal Affairs"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q25",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Memories of Murder' | rows=1 | ids=tt0353969",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Memories of Murder"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q26",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'The Big Lebowski' | rows=1 | ids=JlC18",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Big Lebowski"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q27",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1970 AND year <= 1979 AND genres ⊇ {Crime} | rows=8 | ids=DLD10,GPk10,GPk14,NiR1,PY7,RAC10,RWF4,SRo32",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Crime"
+        ],
+        "year_from": 1970,
+        "year_to": 1979
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q28",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Western} | rows=11 | ids=BSz10,CEa10,CEa5,CH10,DS49,FSc10,IHk30,MCi3,MDa5,MGw2,StC30",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Western"
+        ],
+        "year_from": 1980,
+        "year_to": 1989
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q29",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Action} AND rating >= 8.0 | rows=15 | ids=tt0296574,tt0369221,tt0375878,tt0378194,tt0381061,tt0440963,tt0452803,tt0455829,tt0459516,tt0462249,tt0468569,tt0471043,tt0471571,tt0490964,tt0496318",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Action"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q30",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Drama, Action} | rows=4 | ids=FFC24,LTa10,MMj10,RTo10",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Drama",
+          "Action"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q31",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Animation} | rows=7 | ids=tt0137204,tt0176694,tt0331314,tt0377981,tt0435761,tt0481499,tt0498351",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Animation"
+        ],
+        "year_from": 2010,
+        "year_to": 2019
+      },
+      "accept_alternative_slots": [
+        {
+          "genres": [
+            "Animation"
+          ],
+          "year_from": 2010
+        }
+      ],
+      "notes": "Two acceptable slot readings: the labelled decade reading and the open-ended reading of the same phrasing (\"2010 年以后\" / \"2020 年以后\" / \"科幻\"). Both are recorded so exact-match scoring does not punish the open reading."
+    },
+    {
+      "query_id": "Q32",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2020 AND year <= 2024 AND rating >= 8.0 | rows=2 | ids=tt9000001,tt9000004",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "year_from": 2020,
+        "year_to": 2024,
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q33",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Thriller, Action} AND id NOT IN (ADv17) | rows=3 | ids=DFi17,JDB10,LBe10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "The Fugitive"
+      },
+      "result_constraints": {
+        "genres": [
+          "Thriller",
+          "Action"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q34",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Crime} AND id NOT IN (BS10) | rows=4 | ids=JJm13,JyR2,JyR4,MMy10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Men in Black"
+      },
+      "result_constraints": {
+        "genres": [
+          "Comedy",
+          "Crime"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q35",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'J.Coen' AND id NOT IN (JlC16) | rows=7 | ids=JlC10,JlC11,JlC14,JlC15,JlC18,JlC4,JlC7",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Fargo"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title; find_similar_movies.movie_id may never be produced by the model, and results must exclude the seed."
+    },
+    {
+      "query_id": "Q36",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'M.Mann' AND id NOT IN (MM33) | rows=6 | ids=MM10,MM20,MM25,MM30,MM37,MM41",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Heat"
+      },
+      "result_constraints": {
+        "director": "M.Mann"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q37",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Animation} | rows=4 | ids=EwD10,JPy10,MzN15,RMn10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Toy Story"
+      },
+      "result_constraints": {
+        "genres": [
+          "Comedy",
+          "Animation"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q38",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Biography} AND rating >= 8.0 | rows=17 | ids=tt0253474,tt0264464,tt0292352,tt0331232,tt0339723,tt0343121,tt0352248,tt0363163,tt0368711,tt0395169,tt0396087,tt0436231,tt0453508,tt0471003,tt0473453,tt0498362,tt0498366",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Biography"
+        ],
+        "year_range": {
+          "from": 2000,
+          "to": 2009
+        },
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q39",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2010 AND year <= 2019 AND genres ⊇ {Documentary} AND rating >= 7.0 | rows=3 | ids=tt0218252,tt0430524,tt0481470",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Documentary"
+        ],
+        "year_range": {
+          "from": 2010,
+          "to": 2019
+        },
+        "min_rating": 7.0
+      },
+      "accept_alternative_slots": [
+        {
+          "preferred_genres": [
+            "Documentary"
+          ],
+          "year_range": {
+            "from": 2010,
+            "to": 2024
+          },
+          "min_rating": 7.0
+        }
+      ],
+      "notes": "Two acceptable slot readings of \"2010 年以后\": the labelled decade window and the open-ended window from 2010. Both are recorded so exact-match scoring does not punish the open reading."
+    },
+    {
+      "query_id": "Q40",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Quentin Tarantino' | rows=3 | ids=tt0361748,tt0378194,tt0401792",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "director": "Quentin Tarantino"
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q41",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'City of God' | rows=1 | ids=tt0317248",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "City of God"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q42",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Mulholland Dr.' | rows=1 | ids=tt0166924",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Mulholland Dr."
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q43",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title LIKE 'The Godfather%' | rows=3 | ids=FFC24,FFC5,FFC7",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "The Godfather"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q44",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Cast Away' | rows=1 | ids=RZe22",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Cast Away"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q45",
+      "intent": "search_by_title",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: title = 'Ocean's Eleven' | rows=2 | ids=LM110,StS13",
+      "expected_tools": [
+        "search_movies_by_title"
+      ],
+      "required_slots": {
+        "query": "Ocean's Eleven"
+      },
+      "notes": "Golden predicate is a title lookup; the fragment must reach the tool as the user typed it (no translation, no correction)."
+    },
+    {
+      "query_id": "Q46",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1970 AND year <= 1979 AND genres ⊇ {Noir} | rows=6 | ids=AR10,AR8,AlC10,CaR7,JEu20,PBa3",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Noir"
+        ],
+        "year_from": 1970,
+        "year_to": 1979
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q47",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1960 AND year <= 1969 AND genres ⊇ {Comedy, Western} | rows=3 | ids=BuK10,ElS2,PTw9",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Comedy",
+          "Western"
+        ],
+        "year_from": 1960,
+        "year_to": 1969
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q48",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Romance, Music} | rows=4 | ids=IMd17,PJH14,THk14,WA25",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Romance",
+          "Music"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q49",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Thriller} AND rating >= 8.5 | rows=6 | ids=tt0329474,tt0343956,tt0400234,tt0405094,tt0462249,tt0496418",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Thriller"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 8.5
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q50",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Horror} AND rating >= 7.5 | rows=14 | ids=tt0230600,tt0291407,tt0297411,tt0358456,tt0361038,tt0379290,tt0426425,tt0445940,tt0456005,tt0462322,tt0473565,tt0482470,tt0482545,tt0496354",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Horror"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 7.5
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q51",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Family} AND rating >= 8.0 | rows=5 | ids=tt0328810,tt0357979,tt0395197,tt0462559,tt0490803",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Family"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 8.0
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q52",
+      "intent": "filter_catalog",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Sci-Fi} AND rating >= 7.5 | rows=6 | ids=tt0212712,tt0289879,tt0379786,tt0399361,tt0447160,tt0482571",
+      "expected_tools": [
+        "filter_movies"
+      ],
+      "required_slots": {
+        "genres": [
+          "Sci-Fi"
+        ],
+        "year_from": 2000,
+        "year_to": 2009,
+        "min_rating": 7.5
+      },
+      "notes": "Mirrors the golden predicate field by field; genre values must be derived-enum values, never the user's Chinese genre word."
+    },
+    {
+      "query_id": "Q53",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Action, Sci-Fi} AND id NOT IN (IWo40) | rows=3 | ids=DCn10,JCm20,JCm5",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Face/Off"
+      },
+      "result_constraints": {
+        "genres": [
+          "Action",
+          "Sci-Fi"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q54",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Romance, Action} AND id NOT IN (JCm25) | rows=5 | ids=AMo13,JrR10,MiR21,PVh18,RbH10",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "True Lies"
+      },
+      "result_constraints": {
+        "genres": [
+          "Romance",
+          "Action"
+        ],
+        "year_from": 1990,
+        "year_to": 1999
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q55",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'D.Lynch' AND id NOT IN (DLy8) | rows=7 | ids=DLy1,DLy10,DLy12,DLy18,DLy2,DLy21,DLy5",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Blue Velvet"
+      },
+      "result_constraints": {
+        "director": "D.Lynch"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q56",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Linklater' AND id NOT IN (RLl15) | rows=4 | ids=RLl10,RLl13,RLl18,RLl21",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "Before Sunrise"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title; find_similar_movies.movie_id may never be produced by the model, and results must exclude the seed."
+    },
+    {
+      "query_id": "Q57",
+      "intent": "similar_movies",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Kubrick' AND id NOT IN (StK15) | rows=12 | ids=StK1,StK10,StK2,StK20,StK21,StK3,StK4,StK5,StK6,StK7,StK8,StK9",
+      "expected_tools": [
+        "search_movies_by_title",
+        "find_similar_movies"
+      ],
+      "required_slots": {
+        "seed_title": "The Shining"
+      },
+      "result_constraints": {
+        "director": "Kubrick"
+      },
+      "notes": "Seed title must be resolved with search_movies_by_title (id never invented) and results must exclude the seed. The extra year/genre/director condition is a result constraint, not a find_similar_movies argument (the tool has only movie_id, same_primary_genre_only, limit)."
+    },
+    {
+      "query_id": "Q58",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Animation} AND rating >= 7.5 | rows=10 | ids=tt0126029,tt0286244,tt0291350,tt0307456,tt0312004,tt0327597,tt0388130,tt0388473,tt0441773,tt0485601",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Animation"
+        ],
+        "year_range": {
+          "from": 2000,
+          "to": 2009
+        },
+        "min_rating": 7.5
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q59",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: year >= 2000 AND year <= 2009 AND genres ⊇ {Mystery} AND rating >= 8.5 | rows=4 | ids=tt0329474,tt0371392,tt0469833,tt0482571",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "preferred_genres": [
+          "Mystery"
+        ],
+        "year_range": {
+          "from": 2000,
+          "to": 2009
+        },
+        "min_rating": 8.5
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    },
+    {
+      "query_id": "Q60",
+      "intent": "recommend_by_preference",
+      "expected_refusal": false,
+      "golden_predicate": "predicate: director = 'Scorsese' | rows=23 | ids=MS1,MS10,MS18,MS19,MS2,MS20,MS21,MS22,MS23,MS25,MS26,MS28,MS29,MS3,MS30,MS32,MS34,MS35,MS36,MS4,MS5,MS6,MS7",
+      "expected_tools": [
+        "recommend_movies"
+      ],
+      "required_slots": {
+        "director": "Scorsese"
+      },
+      "notes": "Mirrors the golden predicate; at least one preference must be present and nothing else may be invented (R7-2)."
+    }
+  ]
+}
