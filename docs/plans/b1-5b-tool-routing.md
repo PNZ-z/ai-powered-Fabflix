@@ -14,7 +14,7 @@
 > | 评测契约产物 | **`docs/ai/tool-schema.b1-5.json`（机器可读 schema fixture，本次已创建）**、`docs/ai/README.md`（三个 hash 的算法）、`docs/ai/golden-set.schema.json`、计划中定义的 `docs/ai/golden/queries.b1-5.json`（与 B1.5a 共享 60 条）与 `docs/ai/golden/tool-cases.b1-5.json`（15 条） |
 > | 实测证据 | 12 条工具调用基线（`7/12 = 58%`，`.pi/artifacts/scout-b1-5-mcp.md` §实测 2–3）；DB 快照 2026-11-09（`fabflix-mysql` 3307）；模型事实 2026-11-09 `/api/tags`；**A 路线实测（2026-11-09）= `docs/ai/reports/b1-5a-embedding-eval.md`（D8 FAIL）** |
 > | GitHub issue | ✅ **已创建：[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)** — milestone **#3 `Phase 3 — AI-powered platform`**、**无 labels**（2026-11-10 由 `github-operator` 创建）；规范记录 = `docs/issues/issue-72-b1-5b-tool-routing.md`（原草稿已改名回填编号） |
-> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 评测已完成（2026-11-19，**G1 82.7% FAIL**，报告已出）**；本节记录的是**批准 + issue + 实测结果**状态，**不代表**任何生产实现、B-① 交付或门槛达标 |
+> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 评测已完成（2026-11-19：G1 82.7% FAIL，报告已出）**；本节记录的是**批准 + issue + 实测结果**状态，**不代表**任何生产实现、B-① 交付或门槛达标 |
 
 ---
 

@@ -4,12 +4,12 @@
 | --- | --- |
 | 完成日期 | **2026-11-19** |
 | Issue | [#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)（milestone #3、无 labels；**状态保持 OPEN**——未达验收门槛，后续修复另跟踪；本日志不声称已关闭） |
-| 评分计划 | `docs/plans/b1-5b-tool-routing.md`（r8：评测结果回填）；总纲 `docs/plans/b1-5-movie-retrieval-eval.md`（r8） |
+| 计划 | `docs/plans/b1-5b-tool-routing.md`（r8：评测结果回填）；总纲 `docs/plans/b1-5-movie-retrieval-eval.md`（r8） |
 | 评测报告 | `docs/ai/reports/b1-5b-tool-routing.md`（worker 撰写；本次文档更新**未改报告正文**） |
-| 分支 / 提交 | 分支 `codex/b1-5b-tool-routing`，HEAD = `56d785b`（`feat(eval): add B1.5b routing fixtures and evaluation harness`）；**本次所有改动均未提交**；PR 尚未创建 |
+| 分支 / 提交 | 分支 `codex/b1-5b-tool-routing`。本轮开始时 HEAD = `56d785b`（`feat(eval): add B1.5b routing fixtures and evaluation harness`）；**写作过程中主 agent 把本轮改动（含 `docs/**`、`scripts/eval/tool_eval.py`、报告）一次性提交为 `3b121ea feat(eval): add B1.5b tool-routing evaluation`**。`docs-writer` **未执行任何 git 写操作**（不 add/commit/push）；提交后仅剩两处小修（本日志 typo、计划第 17 行 markdown 嵌套粗体）处于未提交状态。PR 尚未创建 |
 | 评测运行 | 由 `worker` 执行（`scripts/eval/tool_eval.py`，命令见报告 §14）；**本次文档更新未重跑评测**，也不声称独立复现 |
 | 关键结论 | **G1（确定性路由前置）任务级 62/75 = 82.7%，未达 ≥90% 门槛（FAIL）**；G0 39/75 = 52.0%；G2 38/75 = 50.7%；**G3 未测**；**无生产 AI 功能、无 MCP、B-① 未开始** |
-| 未提交/待处理 | `scripts/eval/tool_eval.py`（含判分修复）为工作区 `M`；报告为未跟踪文件；另有无关未跟踪目录 `.idea/` |
+| 未提交/待处理 | `docs/logs/2026-11-19-issue-72-b1-5b-tool-routing.md` 与 `docs/plans/b1-5b-tool-routing.md` 的两处小修（提交 `3b121ea` 之后产生）；无关未跟踪目录 `.idea/`（**不应**一并提交）；PR 待主 agent/`github-operator` 创建 |
 
 ---
 
@@ -51,7 +51,7 @@
 - **未验证项**：① **G3（服务端渲染 + 至多 1 次重试）未测**（`OPEN-b4` 裁定本期可选）；② **冷启动延迟未测**（`OPEN-b2` 仍无法关闭）；③ **MCP server 未实现**（D-6；`/mcp`、`/sse` 鉴权缺口不在本期）；④ G1 答案话术质量、澄清提问内容均**未评**；⑤ `result_constraints` 仅 8 例计分且无独立复核。
 - **P1 披露（引用数字时必须同时出现）**：similar/recommend 执行器为 **stand-in**；`result_constraints` 判分是**自洽循环**（同一套正则既判断“文本是否表述”又判断“是否满足”）；**澄清只验形态**。已在 `ai-user-workflows.md` §1.6 新增小节固化。
 - **P2 / 记录项（未决策，留给主 agent/oracle）**：① 该判分缺陷的**评审过程复盘**是否需要 oracle 介入（报告 §13 R-7）；② `OPEN-b3` 别名词表与维护者、`OPEN-b5` `same_primary_genre_only`、`OPEN-U3` 标注人/第二人复核仍未定；③ 模型 digest / prompt 版本漂移导致的可复现性风险。
-- **提交状态风险**：本次所有文档改动**未提交**；`scripts/eval/tool_eval.py`（含判分修复）仍在工作区未提交（报告 §13 R-5），**报告数字对应的脚本版本须随 PR 提交后才能复现**；`docs/ai/reports/b1-5b-tool-routing.md` 为未跟踪文件；工作区另有无关未跟踪目录 `.idea/`，**不应**一并提交。
+- **提交状态风险**：本轮文档改动已被主 agent 提交为 `3b121ea`（含 `scripts/eval/tool_eval.py` 与报告），但**两处小修仍在本工作区未提交**；报告与脚本的**最终提交哈希/PR 待主 agent 确认** —— 在此之前，“报告数字对应可复现脚本版本”这一点只能定位到 `3b121ea`。工作区另有无关未跟踪目录 `.idea/`，**不应**随 PR 提交。
 - **范围声明**：本轮**无生产 AI 功能**、`src/main/**` / `pom.xml` / CI / frontend / 根 `README.md` 均未改；**B-① 未开始**；issue #72 **保持 OPEN**（远端状态以 GitHub 为准，本日志不声称已关闭）。
 - 除上述项外，**未发现本次文档改动引入的其他已知遗留问题**（文档改动均为状态/数字回填，未改契约语义、阈值、fixture 或验收承诺）。
 
@@ -79,4 +79,4 @@
 ### 2.4 文档与状态治理
 
 - **一处数字变更要横跨 6 份文档**：同一事实（G1 成绩）被架构 spec、子计划、issue 记录、umbrella、roadmap、评测契约 README 同时引用；漏改任何一处都会让后续 agent 读到两套真值。学习价值：**状态回填要按“引用链”遍历**，且历史记录用“旧值作废 + 指向新值”的方式保留（而非删掉历史），避免毁证。
-- **”issue body 冻结“原则**：已发布到 GitHub 的正文由远端为准，本地 `## GitHub issue body` 不再改动，只更新 `## Internal tracking`；同时**不声称**远端 issue 已关闭。学习价值：本地规范记录与远端发布内容的边界要写清，否则本地编辑会造成“本地与远端不一致”的假象。
+- **“issue body 冻结”原则**：已发布到 GitHub 的正文由远端为准，本地 `## GitHub issue body` 不再改动，只更新 `## Internal tracking`；同时**不声称**远端 issue 已关闭。学习价值：本地规范记录与远端发布内容的边界要写清，否则本地编辑会造成“本地与远端不一致”的假象。
