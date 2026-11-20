@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>B1.5e · 路由与执行缺口修复 · Fabflix</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --bg-2: #10182b;
+      --panel: #141d33;
+      --panel-2: #1a2540;
+      --line: #2a3754;
+      --text: #e8edf7;
+      --muted: #9aa8c2;
+      --accent: #7dd3fc;
+      --accent-2: #a78bfa;
+      --good: #34d399;
+      --bad: #fb7185;
+      --warn: #fbbf24;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 12% -10%, rgba(37, 99, 235, .35), transparent 60%),
+        radial-gradient(800px 480px at 95% 0%, rgba(124, 58, 237, .22), transparent 55%),
+        var(--bg);
+      font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, .mono { font-family: var(--mono); }
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 54px 0 28px; }
+    .eyebrow { color: var(--accent); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+    h1 { margin: 10px 0 8px; font-size: clamp(34px, 6vw, 64px); line-height: 1.02; letter-spacing: -.035em; }
+    h1 span { color: var(--accent); }
+    .sub { margin: 0; color: var(--muted); font-size: clamp(16px, 2vw, 20px); max-width: 760px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .pill { border: 1px solid var(--line); background: rgba(20, 29, 51, .8); color: var(--muted); border-radius: 999px; padding: 6px 11px; font-size: 12px; }
+    .pill.good { color: #a7f3d0; border-color: rgba(52, 211, 153, .35); background: rgba(6, 78, 59, .35); }
+    .pill.warn { color: #fde68a; border-color: rgba(251, 191, 36, .35); background: rgba(120, 53, 15, .35); }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.5fr .9fr;
+      gap: 18px;
+      margin: 26px 0 34px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(26, 37, 64, .86), rgba(20, 29, 51, .9));
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .25);
+    }
+    .lead { padding: 24px; }
+    .lead h2 { margin: 0 0 8px; font-size: 18px; }
+    .lead p { margin: 0; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px; }
+    .stat { padding: 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid #25324f; }
+    .stat b { display: block; font-size: 24px; letter-spacing: -.02em; }
+    .stat small { color: var(--muted); font-size: 12px; }
+    .stat .up { color: var(--good); }
+    section { margin: 34px 0; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .section-head h2 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+    .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .fix { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .fix-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .tag { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); }
+    .fix h3 { margin: 0; font-size: 17px; }
+    .query { margin: 0; padding: 11px 12px; border-radius: 10px; background: #0c1426; border: 1px solid #23304d; color: #dbeafe; font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+    .toggle { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: #0c1426; border: 1px solid #23304d; align-self: flex-start; }
+    .toggle button { border: 0; background: transparent; color: var(--muted); padding: 6px 10px; border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; }
+    .toggle button[aria-pressed="true"] { background: #1d4ed8; color: white; }
+    .state { display: none; border-radius: 12px; padding: 12px 13px; border: 1px solid #2a3754; background: #0f172a; }
+    .state.active { display: block; }
+    .state.before { border-color: rgba(251, 113, 133, .35); background: rgba(76, 5, 25, .28); }
+    .state.after { border-color: rgba(52, 211, 153, .35); background: rgba(6, 78, 59, .25); }
+    .state .label { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; }
+    .state.before .label { color: var(--bad); }
+    .state.after .label { color: var(--good); }
+    .state p { margin: 0; color: #d7e1f3; font-size: 13.5px; }
+    .state .path { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; font-family: var(--mono); overflow-wrap: anywhere; }
+    .note { border-left: 3px solid var(--warn); background: rgba(120, 53, 15, .24); border-radius: 0 12px 12px 0; padding: 14px 16px; color: #fde68a; }
+    .note b { color: #fff7d6; }
+    .verify { display: grid; grid-template-columns: 1.15fr .85fr; gap: 14px; }
+    .verify .card { padding: 20px; }
+    .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+    .checklist li { display: flex; gap: 9px; align-items: flex-start; color: #d7e1f3; font-size: 14px; }
+    .checklist li::before { content: "✓"; color: var(--good); font-weight: 800; }
+    .checklist li.warn::before { content: "!"; color: var(--warn); }
+    .checklist li.bad::before { content: "×"; color: var(--bad); }
+    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table th, .table td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #26324d; }
+    .table th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .table td.num { font-family: var(--mono); white-space: nowrap; }
+    .good { color: var(--good); }
+    .bad { color: var(--bad); }
+    .warn { color: var(--warn); }
+    .boundary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .boundary .card { padding: 16px; }
+    .boundary h3 { margin: 0 0 6px; font-size: 14px; }
+    .boundary p { margin: 0; color: var(--muted); font-size: 13px; }
+    footer { padding: 34px 0 60px; color: var(--muted); font-size: 13px; }
+    .footer-links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+    .fine { font-size: 12px; color: #7483a0; }
+    @media (max-width: 860px) {
+      .hero, .verify { grid-template-columns: 1fr; }
+      .grid, .boundary { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .wrap { width: min(100% - 24px, 1120px); }
+      header { padding-top: 34px; }
+      .lead, .fix { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Fabflix · 变更演示 · 仅本次改动</div>
+      <h1>B1.5e <span>路由与执行缺口修复</span></h1>
+      <p class="sub">把 B1.5d 盲测暴露的 5 个失败修掉：越界拒绝、片名里的类型词、中文/英文 seed 抽取、复数类型词，以及 <code>Music/Musical</code> 与无约束相似查询的语义。</p>
+      <div class="meta">
+        <span class="pill">2026-11-21</span>
+        <span class="pill">PR #79 · main 7915fcd</span>
+        <span class="pill good">评测层已合并</span>
+        <span class="pill warn">不是生产功能</span>
+        <span class="pill">B1.5f 未做</span>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="card lead">
+        <h2>一句话结论</h2>
+        <p>in-sample G1 从 <b>67/75</b> 提到 <b>70/75</b>；B1.5d 的 5 个失败都有对应修复。唯一回归是 <b>Q12</b>：它与 Q34 的路由输入完全相同，但冻结标注相反；不读 golden 无法同时满足，已由主 agent 单独批准。</p>
+      </div>
+      <div class="card stats">
+        <div class="stat"><b class="up">70/75</b><small>in-sample G1（原 67/75）</small></div>
+        <div class="stat"><b>61</b><small>self-test checks（原 43）</small></div>
+        <div class="stat"><b>4/4</b><small>checker 全绿</small></div>
+        <div class="stat"><b>135</b><small>既有 fixture 路由 diff = 0</small></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>本次修了什么</h2>
+          <p>每张卡都可以切换“修复前 / 修复后”；数字来自评测产物，不是生产接口。</p>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">B10 · 越界拒绝</span><span class="pill good">refuse</span></div>
+          <h3>票房问题不再被“片名检索”蒙混过去</h3>
+          <p class="query">《The Lion King》当年的票房是多少</p>
+          <div class="toggle" data-toggle="b10"><button aria-pressed="true" data-state="before">修复前</button><button aria-pressed="false" data-state="after">修复后</button></div>
+          <div class="state before active" data-panel="b10-before"><span class="label">Before</span><p>抽到片名 → 调 <code>search_movies_by_title</code> → 返回 1 行；问题问的是票房，目录没有这个字段。</p><span class="path">wrong_tool · under_refusal</span></div>
+          <div class="state after" data-panel="b10-after"><span class="label">After</span><p><code>out_of_catalog</code> 命中 → 直接拒绝，不调任何工具。</p><span class="path">action=refuse · tool_calls=[]</span></div>
+        </article>
+
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">B26 · 片名污染类型</span><span class="pill good">Horror only</span></div>
+          <h3>片名里的 Family 不再变成类型约束</h3>
+          <p class="query">movies like The Addams Family - horror films from 1991 to 1992</p>
+          <div class="toggle" data-toggle="b26"><button aria-pressed="true" data-state="before">修复前</button><button aria-pressed="false" data-state="after">修复后</button></div>
+          <div class="state before active" data-panel="b26-before"><span class="label">Before</span><p>抽出 <code>Family</code> + <code>Horror</code>，AND 后 1991–92 没有同时满足的行 → 0 行。</p><span class="path">genres=[Family, Horror] · candidate_pool=0</span></div>
+          <div class="state after" data-panel="b26-after"><span class="label">After</span><p>先掩码片名区段，只留 <code>Horror</code> + 1991–92；可接受集合 22 行。</p><span class="path">genres=[Horror] · 1991–1992 · 22 acceptable</span></div>
+        </article>
+
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">B27 · 复数类型词</span><span class="pill good">Documentary</span></div>
+          <h3>documentaries 现在能被识别</h3>
+          <p class="query">recommend some documentaries from the 1960s</p>
+          <div class="toggle" data-toggle="b27"><button aria-pressed="true" data-state="before">修复前</button><button aria-pressed="false" data-state="after">修复后</button></div>
+          <div class="state before active" data-panel="b27-before"><span class="label">Before</span><p>别名表只有 <code>documentary</code>，复数匹配失败 → 只剩年份槽位。</p><span class="path">preferred_genres=None</span></div>
+          <div class="state after" data-panel="b27-after"><span class="label">After</span><p>新增 <code>documentaries → Documentary</code>；1960s 纪录片 25 行。</p><span class="path">preferred_genres=[Documentary] · year_range=1960–1969</span></div>
+        </article>
+
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">R-1 · Music / Musical</span><span class="pill good">union</span></div>
+          <h3>musicals 不再只落到 Musical</h3>
+          <p class="query">musicals from 1948 to 1950</p>
+          <div class="toggle" data-toggle="r1"><button aria-pressed="true" data-state="before">修复前</button><button aria-pressed="false" data-state="after">修复后</button></div>
+          <div class="state before active" data-panel="r1-before"><span class="label">Before</span><p><code>musicals → Musical</code>；1948–50 只有 1 行，而冻结标注按 <code>Music</code> 的 24 行。</p><span class="path">genres=[Musical] · 1 row</span></div>
+          <div class="state after" data-panel="r1-after"><span class="label">After</span><p><code>Music</code>/<code>Musical</code> 同族，检索展开两值；1948–50 共 25 行，top-5 仍命中 24 行可接受集。</p><span class="path">Music ∪ Musical · 25 rows · recall expansion</span></div>
+        </article>
+
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">R-2 · 无约束相似</span><span class="pill warn">③b2</span></div>
+          <h3>“类似 Trainspotting”会从种子派生类型与年代</h3>
+          <p class="query">I really liked Trainspotting, can you find something similar?</p>
+          <div class="toggle" data-toggle="r2"><button aria-pressed="true" data-state="before">修复前</button><button aria-pressed="false" data-state="after">修复后</button></div>
+          <div class="state before active" data-panel="r2-before"><span class="label">Before</span><p>seed 抽成整句 → 检索 0 行；即使抽对，文本没有约束时也不收窄。</p><span class="path">seed_title="I really liked Trainspotting" · 0 rows</span></div>
+          <div class="state after" data-panel="r2-after"><span class="label">After</span><p>抽出 <code>Trainspotting</code>；种子恰好 2 个类型且无 director 槽 → 派生 <code>Comedy+Noir</code> + 1990s，11 行可接受。</p><span class="path">derived=[Comedy, Noir] × 1990–1999 · 11 acceptable</span></div>
+        </article>
+
+        <article class="card fix">
+          <div class="fix-head"><span class="tag">已知例外 · Q12</span><span class="pill warn">owner-approved</span></div>
+          <h3>为什么 Q12 仍然是失败</h3>
+          <p class="query">和《Pulp Fiction》相似的电影</p>
+          <div class="toggle" data-toggle="q12"><button aria-pressed="true" data-state="before">Q12</button><button aria-pressed="false" data-state="after">Q34（对照）</button></div>
+          <div class="state before active" data-panel="q12-before"><span class="label">Q12 · 同导演标注</span><p>路由输入与 Q34 逐字节相同：<code>seed_title</code> + 空 <code>result_constraints</code>，2 个 canonical 类型；标注却期望“同导演、不收窄”。</p><span class="path">Q12 ✅ → ❌（唯一获批回归）</span></div>
+          <div class="state after" data-panel="q12-after"><span class="label">Q34 · 类型 × 年代标注</span><p>同样输入，标注期望“共享类型 × 同年代”。不读 golden 无法区分两者，所以选择 R-2 语义，接受 Q12 一条回归。</p><span class="path">Q34 ❌ → ✅</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="verification">
+      <div class="section-head">
+        <div>
+          <h2>验证数字</h2>
+          <p>全部是 in-sample / seen 回归，不是泛化门槛；真正的门槛要等 B1.5f。</p>
+        </div>
+      </div>
+      <div class="verify">
+        <div class="card">
+          <table class="table">
+            <thead><tr><th>指标</th><th>修复前</th><th>修复后</th></tr></thead>
+            <tbody>
+              <tr><td>in-sample G1</td><td class="num">67/75</td><td class="num good">70/75</td></tr>
+              <tr><td>routing</td><td class="num">73/75</td><td class="num good">74/75</td></tr>
+              <tr><td>similar_movies</td><td class="num">11/15</td><td class="num good">13/15</td></tr>
+              <tr><td>filter_catalog</td><td class="num">19/20</td><td class="num good">20/20</td></tr>
+              <tr><td>self-test checks</td><td class="num">43</td><td class="num good">61</td></tr>
+              <tr><td>annotation sentinels</td><td class="num">75</td><td class="num good">75</td></tr>
+              <tr><td>held-out G1（seen）</td><td class="num">28/30</td><td class="num">28/30</td></tr>
+              <tr><td>B1.5d G1（seen）</td><td class="num">23/30</td><td class="num">28/30</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <ul class="checklist">
+            <li>B10/B26/B27 的 3 个真实缺口都有对应断言</li>
+            <li>Q48、Q34、Q53、Q54 由失败变通过</li>
+            <li>Q16/Q35/Q36/Q55/Q56 保持通过</li>
+            <li class="warn">Q12 唯一回归，主 agent 单独批准</li>
+            <li>135 条既有 fixture 路由 diff 为 0</li>
+            <li>4 个 checker 全绿；tool schema / schema_hash 未变</li>
+            <li class="bad">B1.5f 尚未生成/冻结/运行，不能声称泛化</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>边界</h2>
+          <p>这个页面展示的是评测层改动，不是完整 Fabflix，也不是生产 AI 功能。</p>
+        </div>
+      </div>
+      <div class="boundary">
+        <div class="card"><h3>只在评测替身</h3><p>改动在 <code>scripts/eval/tool_eval.py</code> 与别名数据；<code>src/main</code>、pom、CI、数据库均未改。</p></div>
+        <div class="card"><h3>B1.5f 才是门槛</h3><p>B1.5e 只能证明“针对性修复 + seen 回归”；新盲集 G1-T 冷跑 ≥27/30 才能回答泛化。</p></div>
+        <div class="card"><h3>Q12 是标注冲突</h3><p>Q12/Q34 路由输入相同、golden 相反；这是冻结标注的不可判定，不是新规则能同时解决的。</p></div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-links">
+        <a href="https://github.com/PNZ-z/ai-powered-Fabflix/pull/79" target="_blank" rel="noreferrer">PR #79</a>
+        <a href="https://github.com/PNZ-z/ai-powered-Fabflix/blob/main/docs/ai/reports/b1-5e-routing-gap-fixes.md" target="_blank" rel="noreferrer">完整报告</a>
+        <a href="https://github.com/PNZ-z/ai-powered-Fabflix/issues/78" target="_blank" rel="noreferrer">issue #78</a>
+        <a href="https://github.com/PNZ-z/ai-powered-Fabflix/blob/main/docs/ai/reports/b1-5d-blind-holdout.md" target="_blank" rel="noreferrer">上一版：B1.5d 盲测报告</a>
+      </div>
+      <div class="fine">静态演示页 · 由 <code>scripts/demo/serve.sh</code> 在开发机 4173 端口提供 · 不包含数据库、Ollama 或密钥。</div>
+    </footer>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-toggle]').forEach(function (group) {
+      var key = group.getAttribute('data-toggle');
+      group.querySelectorAll('button').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var state = button.getAttribute('data-state');
+          group.querySelectorAll('button').forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b === button));
+          });
+          document.querySelectorAll('[data-panel^="' + key + '-"]').forEach(function (panel) {
+            panel.classList.toggle('active', panel.getAttribute('data-panel') === key + '-' + state);
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
