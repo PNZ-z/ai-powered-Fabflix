@@ -1,0 +1,98 @@
+{
+  "$comment": "B1.5c person normalization rules. Catalog-derived only: every rule is derived from movies.director string forms observed in the snapshot (scout §2.2). No external name data. The two prohibited forms are as important as the allowed ones: a bare surname must never be expanded, because expansion changes the answer set (Q17: 'Steven Spielberg' = 5 rows vs 'Spielberg' = 29 rows).",
+  "normalization_version": "b1-5c-person-normalization/v1",
+  "created": "2026-11-19",
+  "source": "fabflix-mysql:3307/moviedb movies.director (10,888 distinct strings; 788 'X.Lastname' abbreviations; 30 strings containing '~'; 1,398 surnames with more than one string)",
+  "semantics": {
+    "equality": "two director strings denote the same person only when the normalized surnames match AND, if either side carries a first initial or first name, the initials match.",
+    "recall_only": "a bare surname may widen a candidate list for display/recall, never an answer-set comparison (docs/plans/b1-5c-tool-routing-fixes.md §5.4).",
+    "result_constraints_director": "result_constraints.director is judged with the equality rule below; a bare surname is NOT a match for a full name."
+  },
+  "rules": [
+    {
+      "id": "tilde_to_space",
+      "applies": true,
+      "transform": "replace '~' with a single space before any other step",
+      "example": "Woody~Allen -> Woody Allen",
+      "why": "'~' is the catalog's space substitute; any split-on-space normalization fails without it (30 strings)"
+    },
+    {
+      "id": "casefold",
+      "applies": true,
+      "transform": "lowercase the whole string",
+      "example": "M.Mann -> m.mann"
+    },
+    {
+      "id": "collapse_whitespace",
+      "applies": true,
+      "transform": "strip and collapse runs of whitespace to one space",
+      "example": "Woody  Allen -> woody allen"
+    },
+    {
+      "id": "strip_jr_sr",
+      "applies": true,
+      "transform": "drop a trailing 'jr'/ 'jr.'/ 'sr'/ 'sr.' token",
+      "example": "e.d.wood jr. -> e.d.wood"
+    },
+    {
+      "id": "initial_abbreviation_equivalence",
+      "applies": true,
+      "transform": "'X.Lastname' equals 'First Last' only when the surname matches and the first initial matches",
+      "example": "M.Mann == Michael Mann",
+      "counter_example": "Ant.Mann != Michael Mann (initial A vs M)",
+      "why": "788 abbreviated strings exist; the initial check blocks the surname collision families (58 strings contain 'Mann')"
+    },
+    {
+      "id": "surname_expansion_prohibited",
+      "applies": false,
+      "transform": "a bare surname is never expanded to a full name, and a full name is never reduced to 'any movie by someone with that surname'",
+      "example": "Spielberg != Steven Spielberg",
+      "counter_example": "Spielberg == Spielberg (identical strings are always equal)",
+      "why": "expansion enlarges the answer set (5 vs 29 rows for Q17) and cannot be justified from the query text"
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "single_string_surname",
+      "description": "when a surname has exactly one distinct director string in the catalog, equality holds by string identity, not by expansion",
+      "example": "Hitchcock (83 rows, one string) and Vertigo's director 'Hitchcock'",
+      "note": "this is not an exception to the prohibition: the strings ARE identical"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "q17-spielberg-not-equal",
+      "sql_left": "SELECT COUNT(*) FROM movies WHERE director = 'Steven Spielberg'",
+      "left": "Steven Spielberg",
+      "left_rows": 5,
+      "sql_right": "SELECT COUNT(*) FROM movies WHERE director = 'Spielberg'",
+      "right": "Spielberg",
+      "right_rows": 29,
+      "equal": false,
+      "explanation": "Q17's golden answer set is the 5 rows of 'Steven Spielberg'. Treating the 29 'Spielberg' rows as equivalent would replace the answer set; B15c-6 therefore asserts 5 vs 29 and equal = false."
+    },
+    {
+      "id": "initial-abbreviation-equal",
+      "left": "M.Mann",
+      "left_rows": 7,
+      "right": "Michael Mann",
+      "right_rows": 2,
+      "equal": true,
+      "explanation": "same surname 'mann', same first initial 'm' -> the abbreviation is the same person; both row counts stay separate only because the catalog stores two spellings."
+    },
+    {
+      "id": "bare-surname-not-equal",
+      "left": "Mann",
+      "left_rows": 0,
+      "right": "Michael Mann",
+      "right_rows": 2,
+      "equal": false,
+      "explanation": "'Mann' alone matches no catalog string in this snapshot, and even when a surname does match rows it is never a substitute for the full name."
+    }
+  ],
+  "notes": [
+    "Q17 in docs/ai/golden/queries.b1-5.json uses 'Steven Spielberg' = 5 rows; the bare surname 'Spielberg' = 29 rows is a different set (scout §2.2, §3.3). Normalization must not change the answer set, which is exactly what a surname expansion would do.",
+    "1,398 surnames own more than one distinct string (lee 44, kim 26, smith 26, ...), so surname-only matching would merge unrelated people.",
+    "Chinese transliterations of director names (e.g. 希区柯克) are NOT normalized here: they are not derivable from the catalog. Under C4=D the query-time title resolver only resolves titles; a transliterated director stays a recall/display problem and must not be silently mapped."
+  ]
+}

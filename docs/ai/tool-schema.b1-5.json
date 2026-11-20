@@ -1,11 +1,11 @@
 {
   "$comment": "B1.5b evaluation contract. Machine-readable tool schema fixture; the single source of truth for variants G0-G3. Production truth becomes the @Tool/@ToolParam generated schema, which must be verified identical by a consistency test. See docs/ai/README.md.",
-  "contract_version": "b1.5-tools/v2",
-  "revised": "2026-11-09 (fact fix: ratings coverage starts 2001, not 2000; contract_version bumped v1 -> v2)",
+  "contract_version": "b1.5-tools/v3",
+  "revised": "2026-11-19 (B1.5c contract fix: the year arguments keep type integer and minimum 0 but lose maximum 2024, so the schema validates shape while the server decides coverage 196-2024 and returns OUT_OF_RANGE; contract_version bumped v2 -> v3 and schema_hash recomputed. The genre enum is unchanged: 56 values)",
   "created": "2026-11-09",
   "status": "DRAFT - pending oracle review and user approval; not implemented in production code",
   "schema_hash_algorithm": "sha256 over json.dumps(tools, sort_keys=True, separators=(',',':'), ensure_ascii=False) encoded as UTF-8",
-  "schema_hash": "8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567",
+  "schema_hash": "712c0e34c37b6de140c13fcc7d3de15e67ac1f131f2bb6e8751a4f5e4df3474a",
   "db_snapshot": {
     "source": "docker container fabflix-mysql (host port 3307), database moviedb",
     "snapshot_date": "2026-11-09",
@@ -21,7 +21,8 @@
       "genre rows contain duplicate names Action/Comedy/Drama/Horror/Thriller (ids 1-23 and 9001-9006) - always DISTINCT",
       "'Sci-Fi' has 457 movies while 'Science Fiction' has 2: canonicalization of this pair is a server-side alias decision, not an enum change",
       "movie id is an opaque VARCHAR(10); only 9073 of 21087 rows start with 'tt' - never assume the prefix",
-      "ratings exist only for 2001-onwards titles (MIN(year) among rated movies = 2001; all 58 movies from 2000 and all 11,975 from 196-2000 have no rating row), so any pre-2001 rating filter is unsatisfiable and must return EMPTY_RESULT with coverage metadata"
+      "ratings exist only for 2001-onwards titles (MIN(year) among rated movies = 2001; all 58 movies from 2000 and all 11,975 from 196-2000 have no rating row), so any pre-2001 rating filter is unsatisfiable and must return EMPTY_RESULT with coverage metadata",
+      "year arguments are validated as shape only (integer, minimum 0, no maximum); the 196-2024 coverage is a server-side check that returns OUT_OF_RANGE, so INVALID_ARGUMENT / OUT_OF_RANGE / EMPTY_RESULT stay mutually exclusive and reachable (B1.5c §5.2)"
     ]
   },
   "error_contract": {
@@ -56,9 +57,8 @@
             },
             "year": {
               "type": "integer",
-              "minimum": 196,
-              "maximum": 2024,
-              "description": "Optional release year for disambiguation only. Omit unless the user stated a year."
+              "minimum": 0,
+              "description": "Optional release year for disambiguation only. Omit unless the user stated a year. Shape only: the server returns OUT_OF_RANGE outside the 196-2024 coverage."
             },
             "limit": {
               "type": "integer",
@@ -170,15 +170,13 @@
             },
             "year_from": {
               "type": "integer",
-              "minimum": 196,
-              "maximum": 2024,
-              "description": "Inclusive lower bound on release year."
+              "minimum": 0,
+              "description": "Inclusive lower bound on release year. Shape only (any non-negative integer); the server returns OUT_OF_RANGE when the bound is outside the 196-2024 coverage."
             },
             "year_to": {
               "type": "integer",
-              "minimum": 196,
-              "maximum": 2024,
-              "description": "Inclusive upper bound on release year."
+              "minimum": 0,
+              "description": "Inclusive upper bound on release year. Shape only (any non-negative integer); the server returns OUT_OF_RANGE when the bound is outside the 196-2024 coverage."
             },
             "min_rating": {
               "type": "number",
@@ -349,13 +347,13 @@
               "properties": {
                 "from": {
                   "type": "integer",
-                  "minimum": 196,
-                  "maximum": 2024
+                  "minimum": 0,
+                  "description": "Inclusive lower bound on release year. Shape only; the server returns OUT_OF_RANGE outside the 196-2024 coverage."
                 },
                 "to": {
                   "type": "integer",
-                  "minimum": 196,
-                  "maximum": 2024
+                  "minimum": 0,
+                  "description": "Inclusive upper bound on release year. Shape only; the server returns OUT_OF_RANGE outside the 196-2024 coverage."
                 }
               }
             },

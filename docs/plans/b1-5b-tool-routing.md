@@ -1,11 +1,11 @@
 # B1.5b — 结构化工具 / 工具调用路由评测（B 路线）
 
-> **文档状态：🟢 已批准（2026-11-10，主 agent）/ 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) / 评测已完成（2026-11-19：**G1 任务级 62/75 = 82.7%，未达 ≥90% 门槛 → FAIL**；报告已出 = `docs/ai/reports/b1-5b-tool-routing.md`）（r8 = 评测结果回填；`OPEN-b1` = **≥90%**、`OPEN-b4` 只留可选 G3；G1/G2/G0 口径不变）——**评测已跑完并出报告，但门槛未过、issue #72 仍 OPEN，后续修复另跟踪；不声称 B-① 已交付或已开始。**
+> **文档状态：🟢 已批准（2026-11-10，主 agent）/ 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) / 评测已完成（2026-11-19：**G1 任务级 62/75 = 82.7%，未达 ≥90% 门槛 → FAIL**；报告已出 = `docs/ai/reports/b1-5b-tool-routing.md`）（r9 = 回填后续修复 issue #74；r8 = 评测结果回填）——**评测已跑完并出报告，但门槛未过、issue #72 仍 OPEN；后续修复 = [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)（已建 / 待实施）另跟踪；不声称 B-① 已交付，也不声称 #74 已开始/完成。**
 >
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文档类型 | 计划 / 方案（评测 + 质量结论；**只做 B 路线**） |
-> | `last_updated` | **2026-11-19**（**r8：评测结果回填**——B1.5b 已实施并出报告；**G1 = 62/75 = 82.7%（FAIL，未达 ≥90%）**、G0 52.0%、G2 50.7%、G3 未测；因 `scripts/eval/tool_eval.py` 的 `acceptable_movie_ids` 判分缺陷，上一版 92.0%/PASS 作废；不改阈值、不改分母、不改 fixture；**issue #72 保持 OPEN**；不声称 B-① 已交付。r7：回填 GitHub issue #72（编号/URL/milestone）。r6：主 agent 裁定计划通过——`OPEN-b1` 关闭为交付候选形态任务级成功率 **≥90%**；`OPEN-b4` 只保留 **G3（本期可选/不要求，未做须写“未测”）**；`G1`/`G2`/`G0` 仍为必做、seed 排除与 A 路线输入（§1.4）保留。r5：回填 B1.5a 实测输入——A 路线 D8 **FAIL**（0.4833 / 0.4167）、片名强 / filter·similar 弱 → B 路线价值来源；`find_similar_movies` 结果**必须排除 seed**（`ai-user-workflows.md` r5 已收紧契约）。r4：G1 由“可选”改为**必做**、`OPEN-b4` 只保留 G3、`required`/`anyOf` 口径写清。r3：拆分自 `docs/plans/b1-5-movie-retrieval-eval.md` r2；同日按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 重写） |
+> | `last_updated` | **2026-11-19**（**r9：回填后续修复 issue #74**——B1.5c（评测层修复 + 查询时中文片名解析 + 独立 held-out 重测）的计划与 issue 均已存在：[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) **已创建 / 待实施**；本文件只记链接与状态，**不声称 #74 已开始/已完成**。**r8：评测结果回填**——B1.5b 已实施并出报告；**G1 = 62/75 = 82.7%（FAIL，未达 ≥90%）**、G0 52.0%、G2 50.7%、G3 未测；**issue #72 保持 OPEN**；不声称 B-① 已交付。r7：回填 GitHub issue #72（编号/URL/milestone）。r6：主 agent 裁定计划通过——`OPEN-b1` 关闭为 ≥90%；`OPEN-b4` 只保留 G3；`G1`/`G2`/`G0` 仍为必做。r5/r4/r3 见 §14） |
 > | 基线 | `main` @ `85d4675`（PR #68 合并后） |
 > | 上级 | `docs/plans/b1-5-movie-retrieval-eval.md`（umbrella / 决策备忘录：共享数据集、共享指标、决策标准） |
 > | 兄弟 | `docs/plans/b1-5a-movie-card-embeddings.md`（**A 路线**：卡片 embedding；本文件**不碰 embedding**） |
@@ -14,7 +14,7 @@
 > | 评测契约产物 | **`docs/ai/tool-schema.b1-5.json`（机器可读 schema fixture，本次已创建）**、`docs/ai/README.md`（三个 hash 的算法）、`docs/ai/golden-set.schema.json`、计划中定义的 `docs/ai/golden/queries.b1-5.json`（与 B1.5a 共享 60 条）与 `docs/ai/golden/tool-cases.b1-5.json`（15 条） |
 > | 实测证据 | 12 条工具调用基线（`7/12 = 58%`，`.pi/artifacts/scout-b1-5-mcp.md` §实测 2–3）；DB 快照 2026-11-09（`fabflix-mysql` 3307）；模型事实 2026-11-09 `/api/tags`；**A 路线实测（2026-11-09）= `docs/ai/reports/b1-5a-embedding-eval.md`（D8 FAIL）** |
 > | GitHub issue | ✅ **已创建：[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)** — milestone **#3 `Phase 3 — AI-powered platform`**、**无 labels**（2026-11-10 由 `github-operator` 创建）；规范记录 = `docs/issues/issue-72-b1-5b-tool-routing.md`（原草稿已改名回填编号） |
-> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 评测已完成（2026-11-19：G1 82.7% FAIL，报告已出）**；本节记录的是**批准 + issue + 实测结果**状态，**不代表**任何生产实现、B-① 交付或门槛达标 |
+> | 状态 | 🟢 **已批准（2026-11-10，主 agent）/ 已建 issue #72 / 评测已完成（2026-11-19：G1 82.7% FAIL，报告已出）**；后续修复 = **B1.5c [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)（已建 / 待实施，计划 = `docs/plans/b1-5c-tool-routing-fixes.md`）**；本节记录的是**批准 + issue + 实测结果**状态，**不代表**任何生产实现、B-① 交付、门槛达标或 #74 已开始 |
 
 ---
 
@@ -272,7 +272,7 @@
 | oracle | 2026-11-09 提出 9 项阻塞（B-1…B-9）→ r3 已逐项修复；同日 **delta 复核**再提 2 项（G1 不能是可选的 / `required` 与 `anyOf` 语义）→ **r4 已修**，条件已在 r4/r5 文档中满足（G1 必做、`anyOf` 口径）；2026-11-10 delta 条件由主 agent 复核确认已满足 | 🟢 条件已满足（不声称 oracle 已批准 r5/r6 全文） |
 | 主 agent | **2026-11-10 裁定**：`OPEN-b1` 关闭为 **≥90%**；`OPEN-b4` 只留 **G3（可选/不要求）**；**G1/G2/G0 必做**；**批准本计划**；同日由 `github-operator` 创建 **issue #72**（milestone #3、无 labels）。**2026-11-19**：评测已执行并出报告（**G1 62/75 = 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测）；判分缺陷修复使 92.0%/PASS 作废；**issue #72 保持 OPEN**，后续修复另跟踪 | 🟢 已批准 / 已建 issue #72 / **评测已完成（G1 FAIL）** |
 
-> 本文件**不声称**：MCP 已实现或端点可公开访问、oracle 已批准 r5/r6/r7/r8 全文、**B-① 已交付或已开始**；也不声称 **G1 的 82.7% 是 held-out 泛化估计或已达到 ≥90% 门槛（没有达到）**、或相似/推荐能力已实现（执行器为评测 stand-in）。**可以声称的事实**：GitHub issue **#72 已创建**（2026-11-10；状态以远端为准，**本文件不声称已关闭**）；G0/G1/G2 已实测且共用同一 `schema_hash`；报告已存在；G3 与冷启动延迟未测。
+> 本文件**不声称**：MCP 已实现或端点可公开访问、oracle 已批准 r5/r6/r7/r8/r9 全文、**B-① 已交付或已开始**；也不声称 **G1 的 82.7% 是 held-out 泛化估计或已达到 ≥90% 门槛（没有达到）**、或相似/推荐能力已实现（执行器为评测 stand-in）。**可以声称的事实**：GitHub issue **#72 已创建**（2026-11-10；状态以远端为准，**本文件不声称已关闭**）；**后续修复 issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已于 2026-11-19 创建（B1.5c，OPEN、milestone #3、无 labels）且仍为待实施**（本文件不声称其已开始或已完成）；G0/G1/G2 已实测且共用同一 `schema_hash`；报告已存在；G3 与冷启动延迟未测。
 
 ---
 
@@ -288,3 +288,4 @@
 | **r6** | 2026-11-10 | **状态推进：🟡 待复核 → 🟢 已批准（主 agent）/ 待建 issue**（不改实验方案本身）。① §12 `OPEN-b1` **关闭**：交付候选形态任务级成功率门槛 = **≥90%**（同一任务级口径；G0 的 58% 不得交付），并同步 §1.4 / §3.3 / §6；② §12 `OPEN-b4` **只留 G3**：本期**可选/不要求**，未做须写“未测”；③ 重申 **G1/G2/G0 必做**、seed 排除与 A 路线输入不变、**不实现 MCP server / 不改 `src/main` / CI 不依赖 PC**；④ §13 记录 delta 条件已满足与主 agent 批准；**仍不声称已实施、已运行或已建 issue** |
 | **r7** | 2026-11-10 | **回填 GitHub issue（不改实验方案）**：issue 已由 `github-operator` 创建 = **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（milestone **#3**、**无 labels**），规范记录改名为 `docs/issues/issue-72-b1-5b-tool-routing.md`；状态由“待建 issue”改为 **已批准 / 已建 issue #72 / 待实施**，并同步文件头（第 3/16/17 行）、§13 与本节；§12 的 `OPEN-b2`/`OPEN-b3`/`OPEN-b5` 仍为实施期待定项 |
 | **r8** | 2026-11-19 | **评测结果回填（不改阈值/分母/fixture）**：① 状态由“待实施”改为 **🟢 已批准 / issue #72 / 评测已完成（G1 82.7% FAIL；报告已出）**，同步文件头（第 3/8/17 行）、§10（实施回填）、§12（`OPEN-b2`/`OPEN-b3`/`OPEN-b5` 补实测证据指向）、§13、本节；② **实测数字**：G0 **39/75 = 52.0%**、G1 **62/75 = 82.7%（未达 ≥90% → FAIL）**、G2 **38/75 = 50.7%**（回放 G0，`model_calls = 0`）、**G3 未测**；全量口径保留（任务级成功率为主 + 意图/工具/槽位/接地/拒绝/失败模式）；③ **数字变更原因**：`scripts/eval/tool_eval.py` 的 query 分支曾把 `acceptable_movie_ids` 写死为空列表，修复后 92.0%/PASS **作废**（报告 §13 R-7）；④ 明确 **G1 的 82.7% 为同集 in-sample、非 held-out 泛化估计**；相似/推荐执行器为评测 stand-in；⑤ **issue #72 保持 OPEN**（未达 AC），后续修复另跟踪；**不声称 B-① 已交付/已开始** |
+| **r9** | 2026-11-19 | **回填后续修复 issue #74（不改本路线方案、阈值、分母、fixture）**：B1.5c = 评测层语义修复 + 查询时中文片名解析（`G1-T`）+ 独立 30 条 held-out 重测；其 **GitHub issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已创建（OPEN、milestone #3、无 labels）、状态 = 待实施**，计划 = `docs/plans/b1-5c-tool-routing-fixes.md`，规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`；本文件只同步**链接/状态**（文件头第 3/8/17 行与本节），**不声称 #74 已开始或已完成**，也不声称 #72 已关闭或 B-① 已交付 |

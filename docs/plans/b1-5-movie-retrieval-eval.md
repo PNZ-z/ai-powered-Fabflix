@@ -5,10 +5,10 @@
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文档类型 | **umbrella / 决策备忘录**（共享数据集、共享样本、共享指标、决策标准、拆分与顺序）；**不承载执行细节** |
-> | `last_updated` | **2026-11-19**（**r8：B1.5b 评测结果回填**——**G1 62/75 = 82.7%，未达 ≥90% 门槛（FAIL）**、G0 52.0%、G2 50.7%、G3 未测；因此 **A/B 两条路线均未达各自门槛**，本 memo 仍无法收尾，**B-① 未开始**；不改共享数据集/指标/门槛。2026-11-10 **r7**：回填 **B1.5b issue #72 已创建**（milestone #3、无 labels）。2026-11-09 **r6**：B1.5a 实测完成并回填 A 路线结论——**D8 FAIL（0.4833 / 0.4167）**，片名强 / filter·similar 弱，**A 不得单独交付**，B1.5b 为下一步；r4：共享指标口径拆清——“D8 gate = `recall@5` ≥80%”与“跨路线配对比较用任务级成功”分属两个用途；卡片统计改实测值；`OPEN-U2`/`OPEN-U3` 关闭。r3：按 oracle 阻塞项 B-1…B-9 与用户批准 D-1…D-9 拆分） |
+> | `last_updated` | **2026-11-19**（**r9：B1.5c issue 回填**——后续修复/重测的 [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已创建（milestone #3、无 labels、OPEN），状态 = **已建 issue / 待实施**；计划 = `docs/plans/b1-5c-tool-routing-fixes.md`，规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`；不改共享数据集/指标/门槛，**不声称 B1.5c 已开始或已完成**。**r8：B1.5b 评测结果回填**——**G1 62/75 = 82.7%，未达 ≥90% 门槛（FAIL）**、G0 52.0%、G2 50.7%、G3 未测；因此 **A/B 两条路线均未达各自门槛**，本 memo 仍无法收尾，**B-① 未开始**。2026-11-10 **r7**：回填 **B1.5b issue #72 已创建**（milestone #3、无 labels）。2026-11-09 **r6**：B1.5a 实测完成并回填 A 路线结论——**D8 FAIL（0.4833 / 0.4167）**，片名强 / filter·similar 弱，**A 不得单独交付**，B1.5b 为下一步；r6/r5/r4/r3 的变更说明保留在文件头的历史回填段） |
 > | 基线 | `main` @ `85d4675`（PR #68 合并后） |
 > | 执行子计划 | **A 路线** = `docs/plans/b1-5a-movie-card-embeddings.md`；**B 路线** = `docs/plans/b1-5b-tool-routing.md` |
-> | issue 草稿 / 已建 issue | **A 路线 = 已建 [issue #69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（规范记录 `docs/issues/issue-69-b1-5a-movie-card-embeddings.md`，milestone #3、无 labels）；**B 路线 = 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（规范记录 `docs/issues/issue-72-b1-5b-tool-routing.md`，milestone #3、无 labels；**已创建、评测已完成（G1 82.7% FAIL）、保持 OPEN**） |
+> | issue 草稿 / 已建 issue | **A 路线 = 已建 [issue #69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（规范记录 `docs/issues/issue-69-b1-5a-movie-card-embeddings.md`，milestone #3、无 labels）；**B 路线 = 已建 [issue #72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（规范记录 `docs/issues/issue-72-b1-5b-tool-routing.md`，milestone #3、无 labels；**已创建、评测已完成（G1 82.7% FAIL）、保持 OPEN**）；**B 路线后续修复 / 重测 = 已建 [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)**（B1.5c，规范记录 `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`，milestone #3、无 labels；**已创建、待实施**） |
 > | 评测契约 | `docs/ai/README.md`（三个 hash 的算法）、`docs/ai/tool-schema.b1-5.json`（B 路线 schema fixture）、`docs/ai/golden-set.schema.json` |
 > | 上级路线 | `docs/plans/ai-roadmap-overview.md`（A → **B** → C）、`docs/plans/ai-option-b-spring-ai-rag.md`（已批准 B 方案；2026-11-09 已追加 dated 回填） |
 > | 前置 | B0（spike，已完成）、B1（Spring AI 接入，已合并：PR #67 / `aea0477` / issue #66 CLOSED） |
@@ -26,6 +26,8 @@
 > **r7（2026-11-10，B1.5b issue 回填）**：B 路线 [issue **#72**](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72) 已由 `github-operator` 创建（milestone **#3**、**无 labels**），规范记录 = `docs/issues/issue-72-b1-5b-tool-routing.md`（原草稿 `proposed-b1-5b-tool-routing.md` 已改名）；B 路线计划与本文的链接/状态同步为 **已批准 / 已建 issue / 待实施**。**B1.5b 仍未开始实施**（无脚本、无报告、无评测数字），§7 决策备忘录仍无法完成；共享数据集、指标与决策规则**未修改**。
 >
 > **r8（2026-11-19，B 路线实测回填）：B1.5b 评测已完成，G1 FAIL。** 判定口径不变（交付候选形态任务级成功率 ≥90%，`OPEN-b1`）：**G1 = 62/75 = 82.7% 未达门槛（FAIL）**、G0 **39/75 = 52.0%**（印证 D-9“纯 LLM 不得交付”）、G2 **38/75 = 50.7%**（回放 G0）、**G3 未测**；因 `scripts/eval/tool_eval.py` 的 `acceptable_movie_ids` 判分缺陷修复，**上一版 92.0%/PASS 作废**。这里需明确一条关键事实：**A/B 两条路线都未达各自门槛**——A = D8 `recall@5` ≥80%（实测 0.4833 / 0.4167）、B = 任务级 ≥90%（实测 82.7%）；且 G1 是**同集 in-sample** 结果，**不是** held-out 泛化估计，**不能**据此宣称 B-① 可达 90%。**下一步 = 先修已知缺口（别名表、种子消歧、生产相似信号）并以独立 held-out 集重测，再决定 B-① 形态；B-① 未开始**，决策备忘录 §7 **仍不能定稿**（缺 held-out 与修复后的 B 侧数字）。详见 `docs/ai/reports/b1-5b-tool-routing.md`。
+>
+> **r9（2026-11-19，B1.5c issue 回填）：后续修复/重测已立项（issue #74），但未实施。** B1.5c = B 路线评测层修复（多值类型 AND、相似/推荐先收窄后排序、片名搜索优先级、人名归一、别名数据化）+ **查询时中文片名解析变体 `G1-T`**（目录校验后命中才检索）+ **独立 30 条 held-out 重测**；主门槛 = held-out `G1-T` 任务级 ≥90%（27/30），held-out `G1` 为 baseline，in-sample `G1` 仅前后对照。GitHub issue = **[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)**（2026-11-19 创建；OPEN、milestone #3、无 labels；规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`），计划 = `docs/plans/b1-5c-tool-routing-fixes.md`；状态 = **已批准 / 已建 issue #74 / 待实施**（worker 未启动，无脚本/fixture/报告）。**不声称** B1.5c 已开始或已完成、**不声称** ≥90% 已达成或 §7 备忘录可定稿；**B-① 仍未开始**，#72 **保持 OPEN**。
 
 ---
 
@@ -138,7 +140,11 @@ B1.5a（A 路线：卡片 embedding）
         └─ PR 内应用 README 第 13/14 行替换（文本见 b1-5a §9）——✅ **已完成**：实际改 13/14/16 行（见 `b1-5a` §16.4 与报告 §14.1）
                  ↓（不阻塞 b 的启动，但共用 60 条必须先冻结）
 B1.5b（B 路线：工具/路由）
-        └─ 报告：docs/ai/reports/b1-5b-tool-routing.md
+        └─ 报告：docs/ai/reports/b1-5b-tool-routing.md（G1 82.7% FAIL）
+                 ↓（门槛未过 → 后续修复与独立重测另立 issue）
+B1.5c（B 路线评测层修复 + 查询时片名解析 G1-T + 独立 30 条 held-out）
+        └─ issue #74（已建 / 待实施）；计划：docs/plans/b1-5c-tool-routing-fixes.md
+        └─ 报告（计划）：docs/ai/reports/b1-5c-tool-routing-fixes.md——**尚未产生**
                  ↓
 本文件 §7 决策备忘录（A/B/混合 + 逐条打表 + 残余风险）
                  ↓
@@ -146,14 +152,14 @@ B-① 立项（另建 issue，需用户批准）
 ```
 
 - **两个 issue / 两个 PR**（D-9/B-9 已批准），彼此不互相阻塞实现，但**共用同一份 60 条金标准集**：由 B1.5a 先建立并冻结（`golden_version` + SHA-256），B1.5b 直接复用，避免两套样本导致无法配对比较。
-- **进度（2026-11-19 更新）**：**B1.5a 已完成**（D8 FAIL）；**B1.5b 评测已完成**（报告 `docs/ai/reports/b1-5b-tool-routing.md`，**G1 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测）；60 条金标准集已冻结（`b1-5-golden/v1`，sha256 `0c2f4c5e…be079`）并被两条路线复用（可配对）。**两条路线均未达门槛 → 本文件 §7 决策备忘录仍需补“修复 + 独立 held-out 重测”后才能收尾；B-① 未开始。**
+- **进度（2026-11-19 更新）**：**B1.5a 已完成**（D8 FAIL）；**B1.5b 评测已完成**（报告 `docs/ai/reports/b1-5b-tool-routing.md`，**G1 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测）；60 条金标准集已冻结（`b1-5-golden/v1`，sha256 `0c2f4c5e…be079`）并被两条路线复用（可配对）。**两条路线均未达门槛 → 本文件 §7 决策备忘录仍需补“修复 + 独立 held-out 重测”后才能收尾；B-① 未开始。** 该“修复 + 重测”已立为 **B1.5c = [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)**（2026-11-19 创建，OPEN、milestone #3、无 labels），状态 **已建 issue / 待实施**（无脚本、无 held-out fixture、无报告；**不声称已开始/已完成**）。
 - 若 60 条在 B1.5a 阶段因标注问题需要修订，**bump `golden_version`** 并在 B1.5b 报告注明其使用的是哪一版。
 
 ---
 
 ## 7. 决策备忘录的产出要求（两份报告之后才写）
 
-> **当前状态（2026-11-19 更新）**：A 侧输入**已就绪**（B1.5a 报告，D8 FAIL）；**B 侧输入也已就绪**（B1.5b 报告，**G1 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测）。但**本 memo 仍不能定稿**：① B 侧是**同集 in-sample** 数字，无独立 held-out 验证；② G1 未过 90%，修完已知缺口（别名表、种子消歧、生产相似信号）后需重测；③ 2×2 配对可用现有两份报告先算，但结论不稳定。**不得**用任一侧单边结果代替 memo 结论，也**不得**把 82.7% 当作“已接近 90%”的证据。
+> **当前状态（2026-11-19 更新）**：A 侧输入**已就绪**（B1.5a 报告，D8 FAIL）；**B 侧输入也已就绪**（B1.5b 报告，**G1 82.7% FAIL**、G0 52.0%、G2 50.7%、G3 未测），但其后的 **B1.5c 修复/重测（[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)）仍为待实施**，尚无 held-out 数字。但**本 memo 仍不能定稿**：① B 侧是**同集 in-sample** 数字，无独立 held-out 验证；② G1 未过 90%，修完已知缺口（别名表、种子消歧、生产相似信号）后需重测；③ 2×2 配对可用现有两份报告先算，但结论不稳定。**不得**用任一侧单边结果代替 memo 结论，也**不得**把 82.7% 当作“已接近 90%”的证据；**不得**把 #74 的“已建 issue”读作已开始实施。
 
 备忘录（届时更新本文件，或另建 `docs/plans/b1-5-decision-memo.md`，由主 agent 决定）必须包含：
 
@@ -233,4 +239,4 @@ B-① 立项（另建 issue，需用户批准）
 | oracle | 2026-11-09 提出 9 项阻塞（B-1…B-9），本文件与两份子计划、两份规范、两份历史文档回填**逐项对应修复**；同日 **delta 复核**再提 3 项（`db_snapshot_hash` SQL / 卡片统计旧口径 / D8 门槛口径）→ **r4 已修** | 🟡 待复核 r4 |
 | 主 agent | 已裁定“按 oracle 9 项阻塞 + 用户批准决策实施”；**新裁定 r4 的两项口径**（D8 gate = `recall@5`；标注人 = 主 agent）；**2026-11-10 裁定 `OPEN-U1`/`OPEN-b1` = ≥90%**；其余（`OPEN-U4`/`OPEN-U5`）未裁定 | 🟡 部分待裁定（`OPEN-U4`/`OPEN-U5`） |
 
-> **本文件不声称**：任一路线已达到其阈值（**A 实测 D8 FAIL；B 实测 G1 82.7% < 90% → FAIL**）、MCP 已实现或端点可达、oracle 已复核 r6/r7/r8、**B-① 已交付或已开始**。**issue 事实**：B1.5a 已建 **[#69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（**评测已完成，D8 FAIL**）；B1.5b 已建 **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（**评测已完成，G1 FAIL；保持 OPEN**，状态以远端为准）。 **下一步** = 修别名/种子消歧/相似信号 + 独立 held-out 集重测，再决定 B-① 形态；**不声称 B-① 已开始**。
+> **本文件不声称**：任一路线已达到其阈值（**A 实测 D8 FAIL；B 实测 G1 82.7% < 90% → FAIL**）、MCP 已实现或端点可达、oracle 已复核 r6/r7/r8/r9、**B-① 已交付或已开始**、**B1.5c 已开始或已完成**。**issue 事实**：B1.5a 已建 **[#69](https://github.com/PNZ-z/ai-powered-Fabflix/issues/69)**（**评测已完成，D8 FAIL**）；B1.5b 已建 **[#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)**（**评测已完成，G1 FAIL；保持 OPEN**，状态以远端为准）；B1.5c 后续修复/重测已建 **[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)**（**已创建 / 待实施；OPEN**）。 **下一步** = 实施 #74（修别名/种子消歧/相似信号 + 独立 held-out 集重测），再决定 B-① 形态；**不声称 B-① 已开始**。

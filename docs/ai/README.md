@@ -22,6 +22,11 @@
 | `golden/tool-cases.b1-5.json` | 15 条工具用例（拒绝 6 / 澄清 4 / 多槽位 5） | ✅ **已创建、冻结并被 B1.5b 使用**（sha256 **`86fb98ba126176991ff32c4f6ef57d60426ecad53fd117b5933133d94677b6a3`**） |
 | `golden/query-routing.b1-5.json` | 60 条查询的 **B1.5b 路由标注**（`intent` / `expected_tools[]` / `required_slots{}` / `accept_alternative_slots[]` / `result_constraints{}`）。**additive**：不修改 `queries.b1-5.json`，A/B 仍按 `query_id` 可配对 | ✅ **已创建、冻结并被 B1.5b 使用**（`b1-5-routing/v1`，sha256 **`bd862e967015c01d8d2dd8ccd0f51369b51eaff990f36fcb474b616f695253e5`**） |
 | `golden/negative.b1-5.json` | 5 条反例（边界证明，不计入分母） | ✅ 已创建、冻结并被 B1.5a 引用（`b1-5-negative/v1`，sha256 **`09725672a2b8fb6ba330613f61533594ed7919b933a55d435c73f043d5fc75fd`**） |
+| `aliases/genre-aliases.json` | 类型别名（词形 → canonical key）+ `canonical_groups` + `unsupported`；替掉脚本内硬编码常量 | 🟡 **B1.5c 阶段 1a 新建，待主 agent 审核**（`b1-5c-aliases/v1`） |
+| `aliases/person-normalization.json` | 导演名归一规则（`~`→空格、casefold、`X.Lastname`↔`First Last` 仅限姓同+首字母一致；禁止纯姓氏扩展） | 🟡 **B1.5c 阶段 1a 新建，待主 agent 审核**（`b1-5c-person-normalization/v1`） |
+| `aliases/title-aliases.json` | 中文片名 → `movie_id`（**冻结时为空**，C10）；条目只来自运行期目录校验通过的解析结果 | 🟡 **B1.5c 阶段 1a 新建（`entries: []`），待主 agent 审核**（`b1-5c-title-aliases/v1`） |
+| `golden/queries-heldout.b1-5c.json` | 30 条 held-out 查询（`H01`–`H30`；10 zh_zh / 10 zh_en / 10 en_en；含 2 条中文译名用例） | 🟡 **B1.5c 阶段 1a 新建，待主 agent 审核**（`b1-5c-heldout/v1`） |
+| `golden/query-routing-heldout.b1-5c.json` | 30 条 held-out 路由标注，`annotates.sha256` 绑定 held-out queries（不绑冻结的 `queries.b1-5.json`） | 🟡 **B1.5c 阶段 1a 新建，待主 agent 审核**（`b1-5c-routing/v1`） |
 | `reports/b1-5a-embedding-eval.md` | A 路线评测报告（实测数字） | ✅ **已完成（2026-11-09 实测，4 组合 × 21,087 卡 × 60 条）**；**D8 `recall@5` ≥ 80% 未达标（FAIL）**：`bge-m3` **0.4833（29/60）** / `qwen3-embedding:0.6b` **0.4167（25/60）** |
 | `reports/b1-5b-tool-routing.md` | B 路线评测报告（实测数字） | ✅ **已完成（2026-11-19 实测 + 判分缺陷修复后重跑，75 例 × G0/G1/G2）**：G1 任务级 **62/75 = 82.7%**（**未达 ≥90% 门槛 → FAIL**，**且为同集开发结果，非 held-out 泛化估计**）、G0 **39/75 = 52.0%**、G2 **38/75 = 50.7%**（replay G0 + 服务端校验，`model_calls = 0`）、**G3 未测**；接地 75/75；相似/推荐执行器为评测 stand-in；不接受为 B-① 已交付的依据 |
 
@@ -96,14 +101,18 @@ schema_hash = sha256( utf8( json.dumps(tools, sort_keys=True, separators=(",", "
 ```
 
 - `tools` = `tool-schema.b1-5.json` 顶层的 `tools` 数组（不含 `$comment` / `db_snapshot` / `error_contract` 等元数据）。
-- 当前记录值（**2026-11-09 计算，`contract_version = b1.5-tools/v2`**；v2 仅改描述性事实 2000→2001，见 §4 r3 行）：
+- 当前记录值（**2026-11-19 计算，`contract_version = b1.5-tools/v3`**；v3 只把 `year` 类参数的 `maximum: 2024` 去掉、保留 `type: integer` + `minimum: 0`，见 §4 r7 行与 B1.5c 计划 §5.2）：
 
 | 项 | 值 |
 | --- | --- |
-| `schema_hash` | `8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567` |
-| 整文件 `file_sha256` | `b54b0f28c4a086b01c64ff634dfbde87caa34688a975b3e74c1256f29b19f2c5` |
-| 文件字节数 | 14,225 |
+| `schema_hash` | `712c0e34c37b6de140c13fcc7d3de15e67ac1f131f2bb6e8751a4f5e4df3474a` |
+| 整文件 `file_sha256` | `0ba15269de06172963f4513cc11a308c3684a5e10808d2ceb3289d525e9b1169` |
+| 文件字节数 | 15,137 |
 | 工具数 | 5（`search_movies_by_title` / `filter_movies` / `find_similar_movies` / `recommend_movies` / `get_movie_card`） |
+| genre `enum` | **56 值，v3 未改动**（与 `SELECT DISTINCT name FROM genres` 一致） |
+
+- **v3 的 year 形态**：`search_movies_by_title.year`、`filter_movies.year_from/year_to`、`recommend_movies.year_range.{from,to}` 均为 **`type: integer` + `minimum: 0`、无 `maximum`**。因此 **schema 边界 ≠ 覆盖边界**：schema 只查形状（非负整数），196–2024 的覆盖由服务端判定并返回 `OUT_OF_RANGE`（`INVALID_ARGUMENT` / `OUT_OF_RANGE` / `EMPTY_RESULT` 三态互斥且可达）。`db_snapshot.year_min/year_max` 仍是覆盖值 **196/2024**，`scripts/eval/check_schema.py` 同时断言这两个边界。
+- **历史值（v2，B1.5b 使用）**：`schema_hash = 8e72f74120e43c5f4a40b1f8815d952d0bf029338a94e328047c60907fd8a567`、`file_sha256 = b54b0f28c4a086b01c64ff634dfbde87caa34688a975b3e74c1256f29b19f2c5`、14,225 B。v2 与 v3 **不可逐构比较**：`docs/ai/golden/query-routing.b1-5.json` 仍绑定 v2 的 `schema_contract`（冻结，不得改动），B1.5c 的新 routing 文件绑定 v3。
 
 - **`required` / `anyOf` 的实际形态（2026-11-09 r2 复核，逐项验证）**：
 
@@ -142,5 +151,6 @@ schema_hash = sha256( utf8( json.dumps(tools, sort_keys=True, separators=(",", "
 | 2026-11-09 | **r2** | ① `db_snapshot_hash` 的 `stars3_sorted` 子查询改为**可执行版**（原 `sm.star_movie_count` 列不存在，实跑报 `ERROR 1054`），并在 3307 上实测整条 SQL（样例 `AA1`/`AA13`/`tt0094859`）；② 明确 `stars3_sorted` = 按 `name` 字典序前 3（不复刻业务 top-3），`genres_sorted` 仍为 `DISTINCT`+`ORDER BY`，`rating` 缺失 `NULL`/一位小数，`snapshot_export_version` 仍为 `1`；③ §2.3 增加 `required` / `anyOf` 逐工具表（`filter_movies`/`recommend_movies` 的“至少一个条件”由 `anyOf` 表达） | **否**（`anyOf` 本已在 fixture 中，复算 `schema_hash` 与 `file_sha256` 均与记录一致） |
 | 2026-11-09 | **r3** | 数据事实修正：评分覆盖起点 **2000 → 2001**（实测 `MIN(year)` among rated = 2001；2000 年 58 部全无评分）。改动 `tool-schema.b1-5.json` 的 `db_snapshot.ratings_covered_from_year` 与两处描述文本；bump `contract_version` **v1 → v2**；重算 hash | **是**（`8eea424b…44cd` → `8e72f741…a567`；`file_sha256` → `b54b0f28…f2c5`，14,225 B） |
 | 2026-11-09 | **r4** | 按 B1.5a 实测报告回填：① 修正金标准集 sha256 误写（`0c2f4c5e…eacf` → 实际 `0c2f4c5e2eed33333b804487ddb9473f9fb25362c4271cb7ba5c1d3ac22be079`）；② §1 状态表把 `golden/queries`、`golden/negative`、`reports/b1-5a-embedding-eval.md` 标为**已完成/已使用**；③ 记录报告结论 **D8 FAIL**（`bge-m3` 0.4833 / `qwen3` 0.4167）与 `schema_hash=N/A` 已显式写出 | **否**（未改 `tool-schema.b1-5.json`） |
+| 2026-11-19 | **r7** | **B1.5c 契约修正（year 边界）**：`search_movies_by_title.year`、`filter_movies.year_from/year_to`、`recommend_movies.year_range.{from,to}` 删除 `maximum: 2024`，保留 `type: integer` + `minimum: 0`（schema 只查形状，196–2024 覆盖由服务端返回 `OUT_OF_RANGE`）；bump `contract_version` **v2 → v3**；重算 `schema_hash` 与 `file_sha256`；**genre enum 56 值未改**；新增 `docs/ai/aliases/*.json`（类型/人名/空的中文片名表）与 held-out fixture 绑定 v3 | **是**（`8e72f741…a567` → `712c0e34…474a`；`file_sha256` → `0ba15269…1169`，15,137 B） |
 | 2026-11-19 | **r6** | B1.5b **判分缺陷修复 + 重跑**：`scripts/eval/tool_eval.py` 的 `build_cases()` query 分支原将 `acceptable_movie_ids` 写死为 `[]`（60 条 query 的 `acceptable_hit` 恒为 `None`，任务级判定从不检查 golden 可接受集合）；改为按 `query_id` 读取并缺集合即报错，重跑 G0/G1/G2 → **G1 62/75 = 82.7% FAIL**（原 92.0% PASS 作废）、G0 52.0%、G2 50.7%；三条 fixture 与 `schema_hash` 未变；报告补齐 stand-in、结果约束判分循环、澄清仅验形态三项披露 | **否**（未改 `tool-schema.b1-5.json`，`schema_hash` 仍为 `8e72f741…a567`） |
 | 2026-11-19 | **r5** | 按 B1.5b 实测报告回填：① §1 状态表把 `golden/tool-cases.b1-5.json`、`golden/query-routing.b1-5.json` 标为**已创建、冻结并被 B1.5b 使用**（附 sha256），`reports/b1-5b-tool-routing.md` 标为**实测完成**并记录 G1 ~~**92.0%**~~ **（旧值，已作废：实际 62/75 = 82.7% FAIL，见 r6）** / G0 52.0% / G2 50.7%、G3 未测；② 明确 G1 是**同集开发结果**（同一 75 条 fixture 上调优），不可作为 held-out 泛化估计或“B-① 已交付”的依据 | **否**（未改 `tool-schema.b1-5.json`，`schema_hash` 仍为 `8e72f741…a567`） |
