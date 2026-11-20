@@ -7,7 +7,7 @@
 | 前序 issue | [#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)（B1.5b，**OPEN**；本轮**未**改动其状态） |
 | 计划 | `docs/plans/b1-5c-tool-routing-fixes.md`（**r5：实施结果回填**）；总纲 `docs/plans/b1-5-movie-retrieval-eval.md`（r10） |
 | 评测报告 | `docs/ai/reports/b1-5c-tool-routing-fixes.md`（**已实测完成**；报告正文由主 agent 维护，**本轮文档更新未改报告正文**） |
-| 分支 / 提交 | 分支 **`codex/b1-5c-tool-routing-fixes`**；实施提交 **`78f5740`**（held-out fixture + 契约 v3）、**`734eef5`**（评测层修复 + `G1-T` + in-sample/held-out 运行）。本次文档改动**未提交**（`docs-writer` 未执行任何 git 写操作）。**PR 未创建** |
+| 分支 / 提交 | 分支 **`codex/b1-5c-tool-routing-fixes`**；实施提交 **`78f5740`**（held-out fixture + 契约 v3）、**`734eef5`**（评测层修复 + `G1-T` + in-sample/held-out 运行）、**`9e348de`**（**主 agent 在本次文档写作过程中**一次性提交评测报告 + 本轮 `docs/` 回填）。本日志只记录可核实事实；`docs-writer` **未执行任何 git 写操作**。**PR 未创建** |
 | 评测运行 | 由 worker 执行（`scripts/eval/tool_eval.py` 等；命令见报告 §10）；**本轮文档更新未重跑任何评测**，也不声称独立复现 |
 | 关键结论 | held-out `G1-T` **30/30 = 100%**（≥27/30 → **provisional PASS**）；held-out `G1` baseline **28/30 = 93.3%**；`G0` / `G2`（回放）**14/30 = 46.7%**；in-sample `G1` **62/75 → 67/75 = 89.3%**（路由 73/75）；**`G3` 未测、MCP 未实现**；**无生产代码（B-① 未开始），执行器与解析器均为评测 stand-in** |
 | **关键 caveat** | **held-out 30 条在 stage 1c 已可见并被用于修规则**（H18 查询文本改词；H06/H12/H18/H24/H28/H16 的 pattern/年份消歧在看过该 fixture 后补）⇒ 30/30 是 **post-fix regression on a seen fixture，不是盲测、不是泛化估计**。要声称泛化 ≥90% 必须另建 **blind holdout（B1.5d，未做）** |
@@ -26,6 +26,7 @@
 | `docs/issues/issue-74-b1-5c-tool-routing-fixes.md` | 仅改**文件头状态与 `## Internal tracking`**：状态行 → 评测已完成（provisional）/ 非盲测 / B1.5d 待做 / **#74 保持 OPEN**；`计划来源`/`批准状态`/`last_updated` 同步；`实施状态` 由“未实施”改为“评测完成 = provisional”，逐项记录数字、caveat、未裁定项（`OPEN-C3`/`OPEN-C11`/Q48）、blind holdout 未做、PR 未创建；`实施许可` 改为“已给出并已执行（关闭 #74 / 建 PR / B-① 立项仍需主 agent 决定）”；新增 **r5 回填记录**（列明证据来源）。**`## GitHub issue title` / `## GitHub issue body` 完全未改**（`git diff` 已核对：变更全部位于 body 区块之外），**也未编辑远端 issue** |
 | `docs/plans/b1-5-movie-retrieval-eval.md`（umbrella） | ① `last_updated` → **r10**（B1.5c 评测完成但 provisional / 非盲测；下一步 = blind holdout 再定 B-①；B-① 未开始；#74 保持 OPEN）；② `issue 草稿 / 已建 issue` 行 → #74“已创建、评测已完成（provisional PASS、非盲测）、保持 OPEN”；③ `状态` 行新增 B1.5c 例外；④ 新增 **r10 回填段**（实测数字 + caveat + 下一步）；⑤ §6 流程图把 B1.5c 标为“事后可见 → 非盲测 / 报告已产生”，并新增 **B1.5d（blind holdout，未立项）**节点；⑥ §6 进度 bullet 与 §7 memo 当前状态同步（memo **仍不能定稿**）；⑦ 文末“不声称”段重写。**共享数据集/指标/门槛未改** |
 | `docs/plans/ai-roadmap-overview.md` | ① 改写第 12 条为“B1.5c 已立项并**已完成评测（provisional，非盲测）**”；② 新增 **第 13 条**记录本轮实测（`G1-T` 30/30 / `G1` 28/30 / `G0`·`G2` 14/30 / in-sample 67/75 / `G3`·MCP 未测 / stand-in）+ 污染 caveat + “下一步 = blind holdout（B1.5d），B-① 未开始”，并明确不声称已泛化/已交付；③ §M4 的 ⑪ 段追加 **⑫** 同日更新（M4.1 前置再增 B1.5d）。**第 8/10/11 条历史表述未改写** |
+| `docs/architecture/ai-user-workflows.md` | **最小一致性修正（仅 1 处）**：文件头 `last_updated` 的 r7 说明把 `G1-T` **30/30** 的判定从 `（≥ 27/30 → PASS）` 改为 **`（≥ 27/30 → provisional PASS：held-out 在阶段 1c 可见 → post-fix、非盲测；blind holdout 未做）`**。该文件 §1.7 正文（主 agent 于此前的提交中写入）**已自带 provisional / 非盲测 caveat**，§修订记录 r7 行也已写 `provisional PASS`，故本次只补文件头一处，**未改 §1.6、§3 U1、§4.2、`WU-9` 或任何阈值/分母** |
 | `docs/logs/2026-11-19-issue-74-b1-5c-tool-routing-fixes.md` | **本文件**（新建工作流日志） |
 
 > **本轮明确未改**：`docs/ai/reports/b1-5c-tool-routing-fixes.md`（报告正文，主 agent 已自行修正为 provisional）、`scripts/eval/**`、`docs/ai/golden/**`、`docs/ai/aliases/**`、`docs/ai/tool-schema.b1-5.json`、`src/main/**`、`pom.xml`、CI、`README.md`；未提交、未推送、未创建/编辑 GitHub issue 或 PR。
@@ -66,7 +67,7 @@
 | 7 | **`OPEN-C11`（解析成功率/错译率是否设门槛）未定** | ⚠️ 本轮仅披露（n=2），未设门槛 |
 | 8 | `G3` 未测、MCP 未实现、embedding 步 4 关闭、**冷启动延迟未测**（`OPEN-b2`） | ⚠️ 全部如实记为“未测/未实现”，未用 G2 替代 G3 |
 | 9 | 相似/推荐执行器与中文解析器都是**评测 stand-in**；**无生产代码**，B-① 未开始 | ⚠️ 数字不是生产 SLA |
-| 10 | **`docs/architecture/ai-user-workflows.md` §1.7**（本轮由主 agent 新增的实测回填段）目前**未带 provisional / 非盲测 caveat**，与本轮 `docs/` 其余部分口径不一致 | ⚠️ **需主 agent 决定**是否在该段补一句“held-out 在 stage 1c 可见 → provisional / 非盲测”。本轮**未改该文件**（不在本任务范围内，且属主 agent 正在编辑的文件） |
+| 10 | **`docs/architecture/ai-user-workflows.md` 的口径一致性** | ✅ **本轮已处理**：§1.7 正文与 §修订记录 r7（主 agent 写入）已自带 provisional / 非盲测；文件头 r7 说明的一处 `PASS` 已改为 `provisional PASS`（本轮唯一改动） |
 | 11 | **#74 仍 OPEN，PR 未创建**；两个实施提交已在本分支但未开 PR | ⚠️ 交付流程下一步（主 agent / `github-operator`） |
 
 > **未发现其他已知遗留问题**（除上表 11 项）：本轮改动均为文档状态与口径更正，不涉及源码、测试、fixture 或配置；所有数字与 `sha256` 均以报告与 `git show` 为准，未新增未经实测的断言。
