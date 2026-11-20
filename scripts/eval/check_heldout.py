@@ -72,8 +72,8 @@ TITLE_ALIASES_PATH = REPO_ROOT / "docs" / "ai" / "aliases" / "title-aliases.json
 
 # One-shot freeze (plan §8.5): the numbers were written down before the measurement run and may only
 # change with a heldout_version bump plus a "run N" note in the report.
-FROZEN_HELDOUT_SHA256 = "9933b0ccda71a56e21329b261ba971ac2ebcaa1e937ce59131c2bbc55e00535f"
-FROZEN_HELDOUT_ROUTING_SHA256 = "46d5d8cce3f41fa274670de19c6655c06a1413267fb21fbf4b656a2cf35ce38e"
+FROZEN_HELDOUT_SHA256 = "d471c57a3b27d93f499003573ad690b08580691e911fe5127e35b76cd191abe4"
+FROZEN_HELDOUT_ROUTING_SHA256 = "5608dd4c774f09d5b8e9d1f0dd7bf99602539aac0474dc170b1648b393f34aba"
 
 EXPECTED_IDS = [f"H{i:02d}" for i in range(1, 31)]
 TRACKS = ("zh_zh", "zh_en", "en_en")

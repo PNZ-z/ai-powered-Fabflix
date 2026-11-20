@@ -6,15 +6,33 @@ refuses when it must, keeps arguments inside ``docs/ai/tool-schema.b1-5.json``, 
 executed rows are grounded in the catalog. Stage 2 adds the full 60 + 15 run, the G1 second hop
 (seed resolution), grounding re-check, latency percentiles and G2's replay of G0's calls.
 
-Variants (plan ``docs/plans/b1-5b-tool-routing.md`` §5)
-------------------------------------------------------
+Variants (B1.5b plan §5, B1.5c plan §4.3)
+-----------------------------------------
 ``G0``  pure LLM routing: the model picks the tool and the arguments, the server only executes.
 ``G1``  deterministic routing in front: keyword/dictionary pre-classification, enum mapping,
         coverage check and controlled slot filling, no model call at all.
+``G1-T`` G1 plus the query-time title resolver (B1.5c decision C4=D): alias/cache, then 1-3 English
+        candidates from the local model **only for a CJK title the catalog cannot match exactly**,
+        then catalog exact/prefix verification, then clarification. ``G1`` is the baseline that
+        never resolves a Chinese title (``model_calls = 0`` there, always).
 ``G2``  G0's routing plus server-side schema validation and enum/alias mapping (the model still
         chooses; the server rejects or maps). G2 reuses G0's requests, so it never doubles them.
 ``G3``  **not implemented this period** (``OPEN-b4`` = optional / not required). Asking for it
         exits 2 and says "not measured" instead of silently substituting G2.
+
+Execution semantics (B1.5c, plan §5.1/§6.2/§7)
+---------------------------------------------
+A multi-value ``genres[]`` / ``preferred_genres[]`` means **all of them** (AND). Values are
+canonicalized first, so ``Sci-Fi`` and ``Science Fiction`` are one condition, never two. Director
+equality follows ``docs/ai/aliases/person-normalization.json``: ``~`` becomes a space, comparison is
+case-folded, and an abbreviation (``M.Mann``) equals a full name only when the surname and the first
+initial agree - a bare surname is never expanded (``Spielberg`` is not ``Steven Spielberg``;
+plan §5.4). ``find_similar_movies`` narrows the pool by the constraints the **router extracted from
+the query text** and only then ranks (same director, shared genre count, |year difference|, rating);
+the golden annotations are read by ``score_case`` and by nothing else.
+
+Alias data is loaded from ``docs/ai/aliases/*.json`` (``aliases_version``); the harness keeps no
+hard-coded genre or person table.
 
 Tool execution coverage
 -----------------------
@@ -25,19 +43,23 @@ Tool execution coverage
 * ``recommend_movies`` filters by the explicit preferences it receives (genres / year range /
   rating / director / seed ids) and orders by rating, which is what the tool description says it
 does. The tool's arguments are the user's constraints, so no extra semantics are invented.
-* ``find_similar_movies`` ranks candidates sharing at least one seed genre by (shared genre count
-desc, |year difference| asc, rating desc) and never returns the seed. User-stated genres, years
-and rating are then enforced **server-side** as result constraints (``R7-2``: a stated condition
-may not be silently dropped), because the tool schema has no parameters to carry them.
+* ``find_similar_movies`` narrows the candidate pool with the constraints the router extracted
+from the query text (genres AND, year window, director) and then ranks it (same director desc,
+shared genre count desc, |year difference| asc, rating desc) and never returns the seed. The
+narrowing is a ``WHERE`` clause, so ``SIMILAR_POOL`` truncation can never drop a row the user
+asked for (plan §6.2). User-stated conditions are enforced **server-side** (``R7-2``: a stated
+condition may not be silently dropped), because the tool schema has no parameters to carry them.
 
 **The ranking weights above are an evaluation stand-in, not the approved production ranking.**
 This file contains no production code; the production ``find_similar_movies`` / ``recommend_movies``
 ranking remains the decision of the implementation issue (``OPEN-b5``). The report states the
 stand-in and reports routing-level numbers separately from task-level numbers.
 
-``--self-test`` feeds scripted tool calls through the G0/G2 scoring path. It exercises the
-plumbing (validation, enum mapping, coverage states, scoring) without a model and is labelled
-SELF-TEST: those records are NOT a model measurement.
+``--self-test`` feeds scripted tool calls through the G0/G2 scoring path and scripted candidates
+through the G1-T resolver. It exercises the plumbing (validation, enum mapping, coverage states,
+canonical genre AND, director equality, catalog verification, scoring, the "execution never reads
+a golden annotation" sentinel) without a model and is labelled SELF-TEST: those records are NOT a
+model measurement.
 
 ``G2 --reuse-g0 G0.json`` replays G0's recorded calls instead of calling the model again, so G2
 differs from G0 **only** by the server-side layer (one ablation variable, no second sampling).
@@ -50,6 +72,10 @@ Usage
         --base-url http://host:11434 --out G0.json
     python3 scripts/eval/tool_eval.py --variant G2 --cases both --allow-full-run \\
         --reuse-g0 G0.json --out G2.json
+    python3 scripts/eval/tool_eval.py --variant G1-T --cases queries \\
+        --queries-path docs/ai/golden/queries-heldout.b1-5c.json \\
+        --routing-path docs/ai/golden/query-routing-heldout.b1-5c.json \\
+        --no-cache --allow-full-run --out G1T-cold.json
     python3 scripts/eval/tool_eval.py --variant G3            # exits 2: not measured
 
 Exit code 0 = the requested mode finished, 2 = refused / unavailable input.
@@ -63,6 +89,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -71,9 +98,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_golden import REPO_ROOT, ReadOnlyMysql, load_json  # noqa: E402
+from check_heldout import HELDOUT_PATH as HELDOUT_QUERIES_PATH  # noqa: E402  (independence check)
 from check_schema import (  # noqa: E402  (fixtures + shared hash/enum helpers)
+    GENRE_ALIASES_PATH,
+    PERSON_NORMALIZATION_PATH,
     QUERIES_PATH,
     ROUTING_PATH,
+    TITLE_ALIASES_PATH,
     TOOL_CASES_PATH,
     TOOL_SCHEMA_PATH,
     genre_enum,
@@ -96,27 +127,151 @@ YEAR_MIN, YEAR_MAX = 196, 2024
 RATING_COVERAGE_FROM = 2001
 SAMPLED_DEFAULT_LIMIT = 5
 
+# --------------------------------------------------------------------------------------
+# Alias / normalization data (B1.5c: external files, no hard-coded table)
+# --------------------------------------------------------------------------------------
+# ``docs/ai/aliases/genre-aliases.json``      user genre word -> canonical key (an enum value)
+# ``docs/ai/aliases/person-normalization.json`` director equality rule (surname + first initial)
+# ``docs/ai/aliases/title-aliases.json``      verified Chinese title -> movie id (frozen empty, C10)
+GENRE_ALIAS_DOC = load_json(GENRE_ALIASES_PATH)
+PERSON_NORMALIZATION_DOC = load_json(PERSON_NORMALIZATION_PATH)
+TITLE_ALIAS_DOC = load_json(TITLE_ALIASES_PATH)
+
+
+def canonical_key_map(alias_doc: dict) -> dict[str, str]:
+    """enum value -> canonical key (identity for every value outside a canonical group)."""
+    mapping: dict[str, str] = {}
+    for group in alias_doc.get("canonical_groups", []):
+        for value in group:
+            mapping[value] = group[0]
+    return mapping
+
+
+def canonical_member_lists(alias_doc: dict) -> dict[str, list[str]]:
+    """canonical key -> every catalog value that denotes it."""
+    return {group[0]: list(group) for group in alias_doc.get("canonical_groups", [])}
+
+
+GENRE_CANONICAL = canonical_key_map(GENRE_ALIAS_DOC)
+GENRE_CANONICAL_MEMBERS = canonical_member_lists(GENRE_ALIAS_DOC)
 # Deterministic routing vocabulary (G1). Chinese genre words must be mapped server-side: the
-# measured baseline failure was the model submitting  genre values in Chinese (scout §实测 3).
-GENRE_ALIASES = {
-    "动作": ["Action"], "action": ["Action"],
-    "冒险": ["Adventure"], "adventure": ["Adventure"],
-    "动画": ["Animation"], "动画片": ["Animation"], "animation": ["Animation"], "animated": ["Animation"],
-    "传记": ["Biography"], "biography": ["Biography"],
-    "喜剧": ["Comedy"], "comedy": ["Comedy"], "comedies": ["Comedy"],
-    "犯罪": ["Crime"], "crime": ["Crime"],
-    "纪录片": ["Documentary"], "documentary": ["Documentary"],
-    "剧情": ["Drama"], "drama": ["Drama"],
-    "家庭": ["Family"], "family": ["Family"],
-    "恐怖": ["Horror"], "horror": ["Horror"],
-    "音乐": ["Music"], "musical": ["Music"], "musicals": ["Music"],
-    "悬疑": ["Mystery"], "mystery": ["Mystery"],
-    "黑色": ["Noir"], "noir": ["Noir"], "film noir": ["Noir"],
-    "爱情": ["Romance"], "romance": ["Romance"], "romantic": ["Romance"],
-    "科幻": ["Sci-Fi"], "sci-fi": ["Sci-Fi"], "science fiction": ["Sci-Fi"],
-    "惊悚": ["Thriller"], "thriller": ["Thriller"], "thrillers": ["Thriller"],
-    "西部": ["Western"], "western": ["Western"], "westerns": ["Western"],
-}
+# measured baseline failure was the model submitting genre values in Chinese (scout §实测 3).
+GENRE_ALIASES = {term.casefold(): list(values)
+                 for term, values in GENRE_ALIAS_DOC["aliases"].items()}
+
+
+def sql_literal(value: object) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def canonical_genres(values: list | tuple) -> list[str]:
+    """Fold a genre list onto canonical keys and drop duplicates (plan §5.1, oracle P2-1).
+
+    ``Sci-Fi`` and ``Science Fiction`` become one key, so a multi-value filter needs one row
+    match, not two. Literal expansion would require a row to carry both spellings (0 rows).
+    """
+    keys: list[str] = []
+    for value in values:
+        key = GENRE_CANONICAL.get(str(value), str(value))
+        if key not in keys:
+            keys.append(key)
+    return keys
+
+
+def canonical_genre_case_sql(column: str = "g.name") -> str:
+    """SQL expression folding a catalog genre value onto its canonical key."""
+    variants = {value: key for key, group in GENRE_CANONICAL_MEMBERS.items()
+                for value in group[1:]}
+    if not variants:
+        return column
+    branches = " ".join(f"WHEN {column} = {sql_literal(value)} THEN {sql_literal(key)}"
+                        for value, key in sorted(variants.items()))
+    return f"CASE {branches} ELSE {column} END"
+
+
+def genre_member_sql(keys: list[str]) -> str:
+    members = sorted({member for key in keys
+                      for member in GENRE_CANONICAL_MEMBERS.get(key, [key])})
+    return ",".join(sql_literal(member) for member in members)
+
+
+def genre_and_sql(keys: list[str], movie_column: str = "m.id") -> str:
+    """"Every canonical key present" as one SQL predicate (canonicalize first, then AND)."""
+    return (f"{movie_column} IN (SELECT gm.movie_id FROM genres_in_movies gm "
+            f"JOIN genres g ON g.id = gm.genre_id "
+            f"WHERE g.name IN ({genre_member_sql(keys)}) GROUP BY gm.movie_id "
+            f"HAVING COUNT(DISTINCT {canonical_genre_case_sql()}) = {len(keys)})")
+
+
+# ``X.Lastname`` / ``X.Y.Lastname`` abbreviations: initials first, surname last.
+DIRECTOR_INITIALS_RE = re.compile(r"^((?:[a-z]\.\s*)+)(.*)$")
+DIRECTOR_SUFFIX_RE = re.compile(r"\s+(?:jr|sr)\.?$", re.IGNORECASE)
+
+
+def director_parts(value: str) -> tuple[str, str | None]:
+    """(surname, first initial or None) after ``~``->space, case-fold and suffix removal."""
+    text = (value or "").replace("~", " ")
+    text = DIRECTOR_SUFFIX_RE.sub("", text.strip())
+    text = re.sub(r"\s+", " ", text).strip().casefold()
+    if not text:
+        return "", None
+    match = DIRECTOR_INITIALS_RE.match(text)
+    if match:
+        initials = re.findall(r"[a-z]", match.group(1))
+        return match.group(2).strip(" ."), (initials[0] if initials else None)
+    tokens = text.split(" ")
+    if len(tokens) == 1:
+        return tokens[0], None
+    return " ".join(tokens[1:]), tokens[0][0]
+
+
+def directors_equal(left: str, right: str) -> bool:
+    """``person-normalization.json`` equality: same surname, same first initial.
+
+    A bare surname never equals a full name (``Spielberg`` != ``Steven Spielberg``), because that
+    would replace the answer set: Q17 is 5 rows for the full name and 29 for the surname.
+    """
+    if normalized(left) == normalized(right):
+        return True
+    left_surname, left_initial = director_parts(left)
+    right_surname, right_initial = director_parts(right)
+    return (bool(left_surname) and left_surname == right_surname
+            and left_initial is not None and left_initial == right_initial)
+
+
+def alias_pattern(token: str) -> re.Pattern:
+    """Word-bounded match for Latin terms, substring match for CJK terms.
+
+    Substring matching on a short Latin alias such as ``war`` would fire inside ``toward`` or
+    ``Edward`` and silently add a genre the user never named.
+    """
+    if token.isascii():
+        return re.compile(r"(?<![a-z0-9])" + re.escape(token) + r"(?![a-z0-9])")
+    return re.compile(re.escape(token))
+
+
+GENRE_ALIAS_PATTERNS = [(token, alias_pattern(token))
+                        for token in sorted(GENRE_ALIASES, key=len, reverse=True)]
+
+# G1-T resolver (plan §4.3/§4.5/§4.6): local model, strict JSON, 1-3 English candidates.
+RESOLVER_PROMPT_ID = "b1-5c-title-resolver/v1"
+RESOLVER_PROMPT = (
+    "You convert a movie title written in Chinese characters into the English original title used "
+    "by an English-language movie catalog (the catalog stores English titles only, so transliterate "
+    "the well-known original title, do not describe the plot). Reply with strict JSON only, no prose "
+    "and no markdown: "
+    '{"candidates": ["Title A", "Title B"]} with 1 to 3 candidates, most likely first. Use only '
+    "English original titles. Never translate a genre word, a person name or the word 'movie'."
+)
+RESOLVER_TIMEOUT_S = 8.0
+RESOLVER_CACHE_VERSION = "b1-5c-resolver-cache/v1"
+DEFAULT_RESOLVER_CACHE = REPO_ROOT / ".pi" / "artifacts" / "b1-5c-resolver-cache.json"
+HAN_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+
+
+def has_han(text: str | None) -> bool:
+    """True when the text carries Chinese characters (not CJK punctuation such as 《》)."""
+    return bool(HAN_RE.search(text or ""))
 TRANSACTION_PATTERNS = (r"买.{0,20}票", r"退.{0,4}款", r"下.{0,4}单", r"付.{0,4}款")
 REFUSAL_RULES = (
     # "剧情" alone is also the Drama genre word ("剧情片"), so the plot branch needs a plot verb.
@@ -146,22 +301,43 @@ class EvalError(Exception):
     """Raised for unrecoverable evaluation errors (endpoint down, broken fixture)."""
 
 
+def repo_relative(path: Path | str) -> str:
+    """Path relative to the repository when possible, absolute otherwise (report/record field)."""
+    resolved = Path(path).resolve()
+    try:
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
+
+
 # --------------------------------------------------------------------------------------
 # Fixtures and cases
 # --------------------------------------------------------------------------------------
 
-def load_fixtures() -> tuple[dict, dict, dict]:
+def load_fixtures(queries_path: Path = QUERIES_PATH,
+                  routing_path: Path = ROUTING_PATH) -> tuple[dict, dict, dict, dict]:
+    """Schema, tool cases, queries and routing annotations (paths are overridable for held-out)."""
     schema_doc = load_json(TOOL_SCHEMA_PATH)
     cases_doc = load_json(TOOL_CASES_PATH)
-    routing_doc = load_json(ROUTING_PATH)
+    queries_doc = load_json(queries_path)
+    routing_doc = load_json(routing_path)
     recorded = schema_doc.get("schema_hash")
     recomputed = schema_hash(schema_doc["tools"])
     if recorded != recomputed:
         raise EvalError(f"schema_hash mismatch: recorded {recorded}, recomputed {recomputed}")
-    return schema_doc, cases_doc, routing_doc
+    annotates = (routing_doc.get("annotates") or {}).get("sha256")
+    actual = hashlib.sha256(queries_path.read_bytes()).hexdigest()
+    if annotates != actual:
+        # Pairs the routing annotations with the queries they were written for. Without this a
+        # held-out run could silently score the frozen annotations against another query file.
+        raise EvalError(
+            f"{repo_relative(routing_path)}.annotates.sha256 {annotates} != "
+            f"sha256({repo_relative(queries_path)}) {actual}"
+        )
+    return schema_doc, cases_doc, queries_doc, routing_doc
 
 
-def build_cases(cases_doc: dict, routing_doc: dict, selection: str,
+def build_cases(cases_doc: dict, queries_doc: dict, routing_doc: dict, selection: str,
                 ids: list[str] | None) -> list[dict]:
     """Normalise both fixture shapes into one case record."""
     cases: list[dict] = []
@@ -178,22 +354,25 @@ def build_cases(cases_doc: dict, routing_doc: dict, selection: str,
                 "accept_alternative_slots": [],
                 "result_constraints": case.get("result_constraints", {}),
                 "expected_refusal": case["expected_behavior"] == "refuse_no_tool",
+                "allows_clarification": False,
+                "cjk_title": False,
                 "expected_behavior": case["expected_behavior"],
                 "expected_error_code": case.get("expected_error_code", "NONE"),
                 "acceptable_movie_ids": case.get("acceptable_movie_ids", []),
             })
     if selection in ("queries", "both"):
-        queries = {query["id"]: query for query in load_json(QUERIES_PATH)["queries"]}
+        queries = {query["id"]: query for query in queries_doc["queries"]}
         for entry in routing_doc["annotations"]:
             query = queries[entry["query_id"]]
             acceptable_ids = query.get("acceptable_movie_ids", [])
-            if not acceptable_ids:
-                # B1.5a froze an acceptable set for every query. Scoring without it silently
-                # turned task success into "returned any row", which is how Q12/Q16/Q35/Q55/Q56
-                # were reported as successes while missing the golden set.
+            refusal = bool(entry["expected_refusal"])
+            if not acceptable_ids and not refusal:
+                # B1.5a froze an acceptable set for every non-refusal query. Scoring without it
+                # silently turned task success into "returned any row", which is how
+                # Q12/Q16/Q35/Q55/Q56 were reported as successes while missing the golden set.
                 raise EvalError(
-                    f"{entry['query_id']} has no acceptable_movie_ids in "
-                    f"{QUERIES_PATH.relative_to(REPO_ROOT)}; task-level success cannot be scored"
+                    f"{entry['query_id']} has no acceptable_movie_ids in the queries file; "
+                    f"task-level success cannot be scored"
                 )
             cases.append({
                 "case_id": entry["query_id"],
@@ -204,8 +383,11 @@ def build_cases(cases_doc: dict, routing_doc: dict, selection: str,
                 "expected_tools": entry["expected_tools"],
                 "required_slots": entry["required_slots"],
                 "accept_alternative_slots": entry.get("accept_alternative_slots", []),
-                "result_constraints": entry.get("result_constraints", {}),
+                "result_constraints": entry.get("result_constraints", {}) or {},
                 "expected_refusal": entry["expected_refusal"],
+                "allows_clarification": bool(query.get("allows_clarification")
+                                              or entry.get("allows_clarification")),
+                "cjk_title": bool(query.get("cjk_title")),
                 "expected_behavior": ("refuse_no_tool" if entry["expected_refusal"]
                                       else "call_tools_and_answer"),
                 "expected_error_code": "NONE",
@@ -255,6 +437,42 @@ class OllamaClient:
         started = time.perf_counter()
         response = self._post("/api/chat", payload)
         return response, (time.perf_counter() - started) * 1000.0
+
+    def generate_json(self, model: str, system_prompt: str, user_text: str,
+                      timeout_s: float) -> tuple[str | None, float, bool]:
+        """One strict-JSON completion over ``/api/chat``: (content, latency_ms, timed_out).
+
+        ``/api/chat`` is the same endpoint the routing variants use, so the resolver shares their
+        transport and credential path; ``format: json`` enforces strict JSON output. A timeout is
+        a degraded outcome the resolver turns into a clarification (plan §4.6), so it is reported
+        instead of raising; an unreachable endpoint stays fatal.
+        """
+        payload = {
+            "model": model,
+            "messages": [{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": user_text}],
+            "stream": False,
+            "format": "json",
+            "options": {"temperature": TEMPERATURE},
+        }
+        request = urllib.request.Request(
+            self.base_url + "/api/chat",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        started = time.perf_counter()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_s) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except (TimeoutError, ConnectionError):
+            return None, (time.perf_counter() - started) * 1000.0, True
+        except urllib.error.URLError as exc:
+            if isinstance(exc.reason, TimeoutError):
+                return None, (time.perf_counter() - started) * 1000.0, True
+            raise EvalError(f"cannot reach {request.full_url}: {exc}") from exc
+        content = (body.get("message") or {}).get("content")
+        return content, (time.perf_counter() - started) * 1000.0, False
 
     def tags(self) -> dict[str, str]:
         """model name -> digest, so the report can pin the model it actually measured."""
@@ -360,16 +578,20 @@ def validate_call(schema_doc: dict, name: str, arguments: dict) -> list[str]:
 
 
 def map_genres(schema_doc: dict, values: list) -> tuple[list, list]:
-    """Map user-language genre words onto the derived enum (server-side alias table)."""
+    """Map user-language genre words onto canonical enum keys (server-side alias table)."""
     enum = genre_enum(schema_doc)
     mapped, unmapped = [], []
     for value in values:
         if value in enum:
-            mapped.append(value)
+            for key in canonical_genres([value]):
+                if key not in mapped:
+                    mapped.append(key)
             continue
-        alias = GENRE_ALIASES.get(value.strip().lower())
+        alias = GENRE_ALIASES.get(str(value).strip().casefold())
         if alias:
-            mapped.extend(item for item in alias if item not in mapped)
+            for key in canonical_genres(alias):
+                if key not in mapped:
+                    mapped.append(key)
         else:
             unmapped.append(value)
     return mapped, unmapped
@@ -413,23 +635,25 @@ MOVIE_COLUMNS = """m.id, m.title, m.year, m.director,
            FROM genres_in_movies gm JOIN genres g ON g.id = gm.genre_id
           WHERE gm.movie_id = m.id) AS genres,
         r.rating"""
+MOVIE_FIELDS = ("id", "title", "year", "director", "genres", "rating")
 
 
 def constraint_problems(row: dict, constraints: dict | None) -> list[str]:
     """Result-constraint violations of one row (``result_constraint_vocabulary``).
 
-    ``genres`` is read as "the row must carry at least one of the listed genres": catalog rows
-    carry several genres, so a subset reading would reject correct rows (e.g. Q13's
-    ``Action``/``Sci-Fi`` window returns rows that also carry ``Adventure``).
+    ``genres`` means **all** of the listed genres after canonicalization (plan §5.1): a row must
+    carry one genre per canonical key. Reading it as "at least one" is what made Q19/Q30/P-like
+    multi-genre cases accept the wrong rows.
     """
     if not constraints:
         return []
     problems: list[str] = []
     genres = constraints.get("genres")
     if genres:
-        row_genres = {normalized(genre) for genre in row["genres"]}
-        if not row_genres & {normalized(genre) for genre in genres}:
-            problems.append(f"genres {row['genres']} share none of {genres}")
+        row_keys = set(canonical_genres(row["genres"]))
+        missing = [key for key in canonical_genres(genres) if key not in row_keys]
+        if missing:
+            problems.append(f"genres {row['genres']} miss {missing} of {genres}")
     if isinstance(constraints.get("year_from"), int) and row["year"] < constraints["year_from"]:
         problems.append(f"year {row['year']} < {constraints['year_from']}")
     if isinstance(constraints.get("year_to"), int) and row["year"] > constraints["year_to"]:
@@ -439,21 +663,19 @@ def constraint_problems(row: dict, constraints: dict | None) -> list[str]:
         if rating is None or rating + 1e-9 < float(constraints["min_rating"]):
             problems.append(f"rating {row['rating']} < {constraints['min_rating']}")
     director = constraints.get("director")
-    if director and normalized(row["director"]) != normalized(director):
+    if director and not directors_equal(row["director"], director):
         problems.append(f"director {row['director']!r} != {director!r}")
     return problems
 
 
-def constraint_sql(constraints: dict | None) -> list[str]:
+def constraint_sql(constraints: dict | None, executor: "ToolExecutor") -> list[str]:
     """SQL predicates for the user-stated result conditions (server-side enforcement)."""
     if not constraints:
         return []
     clauses: list[str] = []
     genres = constraints.get("genres")
     if genres:
-        quoted = ",".join("'" + str(genre).replace("'", "''") + "'" for genre in genres)
-        clauses.append(f"m.id IN (SELECT gm.movie_id FROM genres_in_movies gm JOIN genres g "
-                       f"ON g.id = gm.genre_id WHERE g.name IN ({quoted}))")
+        clauses.append(genre_and_sql(canonical_genres(genres)))
     if isinstance(constraints.get("year_from"), int):
         clauses.append(f"m.year >= {constraints['year_from']}")
     if isinstance(constraints.get("year_to"), int):
@@ -461,14 +683,36 @@ def constraint_sql(constraints: dict | None) -> list[str]:
     if constraints.get("min_rating") is not None:
         clauses.append(f"r.rating >= {float(constraints['min_rating'])}")
     if constraints.get("director"):
-        director = str(constraints["director"]).replace("'", "''")
-        clauses.append(f"m.director = '{director}'")
+        clauses.append(executor.director_predicate(str(constraints["director"])))
     return clauses
 
 
 class ToolExecutor:
     def __init__(self, mysql: ReadOnlyMysql | None) -> None:
         self.mysql = mysql
+        self._directors: list[str] | None = None
+
+    # -- catalog-derived director equality (person-normalization.json) -------------------
+    def catalog_directors(self) -> list[str]:
+        """Every distinct director string, read once and reused by every comparison."""
+        if self._directors is None:
+            if self.mysql is None:
+                self._directors = []
+            else:
+                self._directors = [row[0] for row in
+                                   self.mysql.select("SELECT DISTINCT director FROM movies")
+                                   if row[0] not in ("NULL", "")]
+        return self._directors
+
+    def matching_directors(self, value: str) -> list[str]:
+        return [name for name in self.catalog_directors() if directors_equal(name, value)]
+
+    def director_predicate(self, value: str) -> str:
+        """``m.director`` predicate for one name using the equality rule, never an expansion."""
+        names = self.matching_directors(value)
+        if not names:
+            return "1 = 0"
+        return "m.director IN (" + ",".join(sql_literal(name) for name in names) + ")"
 
     def execute(self, name: str, arguments: dict, constraints: dict | None = None) -> dict:
         if self.mysql is None:
@@ -485,26 +729,67 @@ class ToolExecutor:
             return self._recommend(arguments, constraints)
         return {"status": "error", "error": "INVALID_ARGUMENT", "fields": {"field": "tool"}}
 
+    @staticmethod
+    def _row_from(row: list[str]) -> dict:
+        return {"id": row[0], "title": row[1], "year": int(row[2]), "director": row[3],
+                # the mysql CLI prints the string NULL for a missing value, not an empty field
+                "genres": [] if row[4] in ("NULL", "") else [g for g in row[4].split(",") if g],
+                "rating": None if row[5] in ("NULL", "") else float(row[5])}
+
     def _rows(self, sql: str) -> list[dict]:
-        return [
-            {"id": row[0], "title": row[1], "year": int(row[2]), "director": row[3],
-             # the mysql CLI prints the string NULL for a missing value, not an empty field
-             "genres": [] if row[4] in ("NULL", "") else [g for g in row[4].split(",") if g],
-             "rating": None if row[5] in ("NULL", "") else float(row[5])}
-            for row in self.mysql.select(sql)
-        ]
+        return [self._row_from(row) for row in self.mysql.select(sql)]
+
+    def _ranked_rows(self, sql: str, extras: tuple[str, ...]) -> list[dict]:
+        """Rows plus the trailing derived columns (match rank / overlap / same director)."""
+        rows = []
+        for row in self.mysql.select(sql):
+            record = self._row_from(row)
+            for offset, name in enumerate(extras, start=len(MOVIE_FIELDS)):
+                record[name] = row[offset]
+            rows.append(record)
+        return rows
 
     def _search(self, arguments: dict) -> dict:
-        query = str(arguments.get("query", "")).replace("'", "''")
+        """Exact match first, then prefix, then substring (plan §7): ``Heat`` is not truncated."""
+        query = str(arguments.get("query", ""))
+        literal = sql_literal(query)
         limit = int(arguments.get("limit", SAMPLED_DEFAULT_LIMIT))
-        sql = (f"SELECT {MOVIE_COLUMNS} FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
-               f"WHERE m.title LIKE '%{query}%'")
+        rank = (f"CASE WHEN LOWER(m.title) = LOWER({literal}) THEN 0 "
+                f"WHEN LOWER(m.title) LIKE CONCAT(LOWER({literal}), '%') THEN 1 ELSE 2 END")
+        sql = (f"SELECT {MOVIE_COLUMNS}, {rank} AS match_rank "
+               f"FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
+               f"WHERE m.title LIKE CONCAT('%', {literal}, '%')")
         if isinstance(arguments.get("year"), int):
             sql += f" AND m.year = {arguments['year']}"
-        sql += f" ORDER BY m.title, m.year LIMIT {limit}"
-        rows = self._rows(sql)
+        sql += f" ORDER BY match_rank, m.title, m.year LIMIT {limit}"
+        rows = self._ranked_rows(sql, ("match_rank",))
+        matches = {0: "exact", 1: "prefix", 2: "substring"}
         return {"status": "EMPTY_RESULT" if not rows else "OK", "results": rows,
-                "match": "none" if not rows else "partial"}
+                "match": "none" if not rows else matches.get(int(rows[0]["match_rank"]), "partial")}
+
+    def title_candidates(self, candidate: str, limit: int = 10) -> list[dict]:
+        """Catalog rows whose title equals the candidate (preferred) or starts with it.
+
+        This is the resolver's step 3 (plan §4.3): extract/prefix only, never substring, so a
+        candidate has to name something the catalog actually contains.
+        """
+        literal = sql_literal(candidate)
+        rank = (f"CASE WHEN LOWER(m.title) = LOWER({literal}) THEN 0 ELSE 1 END")
+        sql = (f"SELECT {MOVIE_COLUMNS}, {rank} AS match_rank "
+               f"FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
+               f"WHERE m.title LIKE CONCAT({literal}, '%') "
+               f"ORDER BY match_rank, m.title, m.year LIMIT {limit}")
+        rows = self._ranked_rows(sql, ("match_rank",))
+        for row in rows:
+            row["match"] = "exact" if int(row["match_rank"]) == 0 else "prefix"
+        return rows
+
+    def exact_title_ids(self, title: str, limit: int = 25) -> list[dict]:
+        """Rows whose title **is** this title, no prefix rows: the parse-outcome oracle (plan §4.5)."""
+        sql = (f"SELECT {MOVIE_COLUMNS} FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
+               f"WHERE LOWER(m.title) = LOWER({sql_literal(title)}) "
+               f"ORDER BY m.title, m.year LIMIT {limit}")
+        return self._rows(sql)
 
     def _filter(self, arguments: dict) -> dict:
         state, meta = coverage_state(arguments)
@@ -513,10 +798,7 @@ class ToolExecutor:
         where = []
         genres = arguments.get("genres") or []
         if genres:
-            quoted = ",".join("'" + str(genre).replace("'", "''") + "'" for genre in genres)
-            where.append(f"m.id IN (SELECT gm.movie_id FROM genres_in_movies gm JOIN genres g "
-                         f"ON g.id = gm.genre_id WHERE g.name IN ({quoted}) "
-                         f"GROUP BY gm.movie_id HAVING COUNT(DISTINCT g.name) = {len(genres)})")
+            where.append(genre_and_sql(canonical_genres(genres)))
         if isinstance(arguments.get("year_from"), int):
             where.append(f"m.year >= {arguments['year_from']}")
         if isinstance(arguments.get("year_to"), int):
@@ -535,44 +817,53 @@ class ToolExecutor:
                 "coverage": COVERAGE}
 
     def _card(self, arguments: dict) -> dict:
-        movie_id = str(arguments.get("movie_id", "")).replace("'", "''")
+        movie_id = sql_literal(arguments.get("movie_id", ""))
         rows = self._rows(f"SELECT {MOVIE_COLUMNS} FROM movies m "
-                          f"LEFT JOIN ratings r ON r.movie_id = m.id WHERE m.id = '{movie_id}'")
+                          f"LEFT JOIN ratings r ON r.movie_id = m.id WHERE m.id = {movie_id}")
         if not rows:
             return {"status": "NOT_FOUND", "results": []}
         return {"status": "OK", "results": rows}
 
     def _similar(self, arguments: dict, constraints: dict | None) -> dict:
-        """Evaluation stand-in: shared-genre + near-year ranking, seed always excluded."""
-        seed_id = str(arguments.get("movie_id", "")).replace("'", "''")
+        """Evaluation stand-in: narrow by the router's constraints, then rank (plan §6.2).
+
+        Order matters. Narrowing first is what reproduces the golden answer sets: ranking alone
+        drops the "shared genre + year window" cases to 0-1 of 3 hits (scout §3.2). The
+        ``SIMILAR_POOL`` cut happens after the ``WHERE``, so it can only drop the tail of a pool
+        the user already narrowed.
+
+        ``same_primary_genre_only`` is accepted by the schema and **ignored**: narrowing the seed
+        genre set to one key would change the approved semantics (plan §6.2 / ``OPEN-b5``).
+        """
+        seed_id = sql_literal(arguments.get("movie_id", ""))
         seed_rows = self._rows(f"SELECT {MOVIE_COLUMNS} FROM movies m "
-                               f"LEFT JOIN ratings r ON r.movie_id = m.id WHERE m.id = '{seed_id}'")
+                               f"LEFT JOIN ratings r ON r.movie_id = m.id WHERE m.id = {seed_id}")
         if not seed_rows:
             return {"status": "NOT_FOUND", "results": [], "seed": None,
                     "reason": "movie_id is not a catalog id"}
         seed = seed_rows[0]
-        seed_genres = sorted(seed["genres"])
-        if arguments.get("same_primary_genre_only") and seed_genres:
-            seed_genres = seed_genres[:1]
-        if not seed_genres:
-            return {"status": "EMPTY_RESULT", "results": [], "seed": seed,
-                    "seed_excluded": True, "reason": "seed has no catalog genre"}
-        quoted = ",".join("'" + genre.replace("'", "''") + "'" for genre in seed_genres)
+        seed_keys = canonical_genres(sorted(seed["genres"]))
         limit = int(arguments.get("limit", SAMPLED_DEFAULT_LIMIT))
-        overlap = (f"(SELECT COUNT(DISTINCT g.name) FROM genres_in_movies gm JOIN genres g "
-                   f"ON g.id = gm.genre_id WHERE gm.movie_id = m.id AND g.name IN ({quoted}))")
-        # User-stated conditions are part of the candidate query, not a post-hoc cut: otherwise
-        # the ranking pool fills with rows the user excluded (R7-2).
-        constraint_where = constraint_sql(constraints)
-        sql = (f"SELECT {MOVIE_COLUMNS}, {overlap} AS overlap "
-               f"FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id "
-               f"WHERE m.id <> '{seed_id}' AND EXISTS (SELECT 1 FROM genres_in_movies gm "
-               f"JOIN genres g ON g.id = gm.genre_id WHERE gm.movie_id = m.id "
-               f"AND g.name IN ({quoted}))"
-               + "".join(f" AND {clause}" for clause in constraint_where) +
-               f" ORDER BY overlap DESC, ABS(m.year - {seed['year']}), r.rating IS NULL, "
-               f"r.rating DESC, m.title LIMIT {SIMILAR_POOL}")
-        pool = self._rows(sql)
+
+        # User-stated conditions narrow the pool in SQL, not after ranking (R7-2).
+        where = [f"m.id <> {seed_id}"] + constraint_sql(constraints, self)
+        overlap_expr = "0"
+        seed_genre_join = ""
+        if seed_keys:
+            overlap_expr = "COALESCE(og.overlap, 0)"
+            seed_genre_join = (
+                f" LEFT JOIN (SELECT gm.movie_id AS movie_id, "
+                f"COUNT(DISTINCT {canonical_genre_case_sql()}) AS overlap "
+                f"FROM genres_in_movies gm JOIN genres g ON g.id = gm.genre_id "
+                f"WHERE g.name IN ({genre_member_sql(seed_keys)}) "
+                f"GROUP BY gm.movie_id) og ON og.movie_id = m.id")
+        same_director = self.director_predicate(seed["director"])
+        sql = (f"SELECT {MOVIE_COLUMNS}, {overlap_expr} AS overlap, ({same_director}) AS same_director "
+               f"FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id{seed_genre_join} "
+               f"WHERE {' AND '.join(where)} "
+               f"ORDER BY same_director DESC, overlap DESC, ABS(m.year - {seed['year']}), "
+               f"r.rating IS NULL, r.rating DESC, m.title LIMIT {SIMILAR_POOL}")
+        pool = self._ranked_rows(sql, ("overlap", "same_director"))
         ranked = [row for row in pool if not constraint_problems(row, constraints)]
         rows = ranked[:limit]
         return {
@@ -582,8 +873,8 @@ class ToolExecutor:
             "seed_excluded": all(row["id"] != seed["id"] for row in rows),
             "candidate_pool": len(pool),
             "constraints_applied": constraints or {},
-            "ranking": "shared genre count desc, |year diff| asc, rating desc "
-                       "(evaluation stand-in)",
+            "ranking": "same director desc, shared seed genre count desc, |year diff| asc, "
+                       "rating desc (evaluation stand-in)",
         }
 
     def _recommend(self, arguments: dict, constraints: dict | None) -> dict:
@@ -591,9 +882,7 @@ class ToolExecutor:
         where = []
         preferred = arguments.get("preferred_genres") or []
         if preferred:
-            quoted = ",".join("'" + str(genre).replace("'", "''") + "'" for genre in preferred)
-            where.append(f"m.id IN (SELECT gm.movie_id FROM genres_in_movies gm JOIN genres g "
-                         f"ON g.id = gm.genre_id WHERE g.name IN ({quoted}))")
+            where.append(genre_and_sql(canonical_genres(preferred)))
         year_range = arguments.get("year_range")
         if isinstance(year_range, dict):
             if isinstance(year_range.get("from"), int):
@@ -603,12 +892,10 @@ class ToolExecutor:
         if arguments.get("min_rating") is not None:
             where.append(f"r.rating >= {float(arguments['min_rating'])}")
         if arguments.get("director"):
-            director = str(arguments["director"]).replace("'", "''")
-            where.append(f"m.director = '{director}'")
-        seeds = [str(seed).replace("'", "''") for seed in arguments.get("seed_movie_ids") or []]
+            where.append(self.director_predicate(str(arguments["director"])))
+        seeds = [sql_literal(seed) for seed in arguments.get("seed_movie_ids") or []]
         if seeds and arguments.get("exclude_seed", True):
-            quoted_seeds = ",".join("'" + seed + "'" for seed in seeds)
-            where.append(f"m.id NOT IN ({quoted_seeds})")
+            where.append(f"m.id NOT IN ({','.join(seeds)})")
         limit = int(arguments.get("limit", SAMPLED_DEFAULT_LIMIT))
         sql = f"SELECT {MOVIE_COLUMNS} FROM movies m LEFT JOIN ratings r ON r.movie_id = m.id"
         if where:
@@ -660,19 +947,30 @@ def detect_refusal(text: str) -> str | None:
 
 
 def extract_genres(text: str) -> list[str]:
-    lowered = text.lower()
+    """Canonical genre keys named in the text, using the alias file's vocabulary.
+
+    Longer terms win (``musical`` before ``music``, ``sports`` before ``sport``) and Latin terms
+    are matched on word boundaries, so ``war`` cannot fire inside ``toward``.
+    """
+    remaining = text.casefold()
     found: list[str] = []
-    for token in sorted(GENRE_ALIASES, key=len, reverse=True):
-        if token in lowered:
-            for genre in GENRE_ALIASES[token]:
-                if genre not in found:
-                    found.append(genre)
-            lowered = lowered.replace(token, " ")
+    for token, pattern in GENRE_ALIAS_PATTERNS:
+        if not pattern.search(remaining):
+            continue
+        for key in canonical_genres(GENRE_ALIASES[token]):
+            if key not in found:
+                found.append(key)
+        remaining = pattern.sub(" ", remaining)
     return found
 
 
 def extract_years(text: str) -> dict:
     slots: dict = {}
+    explicit_range = re.search(
+        r"(?:从\s*)?(?<!\d)(\d{4})\s*(?:年)?\s*(?:到|至|~)\s*(\d{4})\s*年?", text)
+    if explicit_range:
+        slots["year_from"], slots["year_to"] = (int(explicit_range.group(1)),
+                                                int(explicit_range.group(2)))
     decade_zh = re.search(r"([五六七八九二])十\s*年代", text)
     if decade_zh:
         start = CHINESE_DECADES[decade_zh.group(1) + "十"]
@@ -712,7 +1010,7 @@ def extract_years(text: str) -> dict:
 
 def extract_rating(text: str) -> float | None:
     match = re.search(r"([\d.]+)\s*分以上", text) or \
-        re.search(r"rated\s+([\d.]+)", text, re.IGNORECASE) or \
+        re.search(r"rated\s+(?:at\s+least\s+)?([\d.]+)", text, re.IGNORECASE) or \
         re.search(r"([\d.]+)\s*(?:or higher|\+)", text, re.IGNORECASE)
     if match:
         return float(match.group(1))
@@ -737,12 +1035,23 @@ TITLE_PATTERNS = (
 )
 TITLE_CUTS = (r"\s+[-–—]\s+.*$", r"\s+anything similar.*$", r"\s+similar.*$",
               r"\s*系列.*$", r"\s+this (?:movie|film).*$")
+EN_DIRECTOR_RUN = r"([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})"
+# Genre nouns a "recommend some <Name> <genre> ..." phrase can carry, taken from the alias file so
+# the router keeps no private vocabulary. "recommend some Japanese movies" must not turn
+# "Japanese" into a director name, so a bare movies/films is deliberately not in this list.
+EN_GENRE_NOUNS = "|".join(re.escape(term) for term in
+                          sorted(GENRE_ALIASES, key=len, reverse=True) if term.isascii())
 DIRECTOR_PATTERNS = (
     r"(?:directed by|director)\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
     r"(?:films?|movies?)\s+by\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
     r"\bby\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*)*)",
     r"([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s*(?:执导|导演)",
-    r"(?:推荐|想看|找)\s*(?:几部|一些)?\s*([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s*的",
+    # 推荐几部 <Name> 的/在/从/1970 年代... - the name is followed by a clause, not only by 的.
+    r"(?:推荐|想看|找)\s*(?:几部|一些)?\s*" + EN_DIRECTOR_RUN + r"\s*(?:的|在|从|(?=\d{4}))",
+    # Recommend some <Name> thrillers from ... - the name is followed by a genre noun. The verb
+    # carries both cases because a request often starts the sentence ("Recommend some ...").
+    r"(?:[Rr]ecommend|suggest)\s+(?:me\s+)?(?:some|a few|any)?\s*" + EN_DIRECTOR_RUN
+    + r"(?=\s+(?:\d{4}|" + EN_GENRE_NOUNS + r"))",
 )
 
 
@@ -759,8 +1068,9 @@ def extract_title(text: str) -> str | None:
         for cut in TITLE_CUTS:
             value = re.sub(cut, "", value, flags=re.IGNORECASE)
         return value.strip() or None
-    # Last resort for a bare Latin title in a lookup request ("找一下 The Big Lebowski 这部片").
-    if re.search(r"《|找|有没有|想看|is there|find\b|show me", text, re.IGNORECASE):
+    # Last resort for a bare Latin title in a lookup request ("找一下 The Big Lebowski 这部片",
+    # "查一下 The Bridge on the River Kwai 这部片").
+    if re.search(r"《|找|查|有没有|想看|is there|find\b|show me", text, re.IGNORECASE):
         run = re.search(EN_TITLE_RUN, text)
         if run:
             value = run.group(1).strip()
@@ -806,18 +1116,23 @@ def route_deterministically(case: dict) -> dict:
         constraints["min_rating"] = rating
     similar = any(marker in lowered for marker in SIMILAR_MARKERS)
     recommend = any(marker in lowered for marker in RECOMMEND_MARKERS)
+    single_year = (years.get("year_from") if years.get("year_from") is not None
+                   and years.get("year_from") == years.get("year_to") else None)
 
     if similar and title:
-        # find_similar_movies has no genre/year/rating parameter: the stated conditions are
-        # enforced server-side as result constraints (R7-2), a person alias table is not approved.
-        unsupported = {"director": director} if director else {}
+        # find_similar_movies has no genre/year/rating/director parameter: the stated conditions
+        # narrow the candidate pool server-side as result constraints (R7-2, plan §6.2). The
+        # director the query names is one of those conditions ("... Michael Mann 的其他片子");
+        # without it the title's own ambiguity (Heat 1995 vs 1972) cannot be resolved.
+        seed_constraints = dict(constraints)
+        if director:
+            seed_constraints["director"] = director
         return {"action": "tools",
                 "tool_calls": [{"name": "search_movies_by_title",
                                 "arguments": {"query": title, "limit": SEED_SEARCH_LIMIT}}],
                 "follow_up": SEED_FOLLOW_UP,
                 "seed_title": title,
-                "result_constraints": dict(constraints),
-                "unsupported_constraints": unsupported}
+                "result_constraints": seed_constraints}
     if recommend:
         preferences: dict = {}
         if genres:
@@ -839,11 +1154,16 @@ def route_deterministically(case: dict) -> dict:
         return {"action": "tools",
                 "tool_calls": [{"name": "recommend_movies", "arguments": preferences}],
                 "result_constraints": dict(constraints)}
-    if has_title_prefix(text) and title:
+    if title and (has_title_prefix(text) or single_year is not None):
+        # A title plus one stated year is a lookup with the schema's own disambiguation argument
+        # (search_movies_by_title.year), not a genre/year filter.
+        arguments: dict = {"query": title}
+        if single_year is not None:
+            arguments["year"] = single_year
         return {"action": "tools",
-                "tool_calls": [{"name": "search_movies_by_title",
-                                "arguments": {"query": title}}],
-                "result_constraints": dict(constraints)}
+                "tool_calls": [{"name": "search_movies_by_title", "arguments": arguments}],
+                "result_constraints": {key: value for key, value in constraints.items()
+                                       if key not in ("year_from", "year_to")}}
     filters: dict = {}
     if genres:
         filters["genres"] = genres
@@ -895,13 +1215,14 @@ def slots_match(case: dict, called: list[dict]) -> tuple[bool, list[str]]:
                     or ("recommend_movies" in case["expected_tools"]
                         and "filter_movies" not in case["expected_tools"])
                     else "filter_movies")
-            if key == "query":
+            if key in ("query", "year"):
                 tool = "search_movies_by_title"
             arguments = by_tool.get(tool, {})
             actual = arguments.get(key)
             if key in ("genres", "preferred_genres"):
-                if not isinstance(actual, list) or {normalized(g) for g in actual} != \
-                        {normalized(g) for g in value}:
+                # Canonical keys, so "Sci-Fi" and "Science Fiction" are the same condition.
+                if not isinstance(actual, list) or set(canonical_genres(actual)) != \
+                        set(canonical_genres(value)):
                     candidate_problems.append(f"{key}: {actual!r} != {value!r}")
             elif key == "year_range":
                 if not isinstance(actual, dict) or actual.get("from") != value["from"] or \
@@ -910,11 +1231,15 @@ def slots_match(case: dict, called: list[dict]) -> tuple[bool, list[str]]:
             elif key == "query":
                 if normalized(str(actual)) != normalized(value):
                     candidate_problems.append(f"{key}: {actual!r} != {value!r}")
+            elif key == "director":
+                if not isinstance(actual, str) or not directors_equal(actual, value):
+                    candidate_problems.append(f"{key}: {actual!r} != {value!r}")
             elif key == "min_rating":
                 if actual is None or abs(float(actual) - float(value)) > 1e-9:
                     candidate_problems.append(f"{key}: {actual!r} != {value!r}")
-            elif actual != value:
-                candidate_problems.append(f"{key}: {actual!r} != {value!r}")
+            else:
+                if actual != value:
+                    candidate_problems.append(f"{key}: {actual!r} != {value!r}")
         if not candidate_problems:
             return True, []
         problems = candidate_problems
@@ -948,7 +1273,8 @@ def text_constraints(text: str) -> dict:
 
 def score_case(case: dict, called: list[dict], schema_problems: list[str],
                execution: list[dict], behavior: str, error_state: str | None,
-               executor: ToolExecutor) -> dict:
+               executor: ToolExecutor, answer: str = "",
+               disambiguation_candidates: list | None = None) -> dict:
     expected_tools = case["expected_tools"]
     called_names = [call["name"] for call in called]
     if expected_tools:
@@ -981,6 +1307,7 @@ def score_case(case: dict, called: list[dict], schema_problems: list[str],
                              for row in rows
                              for problem in constraint_problems(row, scored)]
     grounding_ok, grounding_problems = executor.ground(rows)
+    clarify = clarification_shape(execution, answer, disambiguation_candidates)
     return {
         "tools_expected": expected_tools,
         "tools_called": called_names,
@@ -1004,9 +1331,38 @@ def score_case(case: dict, called: list[dict], schema_problems: list[str],
         "grounding_ok": grounding_ok,
         "grounding_problems": grounding_problems,
         "execution_deferred": deferred,
+        # ``allows_clarification`` (plan §5.3): strict task success stays the main figure; a
+        # "list the candidates + ask exactly one question" answer is reported next to it.
+        "clarification_style": bool(behavior == "clarify" and clarify["complete"]
+                                    and clarify["questions"] == 1),
+        "clarification_candidates": clarify["candidates"],
         "passed": bool(tools_ok and tools_complete and slots_ok and not schema_problems
                        and behavior_ok and not deferred),
     }
+
+
+def clarification_shape(execution: list[dict], answer: str,
+                        extra_candidates: list | None = None) -> dict:
+    """Does the answer list the candidates (title + year + director) and ask exactly one question?
+
+    R2-3 requires exactly that when a title matches more than one row; the
+    ``allows_clarification`` cases are scored on this shape (plan §5.3).
+    """
+    candidates: list[dict] = []
+    seen: set = set()
+    for candidate in ([{"id": row.get("id"), "title": row.get("title"), "year": row.get("year"),
+                        "director": row.get("director")}
+                       for item in execution for row in item.get("results", [])]
+                      + list(extra_candidates or [])):
+        if candidate.get("id") in seen:
+            continue
+        seen.add(candidate.get("id"))
+        candidates.append(candidate)
+    complete = len(candidates) >= 2 and all(
+        all(candidate.get(field) not in (None, "") for field in ("title", "year", "director"))
+        for candidate in candidates)
+    return {"candidates": candidates, "complete": complete,
+            "questions": answer_text_question_count(answer)}
 
 
 def is_task_success(case: dict, record: dict) -> bool:
@@ -1105,6 +1461,71 @@ class ScriptedClient:
                 "prompt_eval_count": 0, "eval_count": 0}, 0.0
 
 
+# Canned resolver replies for the G1-T plumbing test. They are scripted *model output*, not an
+# alias table: "北非谍影" appears in no fixture, so a verification here cannot turn into an answer
+# key for a measured case. A real G1-T run never loads this class.
+SELF_TEST_RESOLVER_REPLIES = {
+    "北非谍影": (json.dumps({"candidates": ["Casablanca"]}), False),
+    "无法校验的译本": (json.dumps({"candidates": ["Not In This Catalog 12345"]}), False),
+    "格式错误的译本": ("this is not json", False),
+    "多余的字段译本": (json.dumps({"candidates": ["Casablanca"], "note": "extra"}), False),
+    "超时的译本": (None, True),
+}
+
+
+class ScriptedResolverClient:
+    """Canned resolver completions; runs the resolver without a model or a network call."""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def generate_json(self, model: str, system_prompt: str, user_text: str,
+                      timeout_s: float) -> tuple[str | None, float, bool]:
+        title = user_text.rsplit("Chinese title:", 1)[-1].strip()
+        self.calls.append(title)
+        if title not in SELF_TEST_RESOLVER_REPLIES:
+            raise EvalError(f"self-test has no scripted resolver reply for {title!r}")
+        body, timed_out = SELF_TEST_RESOLVER_REPLIES[title]
+        return body, 1.0, timed_out
+
+
+# The user-utterance strings the self-test feeds to the router and the resolver. ``check_self_test_
+# independence`` fails if one of them equals a held-out query text: the held-out fixture may not
+# become part of rule development.
+SELF_TEST_SAMPLES = {
+    "year-range": "2002 到 2003 年评分 7 分以上的战争片",
+    "genre-alias": "想看一部战争片",
+    "title-year": "帮我找 1946 年那部 Notorious",
+    "multi-genre": "动作科幻片",
+    "war-boundary": "a movie toward Edward",
+    "musical": "musical",
+    "music": "music",
+    "rating-at-least": "movies rated at least 6",
+    "title-verb-zh": "查一下 Casablanca 这部片",
+    "genre-not-director": "Recommend some Japanese movies",
+    "director-clause-zh": "推荐几部 Kurosawa 在 1950 年代拍的剧情片",
+    "director-clause-en": "Recommend some Kubrick thrillers from 1958 to 1959",
+    "resolver-cjk": "帮我找《北非谍影》这部电影",
+    "resolver-latin": "帮我找《The Vikings》这部电影",
+    "resolver-zh-title": "北非谍影",
+    "resolver-han": "卡萨布兰卡",
+    "resolver-invalid": "格式错误的译本",
+    "resolver-extra-field": "多余的字段译本",
+    "resolver-rejected": "无法校验的译本",
+    "resolver-timeout": "超时的译本",
+    "replay-miss": "不在回放记录里的译本",
+}
+SELF_TEST_UTTERANCES = tuple(SELF_TEST_SCRIPT) + tuple(SELF_TEST_SAMPLES.values())
+
+
+def check_self_test_independence() -> list[str]:
+    """No self-test assertion may use a held-out query text (review P1-5, plan §8.3)."""
+    heldout = load_json(HELDOUT_QUERIES_PATH)
+    texts = {normalized(query["query"]) for query in heldout["queries"]}
+    return [f"self-test utterance {utterance!r} is a held-out query text"
+            for utterance in SELF_TEST_UTTERANCES if normalized(utterance) in texts]
+
+
 # --------------------------------------------------------------------------------------
 # Variant runners
 # --------------------------------------------------------------------------------------
@@ -1150,11 +1571,387 @@ def evaluate_calls(called: list[dict], schema_doc: dict, executor: ToolExecutor,
     return schema_problems, execution, error_state
 
 
-def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor) -> dict:
-    """Deterministic route, plus the seed hop when the plan needs a movie id first."""
+# --------------------------------------------------------------------------------------
+# G1-T: query-time title resolution (plan §4.3-§4.6)
+# --------------------------------------------------------------------------------------
+
+def answer_text_question_count(answer: str) -> int:
+    return (answer or "").count("?") + (answer or "").count("？")
+
+
+def parse_resolver_candidates(text: str | None) -> list[str] | None:
+    """Strict ``{"candidates": [1-3 English titles]}``; anything else is a failed step.
+
+    Plan §4.3: extra fields, zero candidates, more than three, non-strings or (near-)empty
+    titles are rejected - the resolver must never guess its way past a malformed answer.
+    """
+    if not text:
+        return None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict) or set(payload) != {"candidates"}:
+        return None
+    candidates = payload["candidates"]
+    if not isinstance(candidates, list) or not 1 <= len(candidates) <= 3:
+        return None
+    cleaned: list[str] = []
+    for candidate in candidates:
+        if not isinstance(candidate, str):
+            return None
+        value = candidate.strip()
+        if len(value) < 2 or has_han(value) or value in cleaned:
+            return None
+        cleaned.append(value)
+    return cleaned
+
+
+ANNOTATION_KEYS = ("required_slots", "accept_alternative_slots", "result_constraints",
+                   "acceptable_movie_ids")
+
+
+class AnnotatedCaseGuard:
+    """Case view for the execution half that refuses to hand out a golden annotation.
+
+    Plan §6.1/`B15c-3`: the executor may only use slots and constraints the router derived from the
+    query text. Reading ``required_slots`` / ``result_constraints`` / ``acceptable_movie_ids``
+    while executing means the harness is scoring an oracle, so it must be impossible. The guard
+    wraps the *case mapping*, because wrapping the values would still let the lookup succeed.
+    """
+
+    def __init__(self, case: dict) -> None:
+        self._case = case
+
+    @staticmethod
+    def _reject(key: str):
+        raise EvalError(f"execution read the golden annotation {key!r}")
+
+    def __getitem__(self, key):
+        if key in ANNOTATION_KEYS:
+            self._reject(key)
+        return self._case[key]
+
+    def get(self, key, default=None):
+        if key in ANNOTATION_KEYS:
+            self._reject(key)
+        return self._case.get(key, default)
+
+    def __contains__(self, key):
+        if key in ANNOTATION_KEYS:
+            self._reject(key)
+        return key in self._case
+
+    def __iter__(self):
+        return iter(self._case)
+
+    def keys(self):
+        return self._case.keys()
+
+
+def guard_case_annotations(case: dict) -> AnnotatedCaseGuard:
+    return AnnotatedCaseGuard(case)
+
+
+class TitleResolver:
+    """Alias/cache -> local model candidates -> catalog verification -> clarification.
+
+    Only a CJK title without a catalog exact hit may reach the model (plan §4.3 hard constraint
+    1); every other query keeps ``model_calls = 0``. Unverified candidates never reach
+    ``search_movies_by_title``: the resolver returns either a catalog row or nothing.
+    """
+
+    def __init__(self, client, model: str, executor: "ToolExecutor",
+                 cache_path: Path | None = None, use_cache: bool = True,
+                 replay_path: Path | None = None, timeout_s: float = RESOLVER_TIMEOUT_S,
+                 alias_doc: dict | None = None) -> None:
+        self.client = client
+        self.model = model
+        self.executor = executor
+        self.cache_path = cache_path
+        self.use_cache = use_cache
+        self.timeout_s = timeout_s
+        self.alias_doc = alias_doc if alias_doc is not None else TITLE_ALIAS_DOC
+        self.prompt_sha256 = hashlib.sha256(RESOLVER_PROMPT.encode("utf-8")).hexdigest()
+        self.model_digest: str | None = None
+        self.replay = None
+        self.replay_model: str | None = None
+        self.cache: dict[str, dict] = {}
+        # A cache entry is evidence for the prompt/model that produced it and for nothing else
+        # (plan §4.4/§4.6). Mismatched entries are dropped instead of being replayed as this run's
+        # decision; a replay file with mismatched metadata is fatal, because replay exists to
+        # reproduce exactly one recorded run.
+        self.cache_status = "disabled" if not use_cache else "absent"
+        self.cache_problems: list[str] = []
+        if replay_path is not None:
+            self.replay = load_json(Path(replay_path))
+            self.replay_model = self.replay.get("model")
+            self.cache_problems = self.metadata_problems(self.replay)
+            if self.cache_problems:
+                raise EvalError(
+                    f"--replay-resolver {repo_relative(replay_path)} does not match this run: "
+                    + "; ".join(self.cache_problems)
+                )
+            self.cache = dict(self.replay.get("entries") or {})
+            self.model_digest = self.replay.get("model_digest")
+            self.cache_status = "replay"
+        elif use_cache and cache_path is not None and Path(cache_path).is_file():
+            recorded = load_json(Path(cache_path))
+            self.cache_problems = self.metadata_problems(recorded)
+            if self.cache_problems:
+                self.cache_status = "stale-ignored"
+                print(f"warning: ignoring {repo_relative(cache_path)}: "
+                      + "; ".join(self.cache_problems), file=sys.stderr)
+            else:
+                self.cache = dict(recorded.get("entries") or {})
+                # A warm run never contacts the model, so it inherits the digest the cold run pinned.
+                self.model_digest = recorded.get("model_digest")
+                self.cache_status = "loaded"
+
+    def metadata_problems(self, recorded: dict) -> list[str]:
+        """Why a cache/replay file cannot be trusted as this run's evidence (empty = trusted)."""
+        problems: list[str] = []
+        if recorded.get("cache_version") != RESOLVER_CACHE_VERSION:
+            problems.append(f"cache_version {recorded.get('cache_version')!r} != "
+                            f"{RESOLVER_CACHE_VERSION!r}")
+        if recorded.get("prompt_sha256") != self.prompt_sha256:
+            problems.append(f"prompt_sha256 {recorded.get('prompt_sha256')!r} != "
+                            f"{self.prompt_sha256!r}")
+        if recorded.get("prompt_id") != RESOLVER_PROMPT_ID:
+            problems.append(f"prompt_id {recorded.get('prompt_id')!r} != {RESOLVER_PROMPT_ID!r}")
+        if recorded.get("model") != self.model:
+            problems.append(f"model {recorded.get('model')!r} != {self.model!r}")
+        if "model_digest" not in recorded:
+            problems.append("model_digest is not recorded")
+        return problems
+
+    def alias_entry(self, zh_title: str) -> dict | None:
+        for entry in self.alias_doc.get("entries") or []:
+            if normalized(entry.get("zh_title", "")) == normalized(zh_title):
+                return entry
+        return None
+
+    @staticmethod
+    def user_text(zh_title: str) -> str:
+        return f"Chinese title: {zh_title}"
+
+    def request_sha256(self, zh_title: str) -> str:
+        request = f"{RESOLVER_PROMPT}\n\n{self.user_text(zh_title)}"
+        return hashlib.sha256(request.encode("utf-8")).hexdigest()
+
+    def _choose(self, rows: list[dict], step: str, record: dict,
+                constraints: dict | None = None) -> dict:
+        """One catalog row -> resolved; several distinct ids -> clarification (plan §4.3).
+
+        Before declaring the candidates ambiguous, the clues the query itself gave (year window,
+        director) narrow them (plan §7). Only a still-ambiguous set is handed back as a question:
+        a resolved title and a stated condition together pick one row, never a guess.
+        """
+        exact = [row for row in rows if row.get("match") == "exact"]
+        pool = exact or rows
+        narrowed = pool
+        if len({row["id"] for row in pool}) > 1:
+            narrowed = narrow_seed_candidates(pool, constraints)
+        if narrowed is not pool:
+            record["narrowed_by"] = {key: value for key, value in (constraints or {}).items()
+                                     if key in ("year_from", "year_to", "director")}
+            record["narrowed_to"] = [row["id"] for row in narrowed]
+        ids = {row["id"] for row in narrowed}
+        if len(ids) == 1:
+            chosen = narrowed[0]
+            record.update({"step": step, "chosen_movie_id": chosen["id"],
+                           "chosen_title": chosen["title"],
+                           "catalog_verified": [self._verified(row) for row in pool],
+                           "outcome": "resolved"})
+            return record
+        record.update({"step": "clarify", "catalog_verified": [self._verified(row) for row in pool],
+                       "outcome": "ambiguous", "degraded_to": "clarify"})
+        return record
+
+    @staticmethod
+    def _verified(row: dict) -> dict:
+        return {"id": row["id"], "title": row["title"], "year": row["year"],
+                "director": row["director"], "match": row.get("match")}
+
+    def resolve(self, zh_title: str, constraints: dict | None = None) -> dict:
+        record: dict = {
+            "triggered": True, "zh_title": zh_title, "step": None, "outcome": "unresolved",
+            "llm_candidates": [], "catalog_verified": [], "chosen_movie_id": None,
+            "chosen_title": None, "model": self.model, "temperature": TEMPERATURE,
+            "prompt_id": RESOLVER_PROMPT_ID, "request_sha256": self.request_sha256(zh_title),
+            "cache": "disabled" if not self.use_cache else "miss",
+            "latency_ms": 0.0, "timed_out": False, "degraded_to": None, "model_calls": 0,
+        }
+        # Step 1a is the verified alias table (frozen empty by C10). It is data, not a cache, so
+        # --no-cache does not skip it; step 1b is the run cache, which --no-cache does skip.
+        entry = self.alias_entry(zh_title)
+        if entry is not None:
+            card = self.executor.execute("get_movie_card",
+                                         {"movie_id": entry.get("movie_id", "")})
+            card_rows = card.get("results") or []
+            if card_rows:
+                record.update({"step": "alias", "chosen_movie_id": card_rows[0]["id"],
+                               "chosen_title": card_rows[0]["title"],
+                               "catalog_verified": [self._verified(card_rows[0])],
+                               "outcome": "resolved", "cache": "alias"})
+                return record
+        if self.replay is not None and zh_title not in self.cache:
+            # Replay must reproduce the recorded decisions or fail: falling through would call the
+            # model and silently turn a replay into a second cold run (plan §4.6).
+            raise EvalError(
+                f"--replay-resolver has no recorded decision for {zh_title!r}; refusing to call "
+                f"the model during a replay"
+            )
+        if self.use_cache:
+            cached = self.cache.get(zh_title)
+            if cached is not None:
+                record.update(dict(cached))
+                record.update({"cache": "replay" if self.replay is not None else "hit",
+                               "model_calls": 0})
+                return record
+
+        started = time.perf_counter()
+        direct = self.executor.title_candidates(zh_title)
+        if direct:
+            record = self._choose(direct, "catalog-exact", record, constraints)
+            record["latency_ms"] = round((time.perf_counter() - started) * 1000.0, 1)
+            self._remember(zh_title, record)
+            return record
+        if not has_han(zh_title) or self.client is None:
+            # No CJK title (or no model configured): searching the text as typed is the baseline
+            # behaviour, not a resolution failure. ``model_calls`` stays 0.
+            record.update({"step": "passthrough", "outcome": "not_applicable"})
+            return record
+
+        text, latency_ms, timed_out = self.client.generate_json(
+            self.model, RESOLVER_PROMPT, self.user_text(zh_title), self.timeout_s)
+        record["latency_ms"] = round(latency_ms, 1)
+        record["model_calls"] = 1
+        if timed_out:
+            record.update({"step": "llm-timeout", "timed_out": True, "outcome": "timeout",
+                           "degraded_to": "clarify"})
+            self._remember(zh_title, record)
+            return record
+        candidates = parse_resolver_candidates(text)
+        if candidates is None:
+            record.update({"step": "llm-invalid", "outcome": "invalid_json",
+                           "degraded_to": "clarify"})
+            self._remember(zh_title, record)
+            return record
+        record["llm_candidates"] = candidates
+        verified: list[dict] = []
+        for candidate in candidates:
+            for row in self.executor.title_candidates(candidate):
+                verified.append(row)
+        record["catalog_verified"] = [self._verified(row) for row in verified]
+        if not verified:
+            record.update({"step": "llm", "outcome": "rejected", "degraded_to": "clarify"})
+        else:
+            record = self._choose(verified, "llm", record, constraints)
+        self._remember(zh_title, record)
+        return record
+
+    def _remember(self, zh_title: str, record: dict) -> None:
+        if not self.use_cache:
+            return
+        self.cache[zh_title] = {key: value for key, value in record.items()
+                                if key not in ("latency_ms", "cache")}
+
+    def save(self) -> None:
+        if not self.use_cache or self.replay is not None or self.cache_path is None:
+            return
+        path = Path(self.cache_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"cache_version": RESOLVER_CACHE_VERSION,
+                   "prompt_id": RESOLVER_PROMPT_ID, "prompt_sha256": self.prompt_sha256,
+                   "model": self.model, "model_digest": self.model_digest,
+                   "entries": self.cache}
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+
+
+def resolve_route_title(route: dict, resolver: TitleResolver) -> dict:
+    """Replace the CJK title the router extracted with a catalog-verified English title."""
+    calls = route.get("tool_calls") or []
+    if not calls or calls[0].get("name") != "search_movies_by_title":
+        return {"route": route, "record": None}
+    zh_title = str(calls[0]["arguments"].get("query", ""))
+    if not has_han(zh_title):
+        return {"route": route, "record": {"triggered": False, "zh_title": zh_title,
+                                           "outcome": "not_applicable", "model_calls": 0}}
+    # The year/director clue the query stated (the router's own constraints, never the golden
+    # annotation) disambiguates several catalog rows before the resolution is called ambiguous.
+    record = resolver.resolve(zh_title, route.get("result_constraints") or None)
+    if record.get("chosen_movie_id") is None:
+        question = {
+            "timeout": "which English title do you mean?",
+            "invalid_json": "which English title do you mean?",
+            "rejected": "which English title do you mean?",
+            "ambiguous": "which of these did you mean?",
+        }.get(record.get("outcome"), "which English title do you mean?")
+        candidates = record.get("catalog_verified") or []
+        listed = "; ".join(f"{row['title']} ({row['year']}, {row['director']})"
+                           for row in candidates[:3])
+        answer = f"{question} {listed}".strip() if listed else question
+        return {"route": {"action": "clarify", "tool_calls": []}, "record": record,
+                "answer": answer}
+    arguments = dict(calls[0]["arguments"])
+    arguments["query"] = record["chosen_title"]
+    resolved = dict(route)
+    resolved["tool_calls"] = [{"name": "search_movies_by_title", "arguments": arguments}] \
+        + list(calls[1:])
+    if route.get("seed_title"):
+        resolved["seed_title"] = record["chosen_title"]
+    return {"route": resolved, "record": record}
+
+
+def narrow_seed_candidates(candidates: list[dict], constraints: dict | None) -> list[dict]:
+    """Disambiguate multi-hit titles with the year/director clues the query itself gave.
+
+    The year clue is a **window** (``year_from``/``year_to``), not a single year: "1976 到 1978 年"
+    and "1950 年代" both narrow a candidate list without naming one row's exact year.
+    """
+    narrowed = candidates
+    constraints = constraints or {}
+    year_from = constraints.get("year_from")
+    year_to = constraints.get("year_to")
+    if isinstance(year_from, int) or isinstance(year_to, int):
+        low = year_from if isinstance(year_from, int) else YEAR_MIN
+        high = year_to if isinstance(year_to, int) else YEAR_MAX
+        by_year = [row for row in narrowed if low <= row["year"] <= high]
+        if by_year:
+            narrowed = by_year
+    director = constraints.get("director")
+    if director:
+        by_director = [row for row in narrowed if directors_equal(row["director"], director)]
+        if by_director:
+            narrowed = by_director
+    return narrowed
+
+
+def disambiguation_answer(candidates: list[dict], prompt: str = "which one do you mean?") -> str:
+    listing = "; ".join(f"{row['title']} ({row['year']}, {row['director']})"
+                        for row in candidates[:3])
+    return f"{prompt} {listing}".strip() if listing else prompt
+
+
+def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor,
+           resolver: TitleResolver | None = None) -> dict:
+    """Deterministic route, the optional G1-T title resolution, then the seed hop."""
     route = route_deterministically(case)
     extra: dict = {"route": {key: value for key, value in route.items() if key != "tool_calls"},
                    "latency_ms": 0.0, "model_calls": 0}
+    if resolver is not None:
+        resolution = resolve_route_title(route, resolver)
+        route = resolution["route"]
+        extra["resolver"] = resolution["record"]
+        extra["model_calls"] = int((resolution["record"] or {}).get("model_calls", 0))
+        if resolution.get("answer"):
+            return {"called": [], "execution": [], "schema_problems": [], "behavior": "clarify",
+                    "error_state": None,
+                    "extra": {**extra, "answer": resolution["answer"],
+                              "disambiguation_candidates":
+                                  (resolution["record"] or {}).get("catalog_verified", [])[:3]}}
     action = route["action"]
     if action == "refuse":
         return {"called": [], "execution": [], "schema_problems": [], "behavior": "refuse",
@@ -1180,18 +1977,15 @@ def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor) -> dict:
     if route.get("follow_up") == SEED_FOLLOW_UP:
         candidates = [row for row in rows
                       if normalized(row["title"]) == normalized(route["seed_title"])] or rows
-        if constraints and constraints.get("year_from") is not None \
-                and constraints.get("year_from") == constraints.get("year_to"):
-            narrowed = [row for row in candidates if row["year"] == constraints["year_from"]]
-            candidates = narrowed or candidates
+        candidates = narrow_seed_candidates(candidates, constraints)
         seed = candidates[0] if len(candidates) == 1 else None
         if seed is None:
             # R2-3: more than one plausible title - list candidates and ask, do not guess.
             behavior = "clarify"
             extra["disambiguation_candidates"] = [
-                {"id": row["id"], "title": row["title"], "year": row["year"]}
-                for row in candidates[:3]]
-            extra["answer"] = "[seed unresolved: candidates listed + one question]"
+                {"id": row["id"], "title": row["title"], "year": row["year"],
+                 "director": row["director"]} for row in candidates[:3]]
+            extra["answer"] = disambiguation_answer(candidates)
         else:
             for item in execution:
                 item["displayed"] = False
@@ -1216,12 +2010,20 @@ def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor) -> dict:
                     item["status"] = "EMPTY_RESULT"
                     error_state = "EMPTY_RESULT"
         rows = [row for item in execution for row in item.get("results", [])]
-    if behavior == "tools" and len(rows) > 1 \
-            and called and called[-1]["name"] == "search_movies_by_title":
-        behavior = "clarify"
-        extra["disambiguation_candidates"] = [
-            {"id": row["id"], "title": row["title"], "year": row["year"]} for row in rows[:3]]
-        extra["answer"] = "[multi-hit title: candidates listed + one question]"
+    if behavior == "tools" and called and called[-1]["name"] == "search_movies_by_title":
+        # R2-3 only requires a question when several catalog rows claim the same title. A single
+        # exact row next to prefix/substring noise is not ambiguous, so it is answered directly.
+        query = str(called[-1]["arguments"].get("query", ""))
+        exact_rows = [row for row in rows if normalized(row["title"]) == normalized(query)]
+        ambiguous = len({row["id"] for row in exact_rows}) > 1 or \
+            (not exact_rows and len(rows) > 1)
+        if ambiguous:
+            candidates = exact_rows or rows
+            behavior = "clarify"
+            extra["disambiguation_candidates"] = [
+                {"id": row["id"], "title": row["title"], "year": row["year"],
+                 "director": row["director"]} for row in candidates[:3]]
+            extra["answer"] = disambiguation_answer(candidates)
     extra.setdefault("answer", f"[server-rendered {len(rows)} rows]")
     return {"called": called, "execution": execution, "schema_problems": schema_problems,
             "behavior": behavior, "error_state": error_state, "extra": extra}
@@ -1229,18 +2031,23 @@ def run_g1(case: dict, schema_doc: dict, executor: ToolExecutor) -> dict:
 
 def run_case(case: dict, variant: str, client: OllamaClient | None, model: str,
              schema_doc: dict, executor: ToolExecutor,
-             replay: dict | None = None) -> dict:
+             replay: dict | None = None, resolver: TitleResolver | None = None,
+             guard_annotations: bool = False) -> dict:
     tools = schema_doc["tools"]
     record: dict = {"case_id": case["case_id"], "kind": case["kind"],
-                    "intent": case["intent"], "variant": variant, "query": case["text"]}
+                    "intent": case["intent"], "variant": variant, "query": case["text"],
+                    "allows_clarification": bool(case.get("allows_clarification"))}
     behavior = "answer"
     error_state = None
     called: list[dict] = []
     execution: list[dict] = []
     schema_problems: list[str] = []
 
-    if variant == "G1":
-        result = run_g1(case, schema_doc, executor)
+    if variant in ("G1", "G1-T"):
+        # ``B15c-3``: the execution half gets guarded annotations, so any read of a golden slot or
+        # constraint raises instead of quietly turning the run into an oracle lookup.
+        executable = guard_case_annotations(case) if guard_annotations else case
+        result = run_g1(executable, schema_doc, executor, resolver)
         called = result["called"]
         execution = result["execution"]
         schema_problems = result["schema_problems"]
@@ -1284,8 +2091,11 @@ def run_case(case: dict, variant: str, client: OllamaClient | None, model: str,
 
     record["tool_calls"] = called
     record["execution"] = execution
+    record["behavior"] = behavior
     record.update(score_case(case, called, schema_problems, execution, behavior, error_state,
-                             executor))
+                             executor, answer=record.get("answer") or "",
+                             disambiguation_candidates=record.get("disambiguation_candidates")))
+    annotate_parse_outcome(case, record, executor)
     returned_ids = {row["id"] for item in execution for row in item.get("results", [])}
     record["prose_id_hallucinations"] = sorted(
         {match for match in re.findall(r"\btt\d{5,}\b", record.get("answer") or "")}
@@ -1295,30 +2105,82 @@ def run_case(case: dict, variant: str, client: OllamaClient | None, model: str,
     return record
 
 
+def annotate_parse_outcome(case: dict, record: dict, executor: ToolExecutor) -> None:
+    """Score the resolver's decision against the catalog (plan §4.5 parse metrics).
+
+    Runs after execution, so it may read the golden title; it resolves that title through the same
+    catalog lookup the resolver used and asks whether the chosen id is one of its rows. A chosen
+    id outside that set is a ``wrong_movie`` - the red-line figure that must be attributed case by
+    case whenever it is above zero.
+    """
+    resolver = record.get("resolver") or {}
+    if not resolver.get("triggered"):
+        record["parse_ok"] = None
+        record["wrong_movie"] = None
+        return
+    titles: list[str] = []
+    for slots in [case["required_slots"], *case.get("accept_alternative_slots", [])]:
+        for key in ("query", "seed_title"):
+            value = slots.get(key)
+            if isinstance(value, str) and value not in titles:
+                titles.append(value)
+    expected_ids: set[str] = set()
+    for title in titles:
+        # Exact title rows only: a prefix hit would accept "Superman II" as a correct resolution of
+        # the seed "Superman" and hide a real wrong-movie (plan §4.5 red-line metric). Prefix rows
+        # are the fallback only when the title has no exact row at all.
+        rows = executor.exact_title_ids(title) or executor.title_candidates(title, limit=25)
+        expected_ids |= {row["id"] for row in rows}
+    chosen = resolver.get("chosen_movie_id")
+    record["parse_expected_ids"] = sorted(expected_ids)
+    # A triggered resolution that ends in a clarification is a parse failure (plan §4.5), not an
+    # unmeasured case: counting it as "no attempt" would flatter the parse success rate.
+    record["parse_ok"] = bool(chosen is not None and chosen in expected_ids)
+    record["wrong_movie"] = bool(chosen is not None and chosen not in expected_ids)
+
+
 # --------------------------------------------------------------------------------------
 # Modes
 # --------------------------------------------------------------------------------------
 
-def print_dry_run(schema_doc: dict, cases_doc: dict, routing_doc: dict) -> None:
+def print_dry_run(schema_doc: dict, cases_doc: dict, queries_doc: dict,
+                  routing_doc: dict, queries_path: Path, routing_path: Path,
+                  resolver_cache_path: Path) -> None:
     enum = genre_enum(schema_doc)
+    alias_targets = sorted({value for values in GENRE_ALIASES.values() for value in values})
+    alias_canonical_keys = {GENRE_CANONICAL.get(value, value) for value in alias_targets}
     print(f"schema:            {TOOL_SCHEMA_PATH.relative_to(REPO_ROOT)} "
           f"({schema_doc['contract_version']})")
     print(f"schema_hash:       {schema_doc['schema_hash']}")
     print(f"genre enum:        {len(enum)} values")
     print(f"tools:             {[tool['function']['name'] for tool in schema_doc['tools']]}")
+    print(f"queries:           {repo_relative(queries_path)} "
+          f"({len(queries_doc['queries'])} queries, "
+          f"{queries_doc.get('heldout_version') or queries_doc.get('golden_version')})")
+    print(f"routing:           {repo_relative(routing_path)} "
+          f"({len(routing_doc['annotations'])} entries, {routing_doc['routing_version']}, "
+          f"annotates sha256 {routing_doc['annotates']['sha256'][:12]}…)")
     print(f"tool cases:        {len(cases_doc['tool_cases'])} "
           f"({cases_doc['golden_version']})")
-    print(f"routing entries:   {len(routing_doc['annotations'])} "
-          f"({routing_doc['routing_version']}, golden sha256 "
-          f"{routing_doc['annotates']['sha256'][:12]}…)")
     print(f"prompt:            {PROMPT_ID} sha256 "
           f"{hashlib.sha256(PROMPT_TEXT.encode()).hexdigest()[:12]}…")
-    print("variants:          G0 pure LLM / G1 deterministic / G2 G0 + server validation "
-          "/ G3 not measured")
+    print(f"resolver:          {RESOLVER_PROMPT_ID} sha256 {hashlib.sha256(RESOLVER_PROMPT.encode()).hexdigest()[:12]}… "
+          f"timeout {RESOLVER_TIMEOUT_S:g}s, cache {repo_relative(resolver_cache_path)}")
+    print(f"genre aliases:     {len(GENRE_ALIASES)} terms -> "
+          f"{len(alias_targets)} targets / {len(alias_canonical_keys)} canonical keys "
+          f"({GENRE_ALIAS_DOC['aliases_version']}); canonical groups "
+          f"{GENRE_ALIAS_DOC.get('canonical_groups')}; "
+          f"{len(GENRE_ALIAS_DOC.get('unsupported') or [])} unsupported")
+    print(f"title aliases:     {len(TITLE_ALIAS_DOC.get('entries') or [])} entries "
+          f"({TITLE_ALIAS_DOC['aliases_version']}, frozen empty by C10)")
+    print("variants:          G0 pure LLM / G1 deterministic / G1-T G1 + query-time title "
+          "resolver / G2 G0 + server validation / G3 not measured")
     print("execution:         search_movies_by_title, filter_movies, get_movie_card (SQL); "
           "find_similar_movies, recommend_movies via deterministic evaluation stand-in")
+    print("model calls:       G0 every case; G1 and G1-T non-CJK 0; G1-T CJK title 1 candidate "
+          "request per unresolved title (timeout -> clarification)")
     print("\ncase plan (first 15):")
-    for case in build_cases(cases_doc, routing_doc, "both", None)[:15]:
+    for case in build_cases(cases_doc, queries_doc, routing_doc, "both", None)[:15]:
         print(f"  {case['case_id']:<4} {case['kind']:<6} {case['expected_behavior']:<28} "
               f"tools={case['expected_tools']} slots={case['required_slots']}")
     print("\ndry run: no network call, no SQL, no evaluation run.")
@@ -1344,7 +2206,7 @@ def summarise(records: list[dict]) -> dict:
     def block(subset: list[dict]) -> dict:
         return {"cases": len(subset),
                 "task_success": sum(1 for r in subset if r["task_success"]),
-                "passed": sum(1 for r in subset if r["passed"])}
+                "routing_success": sum(1 for r in subset if r["passed"])}
 
     return {
         "cases": len(records),
@@ -1354,7 +2216,6 @@ def summarise(records: list[dict]) -> dict:
         "slots_ok": sum(1 for r in records if r["slots_ok"]),
         "schema_ok": sum(1 for r in records if r["schema_ok"]),
         "behavior_ok": sum(1 for r in records if r["behavior_ok"]),
-        "passed": sum(1 for r in records if r["passed"]),
         "grounding_ok": sum(1 for r in records if r["grounding_ok"]),
         "result_constraints_checked": sum(1 for r in records
                                           if r["result_constraint_ok"] is not None),
@@ -1369,19 +2230,402 @@ def summarise(records: list[dict]) -> dict:
                     for kind in sorted({r["kind"] for r in records})},
         "by_intent": {intent: block([r for r in records if r["intent"] == intent])
                       for intent in sorted({r["intent"] for r in records})},
+        # Routing and resolution stay separate (plan §4.5): routing = tool/slot choice, resolution
+        # = did the Chinese title end up on the right catalog row. "routing_success" is the only
+        # name for the routing figure (it used to be recorded twice, as "passed" and here).
+        "routing_success": sum(1 for r in records if r["passed"]),
+        "clarification_style_success": sum(1 for r in records
+                                           if r.get("clarification_style")
+                                           and r.get("allows_clarification")),
+        "resolver": resolver_summary(records),
     }
 
 
+def resolver_summary(records: list[dict]) -> dict:
+    triggered = [r for r in records if (r.get("resolver") or {}).get("triggered")]
+    latencies = [(r.get("resolver") or {}).get("latency_ms") for r in triggered
+                 if isinstance((r.get("resolver") or {}).get("latency_ms"), (int, float))
+                 and ((r.get("resolver") or {}).get("latency_ms") or 0) > 0]
+    outcomes: dict[str, int] = {}
+    steps: dict[str, int] = {}
+    for record in triggered:
+        resolver = record["resolver"]
+        outcomes[resolver.get("outcome")] = outcomes.get(resolver.get("outcome"), 0) + 1
+        steps[resolver.get("step")] = steps.get(resolver.get("step"), 0) + 1
+    wrong = [r["case_id"] for r in triggered if r.get("wrong_movie")]
+
+    def rate(numerator: int, denominator: int) -> float | None:
+        return round(numerator / denominator, 4) if denominator else None
+
+    return {
+        "triggered": len(triggered),
+        "parse_success": sum(1 for r in triggered if r.get("parse_ok")),
+        "parse_success_rate": rate(sum(1 for r in triggered if r.get("parse_ok")),
+                                   len(triggered)),
+        "candidate_reject": sum(1 for r in triggered
+                                if (r["resolver"].get("outcome") == "rejected")),
+        "candidate_reject_rate": rate(sum(1 for r in triggered
+                                          if r["resolver"].get("outcome") == "rejected"),
+                                      len(triggered)),
+        "wrong_movie": len(wrong),
+        "wrong_movie_rate": rate(len(wrong), len(triggered)),
+        "wrong_movie_cases": wrong,
+        "fallback_to_clarify": sum(1 for r in triggered
+                                   if r["resolver"].get("degraded_to") == "clarify"),
+        "fallback_rate": rate(sum(1 for r in triggered
+                                  if r["resolver"].get("degraded_to") == "clarify"),
+                              len(triggered)),
+        "timeouts": sum(1 for r in triggered if r["resolver"].get("timed_out")),
+        "alias_hits": sum(1 for r in triggered if r["resolver"].get("cache") == "alias"),
+        # Only a recorded decision counts as a cache hit: an alias hit is the (empty by C10) alias
+        # table, not the run cache, and counting it would inflate the warm-run figure.
+        "cache_hits": sum(1 for r in triggered
+                          if r["resolver"].get("cache") in ("hit", "replay")),
+        "cache_hit_rate": rate(sum(1 for r in triggered
+                                   if r["resolver"].get("cache") in ("hit", "replay")),
+                               len(triggered)),
+        "model_calls": sum(int(r["resolver"].get("model_calls", 0)) for r in triggered),
+        "latency_samples": len(latencies),
+        "latency_p50_ms": percentile(latencies, 0.5),
+        "latency_p95_ms": percentile(latencies, 0.95),
+        "outcomes": dict(sorted(outcomes.items(), key=lambda item: -item[1])),
+        "steps": dict(sorted(steps.items(), key=lambda item: -item[1])),
+    }
+
+
+def self_test_case(case_id: str, text: str, expected_tools: list[str],
+                   slots: dict | None = None, acceptable: list[str] | None = None,
+                   allows_clarification: bool = False, expected_behavior: str = "call_tools_and_answer",
+                   result_constraints: dict | None = None) -> dict:
+    """Minimal case record for the scripted self-test (mirrors ``build_cases``)."""
+    return {
+        "case_id": case_id, "kind": "query", "text": text,
+        "lang": "zh" if has_han(text) else "en", "intent": "search_by_title",
+        "expected_tools": expected_tools, "required_slots": slots or {},
+        "accept_alternative_slots": [], "result_constraints": result_constraints or {},
+        "expected_refusal": False, "allows_clarification": allows_clarification,
+        "cjk_title": has_han(text), "expected_behavior": expected_behavior,
+        "expected_error_code": "NONE", "acceptable_movie_ids": acceptable or [],
+    }
+
+
+def check_semantics(executor: ToolExecutor) -> tuple[dict, list[str]]:
+    """Pure-function and catalog assertions for the B1.5c execution semantics."""
+    checks: dict[str, str] = {}
+    problems: list[str] = []
+
+    def expect(label: str, condition: bool, detail: str = "") -> None:
+        checks[label] = "ok" if condition else f"FAILED {detail}".strip()
+        if not condition:
+            problems.append(f"{label}: {detail}" if detail else label)
+
+    expect("canonical: Sci-Fi == Science Fiction", canonical_genres(["Sci-Fi", "Science Fiction"]) == ["Sci-Fi"])
+    expect("canonical: order independent", canonical_genres(["Science Fiction", "Sci-Fi"]) == ["Sci-Fi"])
+    expect("canonical: unrelated keys kept", canonical_genres(["Action", "Sci-Fi"]) == ["Action", "Sci-Fi"])
+    one_key = genre_and_sql(["Sci-Fi"])
+    expect("genre AND counts canonical keys", "HAVING COUNT(DISTINCT CASE" in one_key
+           and one_key.rstrip().endswith("= 1)"), one_key)
+    expect("genre AND retrieves both spellings", "'Sci-Fi'" in one_key and "'Science Fiction'" in one_key)
+    expect("genre AND: two keys are two conditions", genre_and_sql(["Action", "Sci-Fi"]).rstrip().endswith("= 2)"))
+    expect("director: abbreviation == full name", directors_equal("M.Mann", "Michael Mann"))
+    expect("director: different initial", not directors_equal("Ant.Mann", "Michael Mann"))
+    expect("director: bare surname never expands", not directors_equal("Mann", "Michael Mann"))
+    expect("director: Q17 full name != surname", not directors_equal("Steven Spielberg", "Spielberg"))
+    expect("director: ~ is a space", directors_equal("Woody~Allen", "Woody Allen"))
+    expect("director: identical strings equal", directors_equal("Hitchcock", "Hitchcock"))
+    # The harness must implement the frozen data file, not a private paraphrase of it.
+    recorded = {item.get("id"): item for item in PERSON_NORMALIZATION_DOC.get("assertions", [])}
+    for assertion_id in ("q17-spielberg-not-equal", "initial-abbreviation-equal",
+                         "bare-surname-not-equal"):
+        assertion = recorded.get(assertion_id) or {}
+        left, right = assertion.get("left"), assertion.get("right")
+        expect(f"director: {assertion_id} matches the data file",
+               isinstance(left, str) and isinstance(right, str)
+               and directors_equal(left, right) is bool(assertion.get("equal")),
+               f"{left!r} vs {right!r} recorded equal={assertion.get('equal')}")
+    expect("route: Chinese year range", extract_years(SELF_TEST_SAMPLES["year-range"])
+           == {"year_from": 2002, "year_to": 2003})
+    expect("route: genre alias file", extract_genres(SELF_TEST_SAMPLES["genre-alias"]) == ["War"])
+    expect("route: no false war match", extract_genres(SELF_TEST_SAMPLES["war-boundary"]) == [])
+    expect("route: musical != music", extract_genres(SELF_TEST_SAMPLES["musical"]) == ["Musical"]
+           and extract_genres(SELF_TEST_SAMPLES["music"]) == ["Music"])
+    expect("route: Chinese genre words",
+           extract_genres(SELF_TEST_SAMPLES["multi-genre"]) == ["Action", "Sci-Fi"],
+           str(extract_genres(SELF_TEST_SAMPLES["multi-genre"])))
+    expect("route: title + year goes to the search tool",
+           route_deterministically(
+               self_test_case("S", SELF_TEST_SAMPLES["title-year"], []))["tool_calls"]
+           == [{"name": "search_movies_by_title",
+                "arguments": {"query": "Notorious", "year": 1946}}])
+    expect("route: rated at least N", extract_rating(SELF_TEST_SAMPLES["rating-at-least"]) == 6.0)
+    expect("route: title lookup verb 查",
+           route_deterministically(self_test_case(
+               "S", SELF_TEST_SAMPLES["title-verb-zh"], []))["tool_calls"]
+           == [{"name": "search_movies_by_title", "arguments": {"query": "Casablanca"}}])
+    expect("route: director named as 推荐几部 <Name> 在…",
+           extract_director(SELF_TEST_SAMPLES["director-clause-zh"]) == "Kurosawa")
+    expect("route: director named as Recommend some <Name> <genre>",
+           extract_director(SELF_TEST_SAMPLES["director-clause-en"]) == "Kubrick")
+    expect("route: a genre word is not a director name",
+           extract_director(SELF_TEST_SAMPLES["genre-not-director"]) is None)
+    expect("resolver: strict JSON accepted",
+           parse_resolver_candidates('{"candidates": ["A Title"]}') == ["A Title"])
+    expect("resolver: extra field rejected",
+           parse_resolver_candidates('{"candidates": ["A Title"], "note": "x"}') is None)
+    expect("resolver: zero candidates rejected",
+           parse_resolver_candidates('{"candidates": []}') is None)
+    expect("resolver: four candidates rejected",
+           parse_resolver_candidates('{"candidates": ["A","B","C","D"]}') is None)
+    expect("resolver: non-JSON rejected", parse_resolver_candidates("not json") is None)
+    expect("resolver: Chinese candidate rejected",
+           parse_resolver_candidates('{"candidates": ["卡萨布兰卡"]}') is None)
+    expect("resolver: CJK detection ignores 《》",
+           has_han("《The Vikings》") is False
+           and has_han(SELF_TEST_SAMPLES["resolver-han"]) is True)
+    if executor.mysql is None:
+        checks["catalog checks"] = "skipped (--skip-db)"
+        return checks, problems
+
+    heat = executor.execute("search_movies_by_title", {"query": "Heat", "limit": 10})
+    titles = [row["title"] for row in heat["results"]]
+    expect("search: exact rows first (Heat)", titles[:2] == ["Heat", "Heat"], str(titles))
+    expect("search: match reported", heat["match"] == "exact", str(heat["match"]))
+    expect("filter: canonical Sci-Fi is reachable",
+           executor.execute("filter_movies", {"genres": ["Sci-Fi", "Science Fiction"], "limit": 5})["results"] != [])
+    expect("filter: multi genre is AND",
+           all({"Action", "Sci-Fi"} <= set(row["genres"]) for row in
+               executor.execute("filter_movies", {"genres": ["Action", "Sci-Fi"], "limit": 5})["results"]))
+    expect("director: catalog matching is not an expansion",
+           set(executor.matching_directors("Michael Mann")) == {"M.Mann", "Michael Mann"}
+           and executor.matching_directors("Mann") == [])
+    recommended = executor.execute(
+        "recommend_movies",
+        {"preferred_genres": ["Comedy"], "year_range": {"from": 1950, "to": 1959},
+         "director": "B.Wilder", "limit": 5}, {})
+    expect("recommend: director normalization narrows the answer set",
+           bool(recommended["results"])
+           and all(directors_equal(row["director"], "B.Wilder") for row in recommended["results"]),
+           str([row["director"] for row in recommended["results"]]))
+    expect("recommend: multi genre is AND",
+           all({"Comedy"} <= set(row["genres"])
+               for row in executor.execute("recommend_movies",
+                                           {"preferred_genres": ["Comedy", "Romance"],
+                                            "year_range": {"from": 1950, "to": 1959},
+                                            "limit": 5}, {})["results"]))
+    seed = {"movie_id": "MM33"}  # Heat (1995), Michael Mann: stored as M.Mann
+    similar = executor.execute("find_similar_movies", dict(seed, limit=5), {})
+    expect("similar: seed excluded", all(row["id"] != "MM33" for row in similar["results"]))
+    expect("similar: same director first", bool(similar["results"])
+           and directors_equal(similar["results"][0]["director"], "M.Mann"),
+           str([row["director"] for row in similar["results"]]))
+    narrowed = executor.execute("find_similar_movies", dict(seed, limit=5),
+                                {"genres": ["Action", "Crime"], "year_from": 1990, "year_to": 1999})
+    expect("similar: constraints narrow before ranking",
+           all(not constraint_problems(row, {"genres": ["Action", "Crime"], "year_from": 1990,
+                                            "year_to": 1999})
+               for row in narrowed["results"])
+           and narrowed["candidate_pool"] <= SIMILAR_POOL,
+           f"pool={narrowed.get('candidate_pool')}")
+    return checks, problems
+
+
+def check_annotation_sentinel(schema_doc: dict, cases: list[dict], executor: ToolExecutor) -> list[str]:
+    """``B15c-3``: executing every case must never read a golden annotation."""
+    problems: list[str] = []
+    probe = guard_case_annotations(cases[0] if cases else {"case_id": "probe", "text": ""})
+    for key in ANNOTATION_KEYS:
+        try:
+            probe[key]
+        except EvalError:
+            continue
+        problems.append(f"the annotation guard does not reject {key!r} (the sentinel would be "
+                        f"vacuous)")
+    for case in cases:
+        try:
+            run_g1(guard_case_annotations(case), schema_doc, executor)
+        except EvalError as error:
+            problems.append(f"{case['case_id']}: {error}")
+    return problems
+
+
+def run_resolver_self_test(schema_doc: dict, executor: ToolExecutor) -> tuple[dict, list[str]]:
+    """G1-T plumbing: scripted candidates through the real catalog, no model, no network."""
+    report: dict = {}
+    problems: list[str] = []
+    if executor.mysql is None:
+        report["status"] = "skipped (--skip-db: catalog verification needs the catalog)"
+        return report, problems
+    resolver = TitleResolver(ScriptedResolverClient(), "scripted", executor, use_cache=False)
+    cases = [
+        ("S-CJK", SELF_TEST_SAMPLES["resolver-cjk"], {"query": "Casablanca"}),
+        ("S-LATIN", SELF_TEST_SAMPLES["resolver-latin"], {"query": "The Vikings"}),
+    ]
+    for case_id, text, slots in cases:
+        case = self_test_case(case_id, text, ["search_movies_by_title"], slots=slots)
+        record = run_case(case, "G1-T", None, "scripted", schema_doc, executor, resolver=resolver,
+                          guard_annotations=True)
+        report[case_id] = {"model_calls": record["model_calls"],
+                           "resolver": record.get("resolver"),
+                           "tools_called": record["tools_called"],
+                           "parse_ok": record["parse_ok"], "answer": record.get("answer")}
+    for case_id, zh, expected_outcome in (
+        ("S-INVALID", SELF_TEST_SAMPLES["resolver-invalid"], "invalid_json"),
+        ("S-EXTRA-FIELD", SELF_TEST_SAMPLES["resolver-extra-field"], "invalid_json"),
+        ("S-REJECTED", SELF_TEST_SAMPLES["resolver-rejected"], "rejected"),
+        ("S-TIMEOUT", SELF_TEST_SAMPLES["resolver-timeout"], "timeout"),
+    ):
+        resolution = resolver.resolve(zh)
+        report[case_id] = {"outcome": resolution["outcome"], "step": resolution["step"],
+                           "model_calls": resolution["model_calls"],
+                           "degraded_to": resolution["degraded_to"]}
+        if resolution["outcome"] != expected_outcome:
+            problems.append(f"{case_id}: outcome {resolution['outcome']!r} != {expected_outcome!r}")
+        if resolution["chosen_movie_id"] is not None:
+            problems.append(f"{case_id}: a failed resolution must not choose a movie id")
+        case = self_test_case(case_id, f"帮我找《{zh}》这部电影", ["search_movies_by_title"])
+        record = run_case(case, "G1-T", None, "scripted", schema_doc, executor, resolver=resolver)
+        report[case_id]["behaviour"] = record["behavior"]
+        report[case_id]["tools_called"] = record["tools_called"]
+        if record["tools_called"]:
+            problems.append(f"{case_id}: an unverified title must not reach "
+                            f"search_movies_by_title (called {record['tools_called']})")
+        if record["behavior"] != "clarify":
+            problems.append(f"{case_id}: behaviour {record['behavior']!r} != 'clarify'")
+
+    with tempfile.TemporaryDirectory() as scratch:
+        cache_file = Path(scratch) / "resolver-cache.json"
+        warm = TitleResolver(ScriptedResolverClient(), "scripted", executor,
+                             cache_path=cache_file)
+        first = warm.resolve(SELF_TEST_SAMPLES["resolver-zh-title"])
+        warm.save()
+        second = warm.resolve(SELF_TEST_SAMPLES["resolver-zh-title"])
+        replay = TitleResolver(None, "scripted", executor, replay_path=cache_file)
+        replayed = replay.resolve(SELF_TEST_SAMPLES["resolver-zh-title"])
+        report["S-CACHE"] = {"cache": second["cache"], "model_calls": second["model_calls"],
+                             "chosen_movie_id": second["chosen_movie_id"]}
+        report["S-REPLAY"] = {"cache": replayed["cache"],
+                             "model_calls": replayed["model_calls"],
+                             "chosen_movie_id": replayed["chosen_movie_id"]}
+        if first["chosen_movie_id"] != "C127":
+            problems.append(f"S-CACHE: first resolution chose {first['chosen_movie_id']}")
+        if second["cache"] != "hit" or second["model_calls"] != 0:
+            problems.append(f"S-CACHE: warm run is {second['cache']} with "
+                            f"{second['model_calls']} model calls")
+        if replayed["cache"] != "replay" or replayed["model_calls"] != 0 \
+                or replayed["chosen_movie_id"] != "C127":
+            problems.append(f"S-REPLAY: replay is {replayed['cache']} with "
+                            f"{replayed['model_calls']} model calls, chose "
+                            f"{replayed['chosen_movie_id']}")
+        # A cache written under another prompt or another model is not this run's evidence: it is
+        # ignored instead of replayed, and an explicit replay of it is refused (plan §4.4).
+        stale_file = Path(scratch) / "stale-cache.json"
+        stale_file.write_text(json.dumps(dict(load_json(cache_file), prompt_sha256="0" * 64)),
+                              encoding="utf-8")
+        stale = TitleResolver(ScriptedResolverClient(), "scripted", executor,
+                              cache_path=stale_file)
+        report["S-CACHE"]["stale"] = {"status": stale.cache_status,
+                                      "entries": len(stale.cache),
+                                      "problems": stale.cache_problems}
+        if stale.cache_status != "stale-ignored" or stale.cache:
+            problems.append("S-CACHE: a cache recorded under another prompt must be ignored")
+        other_model = TitleResolver(ScriptedResolverClient(), "another-model", executor,
+                                    cache_path=cache_file)
+        if other_model.cache or not other_model.cache_problems:
+            problems.append("S-CACHE: a cache recorded for another model must be ignored")
+        try:
+            TitleResolver(None, "scripted", executor, replay_path=stale_file)
+        except EvalError:
+            pass
+        else:
+            problems.append("S-REPLAY: a replay file recorded under another prompt must be "
+                            "refused")
+        try:
+            replay.resolve(SELF_TEST_SAMPLES["replay-miss"])
+        except EvalError:
+            pass
+        else:
+            problems.append("S-REPLAY: a replay miss must fail instead of calling the model")
+
+    # S-AMBIG-WINDOW: a title with several exact catalog rows is narrowed by the year window the
+    # query itself stated before the resolution is called ambiguous (plan §7). Heat is 1995 (MM33)
+    # and 1972 (PMo15); without a clue the resolver must ask, with the window it must pick 1995.
+    window_resolver = TitleResolver(ScriptedResolverClient(), "scripted", executor, use_cache=False)
+    unresolved = window_resolver.resolve("Heat")
+    windowed = window_resolver.resolve("Heat", {"year_from": 1990, "year_to": 1999})
+    report["S-AMBIG-WINDOW"] = {
+        "without_clue": {"outcome": unresolved["outcome"], "model_calls": unresolved["model_calls"],
+                          "candidates": [row["id"] for row in unresolved["catalog_verified"]]},
+        "with_window": {"outcome": windowed["outcome"], "model_calls": windowed["model_calls"],
+                        "chosen_movie_id": windowed["chosen_movie_id"],
+                        "narrowed_to": windowed.get("narrowed_to")},
+    }
+    if unresolved["outcome"] != "ambiguous" or unresolved["model_calls"] != 0:
+        problems.append(f"S-AMBIG-WINDOW: a multi-row title without a clue must be ambiguous "
+                        f"({unresolved['outcome']!r}, {unresolved['model_calls']} model calls)")
+    if windowed["outcome"] != "resolved" or windowed["chosen_movie_id"] != "MM33" \
+            or windowed.get("narrowed_to") != ["MM33"] or windowed["model_calls"] != 0:
+        problems.append(f"S-AMBIG-WINDOW: the 1990-1999 window must resolve Heat to MM33 "
+                        f"({windowed['outcome']!r}, chose {windowed['chosen_movie_id']!r}, "
+                        f"narrowed to {windowed.get('narrowed_to')})")
+
+    happy = report["S-CJK"]
+    if happy["model_calls"] != 1:
+        problems.append(f"S-CJK: model_calls {happy['model_calls']} != 1")
+    if (happy["resolver"] or {}).get("chosen_title") != "Casablanca":
+        problems.append(f"S-CJK: chosen_title {happy['resolver']} is not the verified catalog title")
+    if happy["parse_ok"] is not True:
+        problems.append(f"S-CJK: parse_ok {happy['parse_ok']} is not True")
+    latin = report["S-LATIN"]
+    if latin["model_calls"] != 0:
+        problems.append(f"S-LATIN: a non-CJK title must not call the model ({latin['model_calls']})")
+    if (latin["resolver"] or {}).get("outcome") != "not_applicable":
+        problems.append(f"S-LATIN: resolver outcome {latin['resolver']} is not not_applicable")
+    return report, problems
+
+
 def run_self_test(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
-                  routing_doc: dict) -> int:
-    print("SELF-TEST: scripted tool calls, not model output; no model was called.")
-    cases = [case for case in build_cases(cases_doc, routing_doc, "both", None)
-             if case["text"] in SELF_TEST_SCRIPT]
+                  queries_doc: dict, routing_doc: dict) -> int:
+    print("SELF-TEST: scripted tool calls and scripted resolver candidates, not model output; "
+          "no model was called.")
+    executor = ToolExecutor(None if args.skip_db else ReadOnlyMysql())
+    payload: dict = {"mode": "SELF-TEST (scripted, not a model measurement)",
+                     "schema_hash": schema_doc["schema_hash"], "runs": [], "assertions": {}}
+    failures: list[str] = []
+
+    semantics, problems = check_semantics(executor)
+    payload["assertions"]["semantics"] = semantics
+    print(f"  semantics: {len(semantics)} checks, {len(problems)} problem(s)")
+    for label, outcome in semantics.items():
+        print(f"    {label:<46} {outcome}")
+    failures.extend(problems)
+
+    independence = check_self_test_independence()
+    payload["assertions"]["self_test_independence"] = {
+        "utterances": len(SELF_TEST_UTTERANCES), "problems": independence}
+    print(f"  self-test independence: {len(SELF_TEST_UTTERANCES)} utterance(s) vs the held-out "
+          f"queries, {len(independence)} problem(s)")
+    failures.extend(independence)
+
+    built = build_cases(cases_doc, queries_doc, routing_doc, "both", None)
+    sentinel = check_annotation_sentinel(schema_doc, built, executor)
+    payload["assertions"]["annotation_sentinel"] = {
+        "cases": len(built), "problems": sentinel}
+    print(f"  annotation sentinel: {len(built)} cases executed, {len(sentinel)} problem(s)")
+    failures.extend(sentinel)
+
+    resolver_report, resolver_problems = run_resolver_self_test(schema_doc, executor)
+    payload["assertions"]["resolver"] = resolver_report
+    print(f"  resolver pipeline: {resolver_report.get('status', 'ran')} , "
+          f"{len(resolver_problems)} problem(s)")
+    for case_id in ("S-CJK", "S-LATIN", "S-INVALID", "S-EXTRA-FIELD", "S-REJECTED", "S-TIMEOUT",
+                    "S-CACHE", "S-REPLAY", "S-AMBIG-WINDOW"):
+        if case_id in resolver_report:
+            print(f"    {case_id:<14} {resolver_report[case_id]}")
+    failures.extend(resolver_problems)
+
+    cases = [case for case in built if case["text"] in SELF_TEST_SCRIPT]
     if len(cases) != len(SELF_TEST_SCRIPT):
         raise EvalError("self-test cases are missing from the fixtures")
-    executor = ToolExecutor(None if args.skip_db else ReadOnlyMysql())
-    payload = {"mode": "SELF-TEST (scripted, not a model measurement)",
-               "schema_hash": schema_doc["schema_hash"], "runs": []}
     for variant in ("G0", "G2"):
         records = [run_case(case, variant, ScriptedClient(), "scripted", schema_doc, executor)
                    for case in cases]
@@ -1396,15 +2640,24 @@ def run_self_test(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        payload["failures"] = failures
         out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
                             encoding="utf-8")
         print(f"written: {out_path}")
+    if failures:
+        print(f"\nSELF-TEST FAILED ({len(failures)} problem(s)):", file=sys.stderr)
+        for failure in failures:
+            print(f"  - {failure}", file=sys.stderr)
+        return 1
+    print("\nSELF-TEST OK: execution semantics, the annotation sentinel and the G1-T resolver "
+          "pipeline behave as specified (no model was called).")
     return 0
 
 
 def run_variant(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
-                routing_doc: dict) -> int:
-    cases = build_cases(cases_doc, routing_doc, args.cases, args.ids)
+                queries_doc: dict, routing_doc: dict,
+                queries_path: Path, routing_path: Path) -> int:
+    cases = build_cases(cases_doc, queries_doc, routing_doc, args.cases, args.ids)
     if not cases:
         raise EvalError("no case matched the selection")
     if args.limit:
@@ -1428,23 +2681,86 @@ def run_variant(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
     if args.variant in ("G0", "G2") and not replay:
         client = OllamaClient(args.base_url, timeout_s=args.timeout)
     executor = ToolExecutor(None if args.skip_db else ReadOnlyMysql())
-    model_digest = (client.tags().get(args.model) if client else _replayed_digest(replay))
+    resolver = None
+    if args.variant == "G1-T":
+        # A replay never contacts the network: the resolver raises on a title it has no recorded
+        # decision for, so it does not get a client at all (plan §4.6).
+        resolver = TitleResolver(
+            None if args.replay_resolver else OllamaClient(args.base_url, timeout_s=args.timeout),
+            args.model, executor,
+            cache_path=Path(args.resolver_cache), use_cache=not args.no_cache,
+            replay_path=Path(args.replay_resolver) if args.replay_resolver else None,
+            timeout_s=args.resolver_timeout)
     records = [run_case(case, args.variant, client, args.model, schema_doc, executor,
-                        replay.get(case["case_id"]))
+                        replay.get(case["case_id"]), resolver=resolver,
+                        guard_annotations=args.assert_no_annotation_read)
                for case in cases]
+    model_calls = sum(int(record.get("model_calls", 0)) for record in records)
+    # A warm G1-T run never contacts the model, so it reports the digest the cold run pinned.
+    model_digest = resolver.model_digest if resolver is not None else None
+    if args.variant in ("G0", "G2") and client is not None:
+        model_digest = client.tags().get(args.model)
+    elif replay:
+        model_digest = _replayed_digest(replay)
+    elif resolver is not None:
+        if resolver.replay is not None:
+            model_digest = resolver.model_digest
+        elif model_calls:
+            # Pinned only when the resolver actually asked the model, so a CJK-free run stays offline.
+            model_digest = resolver.client.tags().get(args.model)
     for record in records:
         record["model_digest"] = model_digest
+    if resolver is not None:
+        resolver.model_digest = model_digest
+        resolver.save()
     summary = summarise(records)
     payload = {
         "variant": args.variant,
         "contract_version": schema_doc["contract_version"],
         "schema_hash": schema_doc["schema_hash"],
-        "model": args.model if args.variant in ("G0", "G2") else None,
+        "model": ((resolver.replay_model or args.model)
+                  if args.variant == "G1-T" and resolver is not None and resolver.replay
+                  else args.model if args.variant in ("G0", "G2", "G1-T") else None),
         "model_digest": model_digest,
-        "base_url": args.base_url if client else None,
+        "base_url": args.base_url if args.variant in ("G0", "G2", "G1-T") else None,
         "temperature": TEMPERATURE,
         "prompt_id": PROMPT_ID,
         "prompt_sha256": hashlib.sha256(PROMPT_TEXT.encode()).hexdigest(),
+        "queries_path": repo_relative(queries_path),
+        "routing_path": repo_relative(routing_path),
+        "queries_sha256": hashlib.sha256(queries_path.read_bytes()).hexdigest(),
+        "routing_sha256": hashlib.sha256(routing_path.read_bytes()).hexdigest(),
+        # The alias files are inputs too: the report has to pin the revision they were read at.
+        "alias_files": {
+            "genre_aliases": {"path": repo_relative(GENRE_ALIASES_PATH),
+                              "aliases_version": GENRE_ALIAS_DOC["aliases_version"],
+                              "sha256": hashlib.sha256(GENRE_ALIASES_PATH.read_bytes()).hexdigest()},
+            "person_normalization": {
+                "path": repo_relative(PERSON_NORMALIZATION_PATH),
+                "normalization_version": PERSON_NORMALIZATION_DOC["normalization_version"],
+                "sha256": hashlib.sha256(
+                    PERSON_NORMALIZATION_PATH.read_bytes()).hexdigest()},
+            "title_aliases": {"path": repo_relative(TITLE_ALIASES_PATH),
+                             "aliases_version": TITLE_ALIAS_DOC["aliases_version"],
+                             "sha256": hashlib.sha256(
+                                 TITLE_ALIASES_PATH.read_bytes()).hexdigest()},
+        },
+        "resolver": {
+            "enabled": resolver is not None,
+            "prompt_id": RESOLVER_PROMPT_ID,
+            "prompt_sha256": hashlib.sha256(RESOLVER_PROMPT.encode()).hexdigest(),
+            "timeout_s": args.resolver_timeout if resolver is not None else None,
+            "cache_path": (repo_relative(args.resolver_cache)
+                           if resolver is not None and not args.no_cache else None),
+            "replay_resolver": args.replay_resolver,
+            "no_cache": bool(args.no_cache),
+            "cache_state_at_load": resolver.cache_status if resolver is not None else None,
+            "cache_problems": resolver.cache_problems if resolver is not None else [],
+            "embedding": "disabled (plan §4.3 step 4 is optional and off by default)",
+            "alias_entries": len(TITLE_ALIAS_DOC.get("entries") or []),
+            "aliases_version": TITLE_ALIAS_DOC["aliases_version"],
+        },
+        "annotation_guard": bool(args.assert_no_annotation_read),
         "db_snapshot": cases_doc.get("snapshot"),
         "reused_from": args.reuse_g0,
         "summary": summary,
@@ -1464,6 +2780,8 @@ def run_variant(args: argparse.Namespace, schema_doc: dict, cases_doc: dict,
             print(f"        schema problems: {record['schema_problems']}")
         if record["failure_modes"]:
             print(f"        failure modes: {record['failure_modes']}")
+        if record.get("resolver"):
+            print(f"        resolver: {record['resolver']}")
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1478,11 +2796,21 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true",
                         help="default: validate fixtures and print the plan (no network, no SQL)")
     parser.add_argument("--self-test", action="store_true",
-                        help="run scripted tool calls through the G0/G2 path (NOT a model measurement)")
-    parser.add_argument("--variant", choices=("G0", "G1", "G2", "G3"), help="variant to run")
+                        help="run scripted tool calls through the G0/G2 path and scripted candidates "
+                             "through the G1-T resolver, plus the execution/semantics assertions "
+                             "(NOT a model measurement)")
+    parser.add_argument("--variant", choices=("G0", "G1", "G1-T", "G2", "G3"),
+                        help="variant to run: G0 pure LLM, G1 deterministic, G1-T deterministic + "
+                             "query-time title resolver, G2 G0 + server validation, G3 not measured")
     parser.add_argument("--cases", choices=("tool", "queries", "both"), default="tool",
                         help="which fixture to run (default: the 15 tool cases)")
-    parser.add_argument("--ids", help="comma-separated case ids, e.g. T01,T11,Q05")
+    parser.add_argument("--queries-path", default=str(QUERIES_PATH),
+                        help="query fixture to score (default: the frozen 60 queries; pass the "
+                             "held-out file for a held-out run)")
+    parser.add_argument("--routing-path", default=str(ROUTING_PATH),
+                        help="routing annotations for --queries-path (default: the frozen 60; its "
+                             "annotates.sha256 must match the query file)")
+    parser.add_argument("--ids", help="comma-separated case ids, e.g. T01,T11,Q05,H01")
     parser.add_argument("--limit", type=int, default=0, help="evaluate at most N cases")
     parser.add_argument("--allow-full-run", action="store_true",
                         help="allow more cases than --full-run-threshold (approved full runs only)")
@@ -1490,25 +2818,47 @@ def main() -> int:
                         help="case count above which --allow-full-run is required (default 10)")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
-    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S)
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S,
+                        help="timeout for a routing call (G0/G2)")
+    parser.add_argument("--resolver-timeout", type=float, default=RESOLVER_TIMEOUT_S,
+                        help=f"timeout for one G1-T candidate request (default {RESOLVER_TIMEOUT_S:g}s); "
+                             "a timeout degrades to a clarification")
+    parser.add_argument("--resolver-cache", default=str(DEFAULT_RESOLVER_CACHE),
+                        help="G1-T run cache, written outside the repository by default")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="G1-T cold run: neither read nor write the resolver cache")
+    parser.add_argument("--replay-resolver",
+                        help="G1-T: replay the recorded resolver decisions in this JSON instead of "
+                             "calling the model (model_calls stays 0); a title with no recorded "
+                             "decision, or a file recorded under another prompt/model, is a hard "
+                             "error rather than a model call")
+    parser.add_argument("--assert-no-annotation-read", action="store_true",
+                        help="fail the run if the execution half reads a golden annotation "
+                             "(required_slots / result_constraints / acceptable_movie_ids)")
     parser.add_argument("--skip-db", action="store_true", help="no SQL; execution is recorded as skipped")
     parser.add_argument("--reuse-g0",
                         help="G2 only: replay the tool calls recorded in this G0 JSON instead of "
                              "calling the model again")
     parser.add_argument("--out", help="write the run record as JSON to this path")
     args = parser.parse_args()
+    queries_path = Path(args.queries_path).resolve()
+    routing_path = Path(args.routing_path).resolve()
 
-    schema_doc, cases_doc, routing_doc = load_fixtures()
+    schema_doc, cases_doc, queries_doc, routing_doc = load_fixtures(queries_path, routing_path)
     if args.variant == "G3":
         print("G3 (server-rendered answers + one retry) is out of scope this period "
               "(plan OPEN-b4 = optional/not required): not measured.", file=sys.stderr)
         return 2
+    if args.no_cache and args.replay_resolver:
+        raise EvalError("--no-cache and --replay-resolver contradict each other: pick one")
     if args.self_test:
-        return run_self_test(args, schema_doc, cases_doc, routing_doc)
+        return run_self_test(args, schema_doc, cases_doc, queries_doc, routing_doc)
     if args.variant is None:
-        print_dry_run(schema_doc, cases_doc, routing_doc)
+        print_dry_run(schema_doc, cases_doc, queries_doc, routing_doc, queries_path, routing_path,
+                      Path(args.resolver_cache))
         return 0
-    return run_variant(args, schema_doc, cases_doc, routing_doc)
+    return run_variant(args, schema_doc, cases_doc, queries_doc, routing_doc, queries_path,
+                       routing_path)
 
 
 if __name__ == "__main__":

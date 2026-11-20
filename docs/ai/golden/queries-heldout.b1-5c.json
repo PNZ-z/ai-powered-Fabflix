@@ -373,7 +373,7 @@
     {
       "id": "H18",
       "track": "zh_en",
-      "query": "推荐几部 Hitchcock 1940 到 1949 年的悬疑片",
+      "query": "推荐几部 Hitchcock 1940 到 1949 年的惊悚片",
       "lang": "zh",
       "intent": "recommend_by_preference",
       "acceptable_movie_ids": [

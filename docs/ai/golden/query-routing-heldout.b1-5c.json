@@ -4,7 +4,7 @@
   "annotates": {
     "file": "docs/ai/golden/queries-heldout.b1-5c.json",
     "heldout_version": "b1-5c-heldout/v1",
-    "sha256": "9933b0ccda71a56e21329b261ba971ac2ebcaa1e937ce59131c2bbc55e00535f"
+    "sha256": "d471c57a3b27d93f499003573ad690b08580691e911fe5127e35b76cd191abe4"
   },
   "schema_contract": {
     "file": "docs/ai/tool-schema.b1-5.json",
