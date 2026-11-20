@@ -1,11 +1,11 @@
 # B1.5c — B-route evaluation fixes + catalog-validated Chinese title resolution + independent held-out re-measurement（**已批准 / issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已创建 / 待实施**）
 
-> **文档状态：🟢 主 agent 已批准（r3）；GitHub issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已于 2026-11-19 由 `github-operator` 创建（milestone #3、无 labels、state OPEN）；**实施未开始（待实施）**。** 本文件现为 **issue #74 的规范记录**（原发布草稿 `proposed-b1-5c-tool-routing-fixes.md` 已按编号改名，正文内容未改）。oracle 增量复核（`.pi/artifacts/oracle-b1-5c-delta.md`）的 **B-1（主门槛绑定变体）与 C10（别名表来源）已在 r3 落实**；发布前检查清单**已全部完成**，含创建后的回读确认（`closingIssuesReferences` 等价检查为空、#72 仍 OPEN）。本文件**不声称**任何实施/评测已完成，也**不声称** worker 已启动。
+> **文档状态：🟡 评测已完成（**provisional**）/ held-out **非盲测** / blind holdout（B1.5d）待做 / [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) **保持 OPEN**（r5，2026-11-19）。** 本文件现为 **issue #74 的规范记录**（原发布草稿 `proposed-b1-5c-tool-routing-fixes.md` 已按编号改名，`## GitHub issue body` **未改**）。实施已在分支 `codex/b1-5c-tool-routing-fixes` 完成（`78f5740`、`734eef5`），in-sample 与 held-out 全量已跑完并生成报告；但 **held-out 30 条在 stage 1c 可见并被用于修规则（H18 改词、H06/H12/H18/H24/H28/H16 的 pattern/年份消歧）→ 主门槛 30/30 只能是 provisional PASS / post-fix regression，不是独立盲测**；要声称泛化 ≥90% 必须另建 **blind holdout（B1.5d，未做）**。本文件**不声称**已泛化、已交付、已满足全部 AC，也**不声称** #72/#74 已关闭。
 >
 > | 元数据 | 值 |
 > | --- | --- |
 > | 文件类型 | **`docs/issues/issue-74-b1-5c-tool-routing-fixes.md`**（issue #74 的规范记录；原发布草稿 `docs/issues/proposed-b1-5c-tool-routing-fixes.md` 已于 2026-11-19 按编号改名，内容未改） |
-> | 计划来源 | `docs/plans/b1-5c-tool-routing-fixes.md`（r4：issue #74 已回填；**未实施**，worker 未启动、未获实施许可） |
+> | 计划来源 | `docs/plans/b1-5c-tool-routing-fixes.md`（r5：实施结果回填为 **评测已完成 / provisional / 非盲测**；实测数字与差异见其 §17） |
 > | 上级 / 前置 | **issue [#72](https://github.com/PNZ-z/ai-powered-Fabflix/issues/72)（OPEN，B1.5b 评测 G1 82.7% FAIL）**；计划 `docs/plans/b1-5b-tool-routing.md`；报告 `docs/ai/reports/b1-5b-tool-routing.md` |
 > | umbrella | `docs/plans/b1-5-movie-retrieval-eval.md` |
 > | 关联规范 | `docs/architecture/ai-user-workflows.md`（§3 U1 中文译名策略、§3.1 年份三态、§4.2 `GenreEnum`/多值语义、§1.6 实测回填、§9 `WU-9`） |
@@ -15,8 +15,8 @@
 > | 与 #72 的关系 | **续做 / 跟进**（用户决策 C8）；正文用 `Refs #72`；**正文不含任何 GitHub closing keyword 与 `#72` 的组合**；#72 保持 OPEN |
 > | 关键决策（用户） | **C4 = D**（查询时片名解析，hybrid）；**C5**（中文译名计入分母 + 单列不含数字）；**C8**（新开本 issue）；**C9**（30 条 held-out + Wilson CI） |
 > | 关键裁定（主 agent，oracle B-1 / C10） | **主门槛 = held-out `G1-T` 任务级 ≥90%（27/30 全分母）**；held-out `G1` 为 **baseline**（不含中文解析）；in-sample `G1` 仅作前后对照；**C10 = 别名表冻结为空**（不预置 Q21–Q23） |
-> | 批准状态 | 🟢 **主 agent 已批准创建（r3）→ issue #74 已创建（2026-11-19）**；**实施未获批准、未开始**（worker 未启动，无脚本/fixture/报告改动，#74 保持 OPEN） |
-> | `last_updated` | 2026-11-19（**r4：回填 issue #74 编号/URL/milestone/labels 与创建后回读结果；`## GitHub issue body` 未改**。r3：按 oracle B-1 + C10 修订：`G1-T` 主门槛、`G1` baseline、/30 与 /28 + Wilson CI；`title-aliases.json` 空表、删除 `seed-in-sample` 候选） |
+> | 批准状态 | 🟢 **主 agent 已批准创建（r3）→ issue #74 已创建（2026-11-19）**；**实施已发生（r5）：worker 已完成评测层修复 + `G1-T`，评测全量已跑完（报告已生成）**；结果性质 = **provisional / 非盲测**；**#74 保持 OPEN** |
+> | `last_updated` | 2026-11-19（**r5：回填实施与评测结果（provisional）**——实施状态 = 评测完成 / provisional PASS / **held-out 非盲测** / #74 保持 OPEN；**`## GitHub issue body` 未改**，也未编辑远端。r4：回填 issue #74 编号/URL/milestone/labels 与创建后回读结果） |
 > **发布前检查清单（已全部完成，含创建后的回读确认）**
 >
 > - [x] oracle 已对计划与本正文做增量复核（`.pi/artifacts/oracle-b1-5c-delta.md`：r2 的 5 P1 + 7 P2 **全部关闭**），B-1 与 C10 两条阻塞已由主 agent 裁定并回填本文件
@@ -150,12 +150,14 @@ The **primary result is `G1-T` on the held-out set**: it is the delivery candida
 | Labels | **无** |
 | GitHub issue | ✅ **[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)** — 2026-11-19 由 `github-operator` 创建，state **OPEN**，milestone **#3 `Phase 3 — AI-powered platform`**，**无 labels**；本文件档名已于同日改为 `docs/issues/issue-74-b1-5c-tool-routing-fixes.md` |
 | 正文发布一致性（回填核实，2026-11-19） | **部分一致，存在 2 处差异（已核实，未修正）**。远端正文（`gh issue view 74 --json body` 只读回读）= 94 行 / 21,839 字符 / sha256 `9226d2e85d4631f6a6c6d7764717119f76e3e1c92be0be457f961eb523197dba`（与 `github-operator` 报告一致）；本地 `## GitHub issue body` 现为 95 行 / sha256 `27706f260c931cb…8d7861f01`。差异仅两句**冗余强调语**：① Scope 的 “Re-run” 条 —— 远端未标 `G1` baseline / `G1-T` primary gate（本地有）；② Notes —— 远端缺 ”Gate variant“ 条（本地有）。**实质未变**：Goal 第 2 段与 AC-11 均已写明“主结果 = held-out `G1-T`；`G1` = baseline；in-sample = 前后对照；/30 与 /28 + Wilson CI”。按本次授权**未编辑远端**，留给主 agent 裁定（接受现状 / 授权 operator 同步） |
-| 实施状态 | ❌ **未实施 / 待实施**：worker 未启动；无 `scripts/eval/**`、`docs/ai/**` 变更，无 held-out fixture，无报告；#74 保持 OPEN。本文件**不声称**任何 AC 已满足 |
+| 实施状态 | 🟡 **评测已完成 = provisional（r5，2026-11-19）**：分支 `codex/b1-5c-tool-routing-fixes`（`78f5740` = held-out fixture + 契约 v3；`734eef5` = 评测层修复 + `G1-T` + 运行）；报告 = `docs/ai/reports/b1-5c-tool-routing-fixes.md`。实测：held-out `G1-T` **30/30 = 100%**（Wilson [88.6%, 100%]）→ **provisional PASS**；held-out `G1` baseline **28/30 = 93.3%**；`G0`/`G2` **14/30 = 46.7%**；in-sample `G1` **62/75 → 67/75 = 89.3%**（路由 73/75）；`G3`/MCP **未测/未实现**；执行器与解析器均为 stand-in。**关键 caveat：held-out 在 stage 1c 可见并用于补路由词/消歧（H18 改词；H06/H12/H18/H24/H28/H16 的 pattern/年份消歧）→ 30/30 是 post-fix regression on a seen fixture，不是独立盲测，不能作为泛化 ≥90% 的证据**。**未完成/未裁定**：AC-11 只能记 provisional；`OPEN-C3`（澄清式成功）未落码；`OPEN-C11` 未设门槛；`Q48` 回归待裁定；blind holdout（B1.5d）**未做**；**PR 未创建**。⇒ **本 issue 保持 OPEN**，不声称已关闭或已交付 |
 | 发布正文自检 | 正文只陈述**已实测**事实（B1.5b 报告 + scout SQL）；未声称任何 B1.5c 结果已产生；≥90% 门槛写作既有已批准阈值，且**明确绑定 `G1-T` 为主结果、`G1` 为 baseline**；`year` 边界与多值语义写作**单一推荐方案**而非二选一；别名表写作**冻结为空**（C10），正文无 `seed-in-sample` 选项；外部中文数据与"手工编造别名"明确列为 non-goal；similar 复现数统一为 **11/15 并点名**；正文不含 `Closes`/`Fixes` 等 closing keyword；无占位符、无端点地址、无密钥 |
 | **发布后必做（P1-3 复核）** | ✅ **已完成（2026-11-19）**：`github-operator` 创建 #74 后，主 agent 回读确认 issue 侧 closing 引用为空（`closedByPullRequestsReferences` `totalCount: 0`）且 **#72 仍 OPEN**（无 `closed`/`connected` 事件）；正文无 `Closes`/`Fixes` 类关键字。若将来出现误关联，仍应立即编辑正文并复读（不得靠 PR 关联绕过） |
-| 实施许可 | ❌ **尚未给出**。主 agent 只批准了“按本文件创建 issue”；worker 需等到主 agent 在计划 §15 记录实施许可并下发交接包后才能启动 |
+| 实施许可 | 🟡 **已给出并已执行（r5）**：worker 已按批准范围完成评测层修复与 `G1-T`（分支 `codex/b1-5c-tool-routing-fixes`），无 `src/main`/`pom.xml`/CI 改动；**关闭 #74、创建 PR、B-① 立项仍需主 agent 单独决定** |
 | 创建者 | `github-operator`（主 agent 已于 r3 标记“可发布”；**已于 2026-11-19 创建 #74**，编号/URL/milestone 由主 agent 回传，docs-writer 已完成改名与回填） |
 
+> **回填记录（r5，2026-11-19）**：本次只改**本地跟踪记录**（文件头状态行 + 元数据 `计划来源`/`批准状态`/`last_updated` + `Internal tracking` 的`实施状态`/`实施许可` 行 + 本回填段），**未修改 `## GitHub issue body`**（也未编辑远端正文）。本次新增的事实均来自**已落盘证据**：分支与提交（`78f5740`/`734eef5`）、报告 `docs/ai/reports/b1-5c-tool-routing-fixes.md`（§0 第 4 条、§1.1、§3、§7、§9）、`docs/ai/golden/queries-heldout.b1-5c.json` 在 `734eef5` 中的 H18 改词 diff。**不声称**已泛化、已交付、已关闭 #72/#74，也**不声称** `G3`/MCP 已做。
+>
 > **回填记录（r4，2026-11-19）**：本次只改**本地记录**（标题状态行 + 元数据表 + 检查清单最后一项 + `Internal tracking`），**未修改 `## GitHub issue body`**（也未编辑远端正文）。据 `github-operator` 报告（`.pi/artifacts/github-operator-b1-5c-issue.md`）：创建前无 B1.5c 重复 issue、关键词扫描无 closing keyword + `#72` 组合、正文无占位符；远端标题 = `[B1.5c] Fix evaluation-level tool-routing defects, add catalog-validated Chinese title resolution, and re-measure on an independent held-out set`。**另需注意**：本地正文与远端正文在 2 处冗余强调句上不一致（详见上表“正文发布一致性”行），实质验收无条件差异，**待主 agent 裁定**。**不声称** B1.5c 已开始或任何评测数字已产生。
 
 ### 待确认项（发布前必须清空；已发布，下表为**实施期待定**状态）

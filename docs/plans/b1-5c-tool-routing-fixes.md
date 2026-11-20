@@ -1,19 +1,19 @@
-# B1.5c — B 路线评测层修复 + 查询时片名解析（G1-T）+ 独立 held-out 重测
+# B1.5c — B 路线评测层修复 + 查询时片名解析（G1-T）+ held-out 重测（**事后可见 → 非盲测**）
 
-> **文档状态：🟢 已批准 / 已建 [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) / 待实施（r4：回填 issue #74；**实施未开始**）。** 本文件是**方案文档**：主 agent 已批准“按本文件创建 issue”，#74 已于 2026-11-19 创建（milestone #3、无 labels、OPEN），但**未批准实施**——worker 未启动，无任何评测代码/fixture/报告产生。规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`（原 `proposed-*` 草稿已改名）。Open 项见 §14。
+> **文档状态：🟡 评测已完成（r5，**provisional**）/ held-out **非盲测** / blind holdout 待做（B1.5d）/ [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) **保持 OPEN**。** 本文件原是**方案文档**（r4 状态 = 已批准 / 已建 issue / 待实施）；r5 回填了**实际执行结果**：worker 已在分支 `codex/b1-5c-tool-routing-fixes` 完成评测层修复与 `G1-T`（提交 `78f5740`、`734eef5`），并已跑完 in-sample 与 held-out 全量（报告 `docs/ai/reports/b1-5c-tool-routing-fixes.md`）。但 **held-out 30 条在 stage 1c 中可见并被用于修规则**（H18 查询文本被改词；H06/H12/H18/H24/H28/H16 的 pattern/年份消歧在看过该 fixture 后补），因此 **主门槛 30/30 = 100% 只能记为 provisional PASS / post-fix regression，不是独立盲测、不是泛化证据**；要声称泛化 ≥90% 必须另建 **blind holdout（B1.5d，未做）**。规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`。实测数字与计划-实现差异见 **§17**，Open 项见 §14。
 >
 > | 元数据 | 值 |
 > | --- | --- |
-> | 文档类型 | 计划 / 方案（**评测层修复 + 查询时片名解析变体 + 独立 held-out 重测**；仍然**只做 B 路线**、**不改 `src/main`**） |
-> | `last_updated` | 2026-11-19（**r4**：回填 **GitHub issue #74** 编号/URL/milestone/labels 与 issue 文档改名；状态改为“已批准 / 已建 issue / **待实施**”；方案内容未变。r3：oracle B-1 → **主门槛 = held-out `G1-T` ≥90%（27/30 全分母）**、`G1` 为 baseline、in-sample `G1` 仅前后对照；oracle C10/B-2 → **`title-aliases.json` 冻结时为空**。r2 变更见 §16） |
-> | 状态 | 🟢 **已批准（r3，主 agent）/ 已建 [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)（2026-11-19，milestone #3、无 labels、OPEN）/ 待实施（worker 未启动，无实施许可）** |
-> | 基线 | `main` @ `f84746b`（PR #73 已合并；工作区除 `.idea/` 与未跟踪的 `docs/**` 草稿外干净） |
+> | 文档类型 | 计划 / 方案 + **实施结果回填**（**评测层修复 + 查询时片名解析变体 + held-out 重测**；仍然**只做 B 路线**、**不改 `src/main`**；r5：**结果性质 = provisional / 非盲测**） |
+> | `last_updated` | 2026-11-19（**r5**：回填**实际执行结果**——评测已完成但 **provisional**、held-out 在 stage 1c 可见并用于修规则故**非盲测**、blind holdout（B1.5d）**待做**、#74 **保持 OPEN**；新增 §17 记录实测数字与计划-实现差异，§14/§16 同步。r4：回填 **GitHub issue #74** 编号/URL/milestone/labels 与 issue 文档改名。r3：oracle B-1 → **主门槛 = held-out `G1-T` ≥90%（27/30 全分母）**、`G1` 为 baseline、in-sample `G1` 仅前后对照；oracle C10/B-2 → **`title-aliases.json` 冻结时为空**。r2 变更见 §16） |
+> | 状态 | 🟡 **评测已完成 = provisional（r5）/ held-out 非盲测（stage 1c 可见并用于补路由词与消歧）/ blind holdout B1.5d 待做 / [issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 保持 OPEN**（**不声称**已关闭、已交付或已泛化） |
+> | 基线 / 实施分支 | `main` @ `f84746b`（B1.5c 开工时的基线）；**实际实施分支 = `codex/b1-5c-tool-routing-fixes`**（`78f5740` 加 held-out fixture + 契约 v3；`734eef5` 评测层修复 + `G1-T` + in-sample/held-out 运行） |
 > | 前置任务 | `docs/plans/b1-5b-tool-routing.md`（🟢 已批准 / **评测已完成，G1 82.7% FAIL**）；报告 `docs/ai/reports/b1-5b-tool-routing.md` |
 > | 上级（umbrella） | `docs/plans/b1-5-movie-retrieval-eval.md`（共享数据集 / 共享指标 / 决策标准） |
 > | 关联规范 | `docs/architecture/ai-user-workflows.md`（§3 U1 中文译名策略、§3.1 年份三态、§4.2 `GenreEnum` 与多值语义、§1.6 B1.5b 回填、§9 `WU-9`） |
-> | 关联 GitHub issue | **前序 #72（OPEN）** — `docs/issues/issue-72-b1-5b-tool-routing.md`（正文 `Refs #72`、不关闭）；**本任务 = [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)（OPEN）** — 规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`（原 `proposed-b1-5c-tool-routing-fixes.md`，2026-11-19 改名回填） |
+> | 关联 GitHub issue | **前序 #72（OPEN，未关闭）** — `docs/issues/issue-72-b1-5b-tool-routing.md`（正文 `Refs #72`、不关闭）；**本任务 = [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)（OPEN，评测已完成但 **provisional**、**保持 OPEN**）** — 规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md` |
 > | 关键证据 | `.pi/artifacts/scout-b1-5c.md`（2026-11-19 只读 SQL 实测）；`.pi/artifacts/oracle-b1-5c-review.md`（5 P1 / 7 P2）；`.pi/artifacts/oracle-b1-5c-delta.md`（增量复核：P1/P2 全关闭 + 两条阻塞 **B-1 主门槛变体** / **C10 别名表来源**）；B1.5b 报告 §6/§7/§13；架构文档 §1.6 |
-> | 产物（计划） | `docs/ai/reports/b1-5c-tool-routing-fixes.md`（新报告）；held-out fixture 与别名/解析数据文件（见 §9） |
+> | 产物 | 计划：报告 + held-out fixture + 别名/解析数据文件（见 §9）。**实际已产生（r5）**：`docs/ai/reports/b1-5c-tool-routing-fixes.md`、`docs/ai/golden/queries-heldout.b1-5c.json`（`d471c57a…abe4`）、`docs/ai/golden/query-routing-heldout.b1-5c.json`（`5608dd4c…4aba`）、`docs/ai/aliases/*.json` ×3、`scripts/eval/check_heldout.py`；运行产物在 `.pi/artifacts/b1-5c-eval/`（不入库） |
 
 ---
 
@@ -67,7 +67,7 @@
 
 ### 2.1 目标（一句话）
 
-> 在不改生产代码的前提下，修掉 B1.5b 暴露的**评测层语义缺陷**（多值类型 AND、相似/推荐排序、种子消歧、类型与人名归一），按用户决策 **C4=D** 增加一个**查询时片名解析变体 G1-T**（别名/缓存 → 本地 LLM 生成英文候选 → 目录 exact/prefix 校验 → 可选 embedding/模糊 → 澄清），然后用**独立冻结的 30 条 held-out** 重测 G1 与 G1-T，得出可与 in-sample 数字并列的诚实结论。
+> 在不改生产代码的前提下，修掉 B1.5b 暴露的**评测层语义缺陷**（多值类型 AND、相似/推荐排序、种子消歧、类型与人名归一），按用户决策 **C4=D** 增加一个**查询时片名解析变体 G1-T**（别名/缓存 → 本地 LLM 生成英文候选 → 目录 exact/prefix 校验 → 可选 embedding/模糊 → 澄清），然后用**冻结的 30 条 held-out** 重测 G1 与 G1-T（r1–r4 原写“独立 held-out”；**r5 据实修正：该 fixture 在 stage 1c 已可见并用于修规则，故不是独立盲测**，见 §17.3）。
 
 ### 2.2 In scope
 
@@ -100,7 +100,7 @@
 
 | 方案 | 内容 | 优点 | 缺点 | 结论 |
 | --- | --- | --- | --- | --- |
-| **A（推荐）评测层修复 + G1-T + 独立 held-out** | 只改评测脚本/fixture/文档；held-out 独立冻结重测；中文译名走查询时解析 | 不碰生产代码、可回退、可复现；同时回答"缺陷修完后泛化是多少"与"中文译名能否解析" | 结论仍是"替身执行器 + 替身解析器下"的数字；G1-T 引入模型不确定性 | **推荐** |
+| **A（推荐）评测层修复 + G1-T + held-out（r5 注：实际**非盲测**）** | 只改评测脚本/fixture/文档；held-out 冻结重测；中文译名走查询时解析 | 不碰生产代码、可回退、可复现；同时回答"缺陷修完后泛化是多少"与"中文译名能否解析" | 结论仍是"替身执行器 + 替身解析器下"的数字；G1-T 引入模型不确定性；**r5 实况：该 fixture 在 stage 1c 可见并用于修规则 → 只能算 post-fix regression（§17.3）** | **推荐** |
 | B 评测层修复 + 生产相似/推荐实现 | 把同导演/共享类型信号落进 `src/main` | 结论更接近生产 | 超出本任务与 #72 范围；需要新生产 issue、集成测试、契约一致性测试 | **不采纳**（另立 issue） |
 | C 只记录缺口、不修 | 报告里写"已知缺口 13 条"，不动代码 | 成本最低 | 8 条可修缺陷留着；held-out 无法回答"修完如何"；#72 无法推进 | **不采纳** |
 | D 先补中文别名数据再重测 | 引入外部/人工中文别名表 | Q21–Q23 可回收 | 未批准的数据来源 + 许可（`WU-9`）；会拖住 8 条**本来可修**的缺陷 | **不采纳**（与用户 C4=D 的"查询时解析"不同：D 方案依赖**外部数据**） |
@@ -527,6 +527,13 @@ python3 scripts/eval/tool_eval.py --variant G2 --cases queries --reuse-g0 .pi/ar
 | **`OPEN-C11`** | 解析成功率/错译率是否要**设门槛** | 主 agent/用户 | 🟡 待定 | 建议**不设**（仅披露），避免"用口径提分"；若设门槛需明确数值与分母 |
 
 > **§14 状态说明（r4，2026-11-19 回填 issue #74）**：`OPEN-C8` 已执行完毕——B1.5c 的 GitHub issue = **[#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)**（OPEN，milestone #3，无 labels），规范记录 = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`。其余状态的**数字/裁定一个未变**：`OPEN-C1`/`OPEN-C2`/`OPEN-C3`/`OPEN-C6`/`OPEN-C7`/`OPEN-C11` 仍为实施前的待复核/待确认项（在已发布的 #74 正文中以**单一推荐方案**陈述），`OPEN-C4`/`C5`/`C8`/`C9`/`C10` 为已裁定。**建 issue 不等于实施批准**：worker 未启动。
+>
+> **§14 状态说明（r5，2026-11-19 回填实施结果）**：实施**已经发生**（分支 `codex/b1-5c-tool-routing-fixes`，提交 `78f5740` + `734eef5`），评测**已全量跑完**且报告已生成；但**主门槛结果只能记为 provisional PASS**（held-out 在 stage 1c 可见并用于修规则 → 非盲测），详见 §17。因此：
+> - **`OPEN-C1`/`OPEN-C2`/`OPEN-C6`/`OPEN-C7` 已落地并实测**（多值 canonicalize+AND、`year` 去 `maximum` + `b1.5-tools/v3`、人名只“姓同+首字母一致”、别名独立文件 + `unsupported` 断言），验收证据见报告 §6/§8；其“待复核”标记不再阻塞实施，但**如需推翻仍需主 agent 裁定**。
+> - **`OPEN-C3`（澄清式成功）仍未落码** → Q57 类用例仍计任务失败（报告 §7.2）。
+> - **`OPEN-C11`（解析门槛）仍未定**：本轮仅披露（`parse_success 2/2`、`wrong_movie 0/2`，**n=2**），未设门槛。
+> - **新增待办 = blind holdout（B1.5d）**：未参与任何规则修复、独立标注、冻结后不得回看修规则；本轮**未做**。
+> - **#74 保持 OPEN**：不声称已满足全部 AC、不声称已泛化 ≥90%、不声称已交付。
 
 ---
 
@@ -561,7 +568,60 @@ python3 scripts/eval/tool_eval.py --variant G2 --cases queries --reuse-g0 .pi/ar
 | **r1** | 2026-11-19 | 初稿（🟡 待 oracle 审查 / 未批准）。基于 B1.5b 报告（G1 82.7% FAIL）+ scout SQL 实测；提出评测层修复、四项契约裁定、中文译名三选项（建议 B）、held-out 30 条、12 条 AC、10 条风险、9 项开放决策。中文译名建议"接受缺口"。 |
 | **r2** | 2026-11-19 | **按 oracle 5 P1 + 7 P2 与用户决策修订**：① 新增 **§4 C4=D 查询时解析**（五步流水线、别名/缓存来源边界、路由 vs 解析分离指标、成本/可复现/超时降级、与 §3 U1/`WU-9` 的关系）+ 新变体 `G1-T`；② 修 P1-1（新增 `--queries-path`/`--routing-path`，命令可执行）、P1-2（执行/判分数据流分离 + 哨兵断言）、P1-3（issue 用 "leaves #72 open"）、P1-4（**12/15 → 11/15** 并点名）、P1-5（人名归一禁止纯姓氏扩展 + Q17 5 vs 29 断言）；③ 修 P2-1（canonicalize 去重而非字面 AND）、P2-2（中文译名固定 2 条 + 含/不含 + Wilson CI）、P2-3（year 只去 `maximum`）、P2-4（held-out 加 1990s 3–5 条）、P2-5（`unsupported` 三断言）、P2-7（issue Non-goals 措辞）；④ 工期 **4–5.5 → 5.0–7.0 人日**；⑤ 新增 `OPEN-C10`（别名表来源）/`OPEN-C11`（解析门槛）与 3 条新风险（R-10…R-12）；⑥ 状态仍为 🟡 待 oracle 复核 / 未批准 / issue 未创建。**不改任何源码/fixture/报告/历史日志** |
 | **r3** | 2026-11-19 | **按 oracle 增量复核（`.pi/artifacts/oracle-b1-5c-delta.md`）的 B-1 与 C10 修订**：① **B-1**——`B15c-11`/§1.1/§2.2/§4.5/§11 统一为“**主门槛 = held-out `G1-T` 任务级 ≥90%（27/30 全分母）**；held-out `G1` = baseline（不含中文解析）；in-sample `G1` = 前后对照”，报告主表**同列 G1 / G1-T**，两者均给 **/30 与 /28 + Wilson CI**；② **C10**——§4.1/§4.4/§4.7/§5.5/§9/§14 改为“**`title-aliases.json` 冻结时为空**”，**删除“允许 `seed-in-sample`”候选**，不预置 Q21–Q23 的 3 条已知译名；③ 状态改为“oracle 条件已落实；待主 agent 批准实施 / 待建 issue / **未实施**”。**C4=D、C5、C8、C9 与 C1–C3、C6/C7 均保持不变**；**不改任何源码/fixture/报告/历史日志** |
+| **r5** | 2026-11-19 | **回填实施结果（provisional）**：① 文件头与元数据表状态改为 **🟡 评测已完成 = provisional / held-out 非盲测 / blind holdout（B1.5d）待做 / #74 保持 OPEN**；标题与 §2.1 删除“独立 held-out”口径（r1–r4 的“独立”已据实修正）；② 新增 **§17 实施结果回填**（实测数字、held-out 污染证据、计划-实现差异、未测项、下一步）；③ §14 新增 r5 状态说明（`OPEN-C1/C2/C6/C7` 已落地、`OPEN-C3`/`OPEN-C11` 未落、新增 B1.5d）；④ 文末“不声称”段改为只否认**泛化/交付/B-①/#72 关闭**。**不改任何源码/fixture/报告数字**（报告正文由主 agent 维护），**不声称**已泛化或已交付 |
 | **r4** | 2026-11-19 | **回填 GitHub issue #74（不改方案与验收口径）**：① 文件头与元数据表状态改为 **🟢 已批准（r3）/ 已建 [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74)/ 待实施**，`last_updated` 与“关联 GitHub issue”行回填 #74（OPEN、milestone #3、无 labels）；② §14 新增**状态说明**（`OPEN-C8` 已执行，#74 已建；其余 OPEN 项状态**未变**，建 issue ≠ 实施批准）；③ §15 “主 agent 状态”行同步；④ 文末“不声称”段改为只否认**实施/评测未发生**，#72 仍不声称已关闭。**规范记录已改名** = `docs/issues/issue-74-b1-5c-tool-routing-fixes.md`。**不改任何源码/fixture/报告/历史日志**，**不声称已开始或已完成实施** |
+
+---
+
+## 17. 实施结果回填（r5，2026-11-19，**provisional 评测**）
+
+> 本节记录**实际执行结果**与**计划-实现差异**。数字来源 = `docs/ai/reports/b1-5c-tool-routing-fixes.md`（实测完成）；本节**不改** §10 的验收口径、门槛（≥27/30）与分母（30）。
+
+### 17.1 一句话状态
+
+**评测已完成 = provisional**：主门槛 held-out `G1-T` **30/30 = 100%**（≥27/30 → **provisional PASS**），但 **held-out 在 stage 1c 已可见并被用于修路由词/消歧 → 30/30 是 post-fix regression on a seen fixture，不是独立盲测、不是泛化估计**。**blind holdout（B1.5d）未做**；**[issue #74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 保持 OPEN**。
+
+### 17.2 实测数字（唯一口径 = 报告 §1.1）
+
+| 变体 / 样本 | 结果 | Wilson 95% | 说明 |
+| --- | --- | --- | --- |
+| **held-out `G1-T`（冷跑）** | **30/30 = 100%** | [88.6%, 100.0%] | 主门槛 → **provisional PASS**；仅 H01/H16 调模型（`model_calls = 2`） |
+| held-out `G1-T`（热跑 / 回放） | 30/30 = 100% | 同上 | `model_calls = 0`；缓存不改变结论 |
+| **held-out `G1`（baseline）** | **28/30 = 93.3%** | [78.7%, 98.2%] | 不含中文解析，2 条中文用例必败；**不是门槛对象**，且受同一污染影响 |
+| held-out `G0` | **14/30 = 46.7%** | [30.2%, 63.9%] | 纯 LLM 路由不可交付（D-9） |
+| held-out `G2`（回放 G0） | **14/30 = 46.7%** | [30.2%, 63.9%] | 无改善（净 0 例） |
+| in-sample `G1` | **67/75 = 89.3%**（修复前 62/75 = 82.7%） | [80.3%, 94.5%] | **非门槛**；路由层 73/75 = 97.3% |
+| `G3` / MCP | **未测 / 未实现** | — | 与 §2.3 一致 |
+
+- 解析：`triggered 2 / parse_success 2/2 / wrong_movie 0/2`（**n=2**，非估计），冷跑 p50 156.1 ms / p95 488.3 ms（**模型已预热，冷启动延迟仍未测**）。
+- 契约：`b1.5-tools/v3`、`schema_hash 712c0e34…474a`；held-out/别名文件 sha256 本次复核未变（queries `d471c57a…abe4`、routing `5608dd4c…4aba`、aliases ×3 同报告 §3）。
+
+### 17.3 held-out 污染（必须与任何数字同时出现）
+
+- held-out 30 条（`H01`–`H30`）在 **stage 1c** 中可见，并**被用于改查询文本/补通用 pattern**：**`H18` 的查询文本被从“悬疑片”改为“惊悚片”**（提交 `734eef5` 的 `docs/ai/golden/queries-heldout.b1-5c.json` diff 可核：routing 中绑定的旧 sha256 `9933b0cc…535f` → 新 `d471c57a…abe4`，即 **fixture 在全量运行前被编辑过**）；`H06/H12/H18/H24/H28/H16` 的 pattern / 年份消歧是在**看过这些 held-out 用例之后**补的。
+- ⇒ §8.5 的“一次性冻结纪律 / 跑完不得按失败回调规则”**实际未被完全遵守**：记录在案的冻结哈希是**改词之后**的版本，但**规则是在该 fixture 可见时定的**。故只能称 **post-fix regression**。
+- ⇒ 要声称“held-out ≥90% / 泛化 ≥90%”，必须另建 **blind holdout（B1.5d）**：未参与任何规则修复、独立标注、冻结后不得回看修规则；本轮**未做**。
+
+### 17.4 计划与实现的差异（逐项）
+
+| 计划项 | 实际 | 性质 |
+| --- | --- | --- |
+| 主门槛 = held-out `G1-T` ≥27/30 | 30/30，但 fixture 已被用于修规则 | ⚠️ **口径降级为 provisional**（纪律缺口，非阈值/分母调整） |
+| §8.5 跑前冻结、不得按失败回调 | H18 文本在全量跑前被改；pattern/年份消歧在看过 held-out 后补 | ❌ **纪律未遵守**（已如实记录，未回滚） |
+| `B15c-1` 多值 canonicalize + AND | 已实现并实测（Q11、Q19 修复） | ✅ |
+| `B15c-3` 执行流不读标注 | 7 份 run record `annotation_guard = true` | ✅ |
+| `B15c-5` 拆分 `Musical`/`Music` | 已按契约拆分 → **in-sample Q48 回归**（冻结标注把 “musicals” 归入 `Music`，与拆分决策矛盾） | ⚠️ **新增已知回归，待主 agent 裁定（报告 §5.4）** |
+| `OPEN-C3` 澄清式成功 | **未落码** → Q57 类仍计失败 | ⚠️ 未做（未越界改判分） |
+| G3 / MCP | 未测 / 未实现 | ✅ 与 non-goal 一致 |
+| in-sample `G1-T` | **未跑**（仅 `G1` 前后对照） | ⚠️ 未做（非门槛所需） |
+
+### 17.5 未测 / 待办
+
+1. **blind holdout（B1.5d）**：唯一能把“泛化 ≥90%”从 provisional 变成可声称结论的路径；本轮**未做**。
+2. `G3`（未测）、MCP（未实现）、embedding 步 4（关闭）、**冷启动延迟**（`OPEN-b2` 仍未测）。
+3. `OPEN-C3`（`allows_clarification`）与 `OPEN-C11`（解析门槛）仍未裁定。
+4. **Q48 `Musical`/`Music` 矛盾**、**无文本约束的相似查询**（Q34/Q53/Q54）两类风险 held-out **覆盖为 0**，需新版本 held-out 或单独裁定。
+5. **PR 未创建**：分支 `codex/b1-5c-tool-routing-fixes` 尚未开 PR，`#74` 保持 OPEN。
 
 ---
 
@@ -601,5 +661,5 @@ python3 scripts/eval/tool_eval.py --variant G2 --cases queries --reuse-g0 .pi/ar
 
 ---
 
-> 本文件**不声称**：主 agent 已批准**实施**、worker 已启动、任何评测/测试已运行、`G1-T` 已实现、中文译名能力已可用、生产 title resolver 或相似/推荐已实现、B-① 已交付、#72 已关闭。
-> 已确认的事实仅限：oracle 增量复核（`.pi/artifacts/oracle-b1-5c-delta.md`）判定 r2 的 5 P1 + 7 P2 **全部关闭**并给出 B-1（主门槛变体）与 C10（别名表来源）两条阻塞；主 agent 已据此裁定 **G1-T 为主门槛 / 别名表为空表**（r3）；**GitHub issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 已于 2026-11-19 创建（OPEN、milestone #3、无 labels）且保持 OPEN**（状态以远端为准，本文件不声称其已关闭）。
+> 本文件**不声称**：held-out `G1-T` 的 30/30 是**独立盲测或泛化估计**（它是 post-fix regression on a seen fixture）、**泛化 ≥90% 已达成**、B-① 已交付或已开始、`G3`/MCP 已做、`OPEN-C3` 已落码、中文解析已达某成功率（n=2）、#72 已关闭。
+> 已确认的事实仅限：oracle 增量复核（`.pi/artifacts/oracle-b1-5c-delta.md`）判定 r2 的 5 P1 + 7 P2 **全部关闭**并给出 B-1（主门槛变体）与 C10（别名表来源）两条阻塞；主 agent 已据此裁定 **G1-T 为主门槛 / 别名表为空表**（r3）；**实施已发生**（分支 `codex/b1-5c-tool-routing-fixes`：`78f5740` 加 held-out fixture + 契约 v3、`734eef5` 评测层修复 + `G1-T`），全量跑完并生成报告；**但 held-out 在 stage 1c 可见且被用于修规则 → 主门槛只能记 provisional PASS**（§17.3）；**blind holdout（B1.5d）未做**；**GitHub issue [#74](https://github.com/PNZ-z/ai-powered-Fabflix/issues/74) 保持 OPEN**（状态以远端为准）。
