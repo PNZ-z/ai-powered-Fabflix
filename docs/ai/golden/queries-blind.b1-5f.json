@@ -1,0 +1,679 @@
+{
+  "$comment": "B1.5f blind holdout (30, IDs C01-C30). Authored after the B1.5e fixes were merged (main @ 7915fcd) in a session that did not write them, and frozen before the first tool_eval.py run: no variant has ever been executed against this file (plan §2 BF-1..BF-6). Eight pre-declared probe groups (P-1..P-8) cover 10 of the 30 cases and stay inside the /30 denominator; P-4 is declared expected-to-fail (the Q12 shape) and still consumes one of the three tolerated failures. Probe/known_gap/expected_failure are checker-local fields: this file is not validated by docs/ai/golden-set.schema.json (same as the B1.5d blind fixture).",
+  "blind_version": "b1-5f-blind/v1",
+  "created": "2026-11-20",
+  "snapshot": {
+    "source": "fabflix-mysql:3307/moviedb",
+    "snapshot_date": "2026-11-09",
+    "movies": 21087,
+    "year_min": 196,
+    "year_max": 2024,
+    "genre_rows": 61,
+    "genre_distinct_names": 56,
+    "movies_without_rating": 13082,
+    "ratings_covered_from_year": 2001,
+    "db_snapshot_hash": "8b16c047de5c885a2d90309797c51c0c506311c074927a2d5b3fc5ad162ff925"
+  },
+  "quota": {
+    "tracks": {
+      "zh_zh": 10,
+      "zh_en": 10,
+      "en_en": 10
+    },
+    "intents": {
+      "search_by_title": 5,
+      "filter_catalog": 9,
+      "similar_movies": 7,
+      "recommend_by_preference": 3,
+      "clarify_or_refuse": 6
+    },
+    "clarify_or_refuse_split": {
+      "refusal": 4,
+      "clarification": 2
+    },
+    "multi_slot": 4,
+    "cjk_title": 2,
+    "note": "Intent figures include the four multi_slot cases (they keep their filter_catalog / similar_movies intent and are counted again in 'multi_slot'); 26 base cases + 4 multi_slot = 30. multi_slot marks the two four-slot filters (C03/C14) and the two three-slot similar cases (C05/C17); the other three-slot filter cases stay unmarked, as in B1.5c/B1.5d. Probe inventory: P-1 C22, P-2 C25, P-3 C04, P-4 C18 (expected failure), P-5 C07/C28, P-6 C16, P-7 C23, P-8 C01/C11. Three cases (C05/C06/C09) sit entirely in the 1990s and none constrains min_rating; no case is in the 2020s."
+  },
+  "queries": [
+    {
+      "id": "C01",
+      "track": "zh_zh",
+      "query": "我想看《飞越疯人院》，帮我找一下",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "MF5"
+      ],
+      "labeling_note": "P-8 探针（新 CJK 译名 1/2）：中文片名「飞越疯人院」不在 title-aliases.json（该表仍为 entries: []），也不在既有 5 个中文译名里。目录英文原名为 One Flew over the Cuckoo's Nest（MF5，1975，Forman，Drama，无评分）。G1-T 必须先用 LLM 候选 + 目录校验把中文名解析成该英文原名，再把解析结果送进 search_movies_by_title.query；G1 无法解析，此条在 G1 下必然失败。该片同时是无评分（rating IS NULL）的代表样本。",
+      "snapshot_row_refs": [
+        "predicate: title = 'One Flew over the Cuckoo\\'s Nest' | rows=1 | ids=MF5",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_title": true,
+      "probe": "P-8"
+    },
+    {
+      "id": "C02",
+      "track": "zh_zh",
+      "query": "1966 到 1968 年的惊悚片有哪些",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "AMs50",
+        "ARG2",
+        "FT8",
+        "H81",
+        "JaS38",
+        "KFu10",
+        "MiW12",
+        "NJ7",
+        "NoB3",
+        "PlA120",
+        "PlB2",
+        "TYg40"
+      ],
+      "labeling_note": "类型 + 显式年份区间双约束；可接受集合 = 1966-1968（含两端）惊悚片全集，共 12 部，不是排序子集。中文类型词「惊悚」经 genre-aliases.json 归一到 enum 值 Thriller；窗口端点包含性由本条与 C24 的单窗口/两年窗口共同覆盖。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1966 AND year <= 1968 AND genres ⊇ {Thriller} | rows=12 | ids=AMs50,ARG2,FT8,H81,JaS38,KFu10,MiW12,NJ7,NoB3,PlA120,PlB2,TYg40",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C03",
+      "track": "zh_zh",
+      "query": "2006 到 2007 年评分 7 分以上的奇幻片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0287075",
+        "tt0416449",
+        "tt0443455",
+        "tt0445922",
+        "tt0445960",
+        "tt0456144",
+        "tt0486655"
+      ],
+      "labeling_note": "四槽位筛选（类型 + 年份区间 + 最低评分，cross-mark multi_slot）：奇幻片 2006-2007 且评分 ≥ 7 共 7 部全集。评分只覆盖 2001+，所以本窗口可用；评分按数值比较（不是字符串）。「评分 7 分以上」必须落成 min_rating = 7（含等号），实现成 > 7 会漏掉恰好 7.0 的行。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2006 AND year <= 2007 AND genres ⊇ {Fantasy} AND rating >= 7 | rows=7 | ids=tt0287075,tt0416449,tt0443455,tt0445922,tt0445960,tt0456144,tt0486655",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "multi_slot": true
+    },
+    {
+      "id": "C04",
+      "track": "zh_zh",
+      "query": "想看类似 Gozu 那样的电影",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "tt0301167",
+        "tt0303990",
+        "tt0305240",
+        "tt0316599",
+        "tt0366292",
+        "tt0377079"
+      ],
+      "labeling_note": "P-3 探针（③b2 边界的 same director 约定）：查询文本只说「类似 Gozu」，没有任何类型/年代/导演约束（routing 的 result_constraints = {}）。种子 Gozu（tt0361668，2003，Crime/Drama/Horror）有 3 个 canonical 类型 + 已知导演 Takashi Miike；③b2 的派生收窄只发生在「种子恰好 2 个 canonical 类型且文本没有导演」的情况下，因此本条不派生。可接受集合 = 该导演的其他目录行全集（predicate: director = 'Takashi Miike' AND id NOT IN (tt0361668) | rows=6），convention = same director；命中靠 _similar 的 same_director 优先排序（计划 §3.3），因此 top-5 ⊆ 这 6 行。",
+      "snapshot_row_refs": [
+        "predicate: director = 'Takashi Miike' AND id NOT IN (tt0361668) | rows=6 | ids=tt0301167,tt0303990,tt0305240,tt0316599,tt0366292,tt0377079",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-3"
+    },
+    {
+      "id": "C05",
+      "track": "zh_zh",
+      "query": "喜欢 Jumanji 这种奇幻片，1993 到 1995 年的",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AMr10",
+        "ChG10",
+        "CP3",
+        "GdT10",
+        "JoS18",
+        "RHo27",
+        "SBa22",
+        "WiD20"
+      ],
+      "labeling_note": "多槽位相似（种子 + 类型 + 年份窗口，cross-mark multi_slot）：约定 = shared genre × window。种子 Jumanji（JJo5，1995，Fantasy）；文本显式声明奇幻 + 1993-1995，因此结果约束是「genres ⊇ {Fantasy} AND 1993 ≤ year ≤ 1995」而不是派生。可接受集合 = 该窗口 9 部去掉种子（predicate: year >= 1993 AND year <= 1995 AND genres ⊇ {Fantasy} AND id NOT IN (JJo5) | rows=8）。1990 年代切片 1/3，且不约束 min_rating（评分只覆盖 2001+）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1993 AND year <= 1995 AND genres ⊇ {Fantasy} AND id NOT IN (JJo5) | rows=8 | ids=AMr10,ChG10,CP3,GdT10,JoS18,RHo27,SBa22,WiD20",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "multi_slot": true
+    },
+    {
+      "id": "C06",
+      "track": "zh_zh",
+      "query": "推荐几部 1990 年代的喜剧剧情片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "Ady3",
+        "FOz20",
+        "JKr10",
+        "JoF5",
+        "JoM10",
+        "KvR10",
+        "Opa2",
+        "PM20",
+        "RGl10",
+        "SLJ5",
+        "StF12",
+        "StF14",
+        "StF17",
+        "SwS10",
+        "TDe10",
+        "WhS1",
+        "xPr10"
+      ],
+      "labeling_note": "推荐用例：两个偏好类型（喜剧 ∧ 剧情）+ 整十年区间；可接受集合 = 1990-1999 同时具备 Comedy 与 Drama 的 17 部全集。多值 genres 是 AND 语义（每个 canonical key 记一次匹配，见 genre-aliases.json 的 semantics 段），实现成 OR 会把集合放大到上百部。1990 年代切片 2/3，不约束 min_rating（评分只覆盖 2001+）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1990 AND year <= 1999 AND genres ⊇ {Comedy, Drama} | rows=17 | ids=Ady3,FOz20,JKr10,JoF5,JoM10,KvR10,Opa2,PM20,RGl10,SLJ5,StF12,StF14,StF17,SwS10,TDe10,WhS1,xPr10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C07",
+      "track": "zh_zh",
+      "query": "Jurassic Park 当年的全球票房是多少",
+      "lang": "zh",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "P-5 探针（越界请求 1/2，中文票房）：目录只有片名/年份/导演/类型/主演/评分，没有票房数据。正确行为 = 不调用任何工具、直接拒绝并说明覆盖范围。此条查询里没有任何《…》中文片名，因此冷跑不会多出第 3 次模型调用（预算是 2 次）。",
+      "snapshot_row_refs": [
+        "predicate: no catalog lookup - box office gross is not a catalog field (refuse, no tool call) | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true,
+      "probe": "P-5"
+    },
+    {
+      "id": "C08",
+      "track": "zh_zh",
+      "query": "帮我找那部叫 The Winslow Boy 的电影",
+      "lang": "zh",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [
+        "AA26",
+        "DMa21"
+      ],
+      "labeling_note": "澄清用例：快照里 title = 'The Winslow Boy' 有 2 行（1948 Asquith AA26 / 1999 Mamet DMa21），查询没有任何年份/导演/主演线索。正确行为 = 列出这两行候选（片名 + 年份 + 导演）+ 只问一个问题；allows_clarification = true 表示这种澄清式回答算严格任务成功，但主口径仍要求可接受集合命中，两条都计入 /30。",
+      "snapshot_row_refs": [
+        "predicate: title = 'The Winslow Boy' | rows=2 | ids=AA26,DMa21",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "allows_clarification": true
+    },
+    {
+      "id": "C09",
+      "track": "zh_zh",
+      "query": "1993 到 1995 年的西部片有哪些",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "GCh20",
+        "GPC29",
+        "GvS8",
+        "JJm9",
+        "JKp35",
+        "JZu15",
+        "LaK18",
+        "MGw5",
+        "MRP14",
+        "RD37",
+        "SiW10",
+        "SSR15",
+        "WHl32"
+      ],
+      "labeling_note": "1990 年代切片 3/3：类型 + 两年窗口 → 13 部全集。90 年代有 2,370 部真实数据，本条落在 1993-1995 的西部片切片上，不约束 min_rating（评分只覆盖 2001+，1990 年代片大多无评分行）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1993 AND year <= 1995 AND genres ⊇ {Western} | rows=13 | ids=GCh20,GPC29,GvS8,JJm9,JKp35,JZu15,LaK18,MGw5,MRP14,RD37,SiW10,SSR15,WHl32",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C10",
+      "track": "zh_zh",
+      "query": "帮我找 1971 年上映的 The Hospital",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "ArH210"
+      ],
+      "labeling_note": "英文片名 + 年份线索的中文检索：The Hospital（ArH210，1971，Hiller，Comedy/Horror）。年份写进 search_movies_by_title.year 作为消歧（v3 契约里 year 只做形状校验，1971 在 196-2024 覆盖内）。英文片名不需要翻译步骤，G1 与 G1-T 的 model_calls 都必须是 0。",
+      "snapshot_row_refs": [
+        "predicate: title = 'The Hospital' AND year = 1971 | rows=1 | ids=ArH210",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C11",
+      "track": "zh_en",
+      "query": "《公民凯恩》是哪一年的电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "OW1"
+      ],
+      "labeling_note": "P-8 探针（新 CJK 译名 2/2）：中文片名「公民凯恩」不在 title-aliases.json（entries: []），也不在既有 5 个中文译名里。目录英文原名 Citizen Kane（OW1，1940，Welles，Drama，无评分）。G1-T 必须先解析再检索；G1 必然失败。本条与 C01 是本批仅有的两条 cjk_title，冷跑模型调用预算 = 2 依赖这一点。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Citizen Kane' | rows=1 | ids=OW1",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "cjk_title": true,
+      "probe": "P-8"
+    },
+    {
+      "id": "C12",
+      "track": "zh_en",
+      "query": "查一下 Western Union 这部电影",
+      "lang": "zh",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "FL23"
+      ],
+      "labeling_note": "英文精确片名检索（FL23，1941，F. Lang，Western）。片名里含类型词 Western，但本条是 search_by_title，标题命中与类型槽无关：不得因为片名里的类型词去调用 filter_movies，也不得把 Western 当结果约束。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Western Union' | rows=1 | ids=FL23",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C13",
+      "track": "zh_en",
+      "query": "1970 到 1972 年的动画片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "CAN10",
+        "FrB1",
+        "FrB3",
+        "RBa1",
+        "RWl10",
+        "WRe25"
+      ],
+      "labeling_note": "类型 + 两年窗口：Animation 1970-1972 共 6 部全集。中文词「动画片」按 alias 表归一到 enum 值 Animation（不是 Animated/卡通）。小池用例用来暴露「截断发生在收窄之前」的实现缺陷。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1970 AND year <= 1972 AND genres ⊇ {Animation} | rows=6 | ids=CAN10,FrB1,FrB3,RBa1,RWl10,WRe25",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C14",
+      "track": "zh_en",
+      "query": "2007 到 2008 年评分 7 分以上的纪录片",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "tt0430916",
+        "tt0453549",
+        "tt0455404",
+        "tt0462490",
+        "tt0469185",
+        "tt0479713",
+        "tt0480673",
+        "tt0481580",
+        "tt0488282",
+        "tt0488508",
+        "tt0496253",
+        "tt0496403",
+        "tt0498075"
+      ],
+      "labeling_note": "四槽位筛选（类型 + 年份区间 + 最低评分，cross-mark multi_slot）：纪录片 2007-2008 且评分 ≥ 7 共 13 部全集。评分只覆盖 2001+，本窗口内每条都有评分行，因此 min_rating 可满足。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2007 AND year <= 2008 AND genres ⊇ {Documentary} AND rating >= 7 | rows=13 | ids=tt0430916,tt0453549,tt0455404,tt0462490,tt0469185,tt0479713,tt0480673,tt0481580,tt0488282,tt0488508,tt0496253,tt0496403,tt0498075",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "multi_slot": true
+    },
+    {
+      "id": "C15",
+      "track": "zh_en",
+      "query": "1980 到 1982 年的黑色电影",
+      "lang": "zh",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "ALi10",
+        "KrK20",
+        "MLH10",
+        "MNe12",
+        "PBa6",
+        "RS3"
+      ],
+      "labeling_note": "类型 + 两年窗口：Noir 1980-1982 共 6 部全集。中文词「黑色电影」经 alias 表（film noir）归一到 enum 值 Noir；Noir 在 B1.5b 的冻结集里只以英文 \"film noir\" 出现过，本条的 zh→enum 映射是新增覆盖。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1982 AND genres ⊇ {Noir} | rows=6 | ids=ALi10,KrK20,MLH10,MNe12,PBa6,RS3",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C16",
+      "track": "zh_en",
+      "query": "找一些像 War Games 那样的冒险片，1983 到 1984 年的",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AMD16",
+        "BGH26",
+        "DLo13",
+        "HuH15",
+        "IDk6",
+        "IG2",
+        "IrK15",
+        "JKw5",
+        "JSz10",
+        "JTo3",
+        "RFr19",
+        "RoD10",
+        "RZe3"
+      ],
+      "labeling_note": "P-6 探针（片名含类型词，约定 = shared genre × window）：种子片名 War Games（IBa12，1983，Adventure）本身带类型词 War，但文本显式声明的类型是「冒险片」，类型只取显式声明的那一个（F-2 掩码后），片名里的 War 不得成为约束。可接受集合 = Adventure ∧ 1983-1984 的 14 部去掉种子（predicate: year >= 1983 AND year <= 1984 AND genres ⊇ {Adventure} AND id NOT IN (IBa12) | rows=13）。若掩码失效把 War 也加进类型约束，集合会收缩成 Adventure ∧ War，与这里的 13 行不符。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1983 AND year <= 1984 AND genres ⊇ {Adventure} AND id NOT IN (IBa12) | rows=13 | ids=AMD16,BGH26,DLo13,HuH15,IDk6,IG2,IrK15,JKw5,JSz10,JTo3,RFr19,RoD10,RZe3",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-6"
+    },
+    {
+      "id": "C17",
+      "track": "zh_en",
+      "query": "喜欢 Willow，想看 1986 到 1988 年的奇幻片",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "DLy8",
+        "GaM10",
+        "GeM17",
+        "GeM2",
+        "JoD20",
+        "NCo10",
+        "NCo11",
+        "PRz10",
+        "TGi6",
+        "WiW20"
+      ],
+      "labeling_note": "多槽位相似（种子 + 类型 + 年份窗口，cross-mark multi_slot），约定 = shared genre × window：种子 Willow（RHo15，1987，Fantasy）；可接受集合 = Fantasy ∧ 1986-1988 的 11 部去掉种子（predicate: year >= 1986 AND year <= 1988 AND genres ⊇ {Fantasy} AND id NOT IN (RHo15) | rows=10）。文本显式给出类型与窗口，不依赖 ③b2 的派生。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1986 AND year <= 1988 AND genres ⊇ {Fantasy} AND id NOT IN (RHo15) | rows=10 | ids=DLy8,GaM10,GeM17,GeM2,JoD20,NCo10,NCo11,PRz10,TGi6,WiW20",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "multi_slot": true
+    },
+    {
+      "id": "C18",
+      "track": "zh_en",
+      "query": "跟 That Hamilton Woman 相似的电影",
+      "lang": "zh",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AK1",
+        "AK19",
+        "AK26",
+        "AK40",
+        "AK45",
+        "AK49",
+        "AK50",
+        "AK57",
+        "AK58",
+        "AK59",
+        "AK78",
+        "AK96"
+      ],
+      "labeling_note": "P-4 探针（预声明预期失败，known_gap = R-2/Q12-unsat）：与 Q12 同形 —— 种子 That Hamilton Woman（AK90，1941，Biography/Romance）恰好 2 个 canonical 类型，文本零约束（result_constraints = {}），而标注约定是 same director（导演 A.Korda 的其他目录行全集，predicate: director = 'A.Korda' AND id NOT IN (AK90) | rows=12）。③b2 会按「种子 2 类型 × 整十年」派生收窄，而该导演的行绝大多数落在 1914-1936 与 1947 年、且不共享这两个类型，派生结果里几乎不含导演行，因此纯文本执行器无法满足本条 —— 这是 Q12 例外（owner 已批准的唯一净回归）的复现，不是新缺陷；失败必须归因 R-2/Q12-unsat，不得据此改规则。",
+      "snapshot_row_refs": [
+        "predicate: director = 'A.Korda' AND id NOT IN (AK90) | rows=12 | ids=AK1,AK19,AK26,AK40,AK45,AK49,AK50,AK57,AK58,AK59,AK78,AK96",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-4",
+      "known_gap": "R-2/Q12-unsat",
+      "expected_failure": true
+    },
+    {
+      "id": "C19",
+      "track": "zh_en",
+      "query": "推荐 2007 到 2008 年评分 6.5 分以上的历史片",
+      "lang": "zh",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "tt0414055",
+        "tt0443706",
+        "tt0446750",
+        "tt0459293",
+        "tt0469494",
+        "tt0471359"
+      ],
+      "labeling_note": "推荐用例：偏好类型 + 年份区间 + 最低评分 → History ∧ 2007-2008 ∧ rating ≥ 6.5 共 6 部全集。评分只覆盖 2001+，本窗口内可行；「6.5 分以上」必须落成 min_rating = 6.5（含等号）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 2007 AND year <= 2008 AND genres ⊇ {History} AND rating >= 6.5 | rows=6 | ids=tt0414055,tt0443706,tt0446750,tt0459293,tt0469494,tt0471359",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C20",
+      "track": "zh_en",
+      "query": "这些电影在 Netflix 上可以在线看吗",
+      "lang": "zh",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "越界请求（在线播放可用性）：目录没有流媒体/版权/可用平台字段，必须不调用任何工具就拒绝，不得编造平台信息。与片名字典无关，所以本条不含任何《…》片名。",
+      "snapshot_row_refs": [
+        "predicate: no catalog lookup - streaming availability is not a catalog field (refuse, no tool call) | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true
+    },
+    {
+      "id": "C21",
+      "track": "en_en",
+      "query": "Can you find the movie Star Wars?",
+      "lang": "en",
+      "intent": "search_by_title",
+      "acceptable_movie_ids": [
+        "GgL3"
+      ],
+      "labeling_note": "英文精确片名检索（GgL3，1977，G.Lucas，Action/Adventure/Sci-Fi）。片名是完整标题而不是前缀，因此 exact 命中只有 1 行；实现成 prefix/substring 也不会多出别的行（目录里没有 Star Wars 续集）。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Star Wars' | rows=1 | ids=GgL3",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C22",
+      "track": "en_en",
+      "query": "musicals from 1980 to 1982",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "BE26",
+        "CSr8",
+        "DPt23",
+        "FJS35",
+        "HbR17",
+        "HJS10",
+        "JqD22",
+        "JuT5",
+        "MLe10",
+        "PaB10",
+        "RFM12",
+        "RGr10",
+        "RMY15"
+      ],
+      "labeling_note": "P-1 探针（R-1 的 union 口径，known_gap = R-1）：查询含复数形式 musicals，genre-aliases.json 把 musicals → Musical，而 Music 与 Musical 在 b1-5c-aliases/v2 里是同一个 canonical group（R-1 是召回扩大，不是等价替换）。因此可接受集合 = 1980-1982 窗口的 union（Music 12 行 ∪ Musical 1 行 = 13 行，其中 RMY15 One Trick Pony 1980 只在 Musical 口径里）。两种单口径读数一并记录：{1980-1982, Music} = 12 行、{1980-1982, Musical} = 1 行；全库 Music = 619 行 / Musical = 139 行。窗口说明：本探针原计划用 1948-1950（union 25 行），但该窗口的 24 个 Music id 与 B1.5d 已计分用例 B22 的 acceptable 集合逐一相同，违反「与 135 条计分基线逐 id 不重叠」的排除口径；主 agent 批准改为 1980-1982（union 13 行、与基线零重叠），union 仍严格大于 Music 单口径，判别力不变。只按 B1.5d 的「24 行 Music」口径标注会误判正确行为。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1982 AND genres ∈ {Music, Musical} (union 口径) | rows=13 | ids=BE26,CSr8,DPt23,FJS35,HbR17,HJS10,JqD22,JuT5,MLe10,PaB10,RFM12,RGr10,RMY15",
+        "predicate: year >= 1980 AND year <= 1982 AND genres ⊇ {Music} | rows=12 | ids=BE26,CSr8,DPt23,FJS35,HbR17,HJS10,JqD22,JuT5,MLe10,PaB10,RFM12,RGr10",
+        "predicate: year >= 1980 AND year <= 1982 AND genres ⊇ {Musical} | rows=1 | ids=RMY15",
+        "catalog-wide: 619 rows for genres ⊇ {Music}, 139 rows for genres ⊇ {Musical} (R-1 是召回扩大，两种解释并列记录)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-1",
+      "known_gap": "R-1"
+    },
+    {
+      "id": "C23",
+      "track": "en_en",
+      "query": "documentaries from 1974 to 1976",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "ADx25",
+        "BaK1",
+        "BSc7",
+        "CAm12",
+        "EdA10",
+        "GeB3",
+        "RvP6"
+      ],
+      "labeling_note": "P-7 探针（复数类型词 filter）：查询用复数 documentaries，alias 表里 documentaries 是唯一新增的复数词形 → Documentary（单复数必须归一到同一个 enum 值）。可接受集合 = Documentary ∧ 1974-1976 的 7 部全集。若复数词不归一，这条会变成空结果或 INVALID_ARGUMENT。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1974 AND year <= 1976 AND genres ⊇ {Documentary} | rows=7 | ids=ADx25,BaK1,BSc7,CAm12,EdA10,GeB3,RvP6",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-7"
+    },
+    {
+      "id": "C24",
+      "track": "en_en",
+      "query": "horror movies from 1950 to 1952",
+      "lang": "en",
+      "intent": "filter_catalog",
+      "acceptable_movie_ids": [
+        "CSi6",
+        "HLF10",
+        "JN16",
+        "LBu1",
+        "SNe8"
+      ],
+      "labeling_note": "类型 + 两年窗口：Horror 1950-1952 共 5 部全集（恰好等于默认 limit，因此 top-5 必须等于全集）。1950 年代切片，用来暴露「小池被截断/被排序改写」的实现缺陷。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1950 AND year <= 1952 AND genres ⊇ {Horror} | rows=5 | ids=CSi6,HLF10,JN16,LBu1,SNe8",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C25",
+      "track": "en_en",
+      "query": "I liked Star 80 - can you find something similar?",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "CBe10",
+        "CoF10",
+        "MkR10",
+        "MN8",
+        "MR30",
+        "PLf10",
+        "PlT50",
+        "RA10",
+        "TCl10"
+      ],
+      "labeling_note": "P-2 探针（R-2 派生收窄，known_gap = R-2，约定 = shared genre × window，window = 种子的整十年 1980-1989）：查询文本只说「something similar」，没有任何类型/年代约束。种子 Star 80（BF9，1983）恰好 2 个 canonical 类型 (Biography, Drama)，因此 ③b2 会派生「种子的全部类型 × 整十年」。可接受集合 = Biography ∧ Drama ∧ 1980-1989 的 10 部去掉种子（predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Biography, Drama} AND id NOT IN (BF9) | rows=9）。种子是英文片名，冷跑不会新增模型调用。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1980 AND year <= 1989 AND genres ⊇ {Biography, Drama} AND id NOT IN (BF9) | rows=9 | ids=CBe10,CoF10,MkR10,MN8,MR30,PLf10,PlT50,RA10,TCl10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "probe": "P-2",
+      "known_gap": "R-2"
+    },
+    {
+      "id": "C26",
+      "track": "en_en",
+      "query": "movies like The Searchers - westerns from 1955 to 1957",
+      "lang": "en",
+      "intent": "similar_movies",
+      "acceptable_movie_ids": [
+        "AnM28",
+        "BBo27",
+        "DeD60",
+        "DeD61",
+        "DeD62",
+        "DeD83",
+        "GSt18",
+        "ISt24",
+        "KuN49",
+        "KV61",
+        "RMl1",
+        "Z5630"
+      ],
+      "labeling_note": "相似用例，约定 = shared genre × window：种子 The Searchers（IF112，1956，Western，J.Ford）；文本显式声明西部片 + 1955-1957，可接受集合 = Western ∧ 1955-1957 的 13 部去掉种子（predicate: year >= 1955 AND year <= 1957 AND genres ⊇ {Western} AND id NOT IN (IF112) | rows=12）。1950 年代切片，覆盖 B1.5b 只用过整十年窗口的空白（显式两年窗口）。",
+      "snapshot_row_refs": [
+        "predicate: year >= 1955 AND year <= 1957 AND genres ⊇ {Western} AND id NOT IN (IF112) | rows=12 | ids=AnM28,BBo27,DeD60,DeD61,DeD62,DeD83,GSt18,ISt24,KuN49,KV61,RMl1,Z5630",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C27",
+      "track": "en_en",
+      "query": "recommend some films by Pakula",
+      "lang": "en",
+      "intent": "recommend_by_preference",
+      "acceptable_movie_ids": [
+        "AJP1",
+        "AJP15",
+        "AJP2",
+        "AJP25",
+        "AJP29",
+        "AJP3",
+        "AJP5",
+        "AJP6",
+        "AJP7"
+      ],
+      "labeling_note": "推荐用例（导演单槽）：目录里 director 字符串 'Pakula' 名下 9 部（1971-1997），可接受集合 = 全集。按 person-normalization.json，裸姓不得扩展成任意同姓：这里 'Pakula' 就是库内存储字符串本身，不做姓氏扩展，也不合并成其他别名。",
+      "snapshot_row_refs": [
+        "predicate: director = 'Pakula' | rows=9 | ids=AJP1,AJP15,AJP2,AJP25,AJP29,AJP3,AJP5,AJP6,AJP7",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ]
+    },
+    {
+      "id": "C28",
+      "track": "en_en",
+      "query": "How much did Jaws earn at the box office?",
+      "lang": "en",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "P-5 探针（越界请求 2/2，英文票房）：目录没有票房/收入字段，必须不调用任何工具就拒绝并说明覆盖范围。查询里没有 CJK 字符，也没有《…》片名，冷跑不会多出模型调用。",
+      "snapshot_row_refs": [
+        "predicate: no catalog lookup - box office gross is not a catalog field (refuse, no tool call) | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true,
+      "probe": "P-5"
+    },
+    {
+      "id": "C29",
+      "track": "en_en",
+      "query": "What is the Rotten Tomatoes score for The Godfather?",
+      "lang": "en",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [],
+      "labeling_note": "越界请求（第三方评分）：目录只有自有 ratings 表（1-10 分），没有 Rotten Tomatoes/外部评分来源，必须拒绝而不是拿自有评分冒充外部评分。",
+      "snapshot_row_refs": [
+        "predicate: no catalog lookup - third-party ratings are out of scope (refuse, no tool call) | rows=0 | ids=(none)",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "expects_no_match": true
+    },
+    {
+      "id": "C30",
+      "track": "en_en",
+      "query": "Is there a movie called Pygmalion?",
+      "lang": "en",
+      "intent": "clarify_or_refuse",
+      "acceptable_movie_ids": [
+        "AA13",
+        "LuB20",
+        "xEn10"
+      ],
+      "labeling_note": "澄清用例：title = 'Pygmalion' 有 3 行（1935 Engel xEn10 / 1937 Berger LuB20 / 1938 Asquith AA13），查询没有年份/导演线索。正确行为 = 列出这 3 行候选（片名 + 年份 + 导演）+ 只问一个问题；allows_clarification = true 表示澄清式回答算严格任务成功，主口径仍要求可接受集合命中。",
+      "snapshot_row_refs": [
+        "predicate: title = 'Pygmalion' | rows=3 | ids=AA13,LuB20,xEn10",
+        "verified read-only on fabflix-mysql:3307/moviedb 2026-11-20 (movies ⨝ genres_in_movies ⨝ genres ⨝ ratings)"
+      ],
+      "allows_clarification": true
+    }
+  ]
+}

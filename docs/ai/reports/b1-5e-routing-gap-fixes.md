@@ -6,7 +6,7 @@
 > | issue | [#78](https://github.com/PNZ-z/ai-powered-Fabflix/issues/78)（`Refs #74`，**#74 保持 OPEN**） |
 > | 计划 | `docs/plans/b1-5e-routing-gap-fixes.md`（r2；`OD-1`…`OD-7` + 后续裁定 ③b2） |
 > | 前序事实 | B1.5d blind holdout（已合并，PR #77）`G1-T`（冷）**25/30** < 27/30 → FAIL；该 30 条因本任务的规则改动已成 **seen fixture**，数字冻结在 `docs/ai/reports/b1-5d-blind-holdout.md` |
-> | 结果性质 | **全部数字都是 in-sample / seen 回归证据**。本报告不声称泛化、不声称 B1.5c/B1.5d/B1.5e 达标、不声称生产代码有任何改动。泛化只能由 B1.5f 的一次冷跑回答，而 **B1.5e 不生成、不冻结、不运行 B1.5f**（本仓库没有任何 B1.5f fixture 或 `blind_version` 引用） |
+> | 结果性质 | **全部数字都是 in-sample / seen 回归证据**。本报告不声称泛化、不声称 B1.5c/B1.5d/B1.5e 达标、不声称生产代码有任何改动。泛化只能由 B1.5f 的一次冷跑回答，而 **B1.5e 不生成、不冻结、不运行 B1.5f**（本仓库没有任何 B1.5f fixture 或 `blind_version` 引用）〔**2026-11-20 追加链接**：B1.5f 已执行并 **FAIL**（`G1-T` 冷 24/30 = 80.0% < 27/30），见 `docs/ai/reports/b1-5f-new-blind-holdout.md`；本报告的历史结论不改〕 |
 > | 改动文件 | `scripts/eval/tool_eval.py`、`docs/ai/aliases/genre-aliases.json`、`scripts/eval/check_schema.py`（组断言）、`docs/ai/README.md`（追加一行）、本报告。**零改动**：`src/main/**`、`pom.xml`、CI、`docs/ai/tool-schema.b1-5.json`、`docs/ai/golden-set.schema.json`、`scripts/eval/check_blind_holdout.py`、B1.5a–B1.5d 的任何 fixture/计划/报告 |
 > | 契约指纹 | `contract_version b1.5-tools/v3`、`schema_hash 712c0e34c37b6de140c13fcc7d3de15e67ac1f131f2bb6e8751a4f5e4df3474a`（**未变**，`check_schema.py` 重算一致） |
 | 本轮修订（三路 reviewer 的已接受意见） | P1：`TITLE_PATTERNS[7]` 加 `FUNCTION_WORDS`/类型词首词守卫（`movies I enjoyed in the 1990s`、`I enjoyed comedy films from the 1990s` 不再被当成片名）＋ 兜底边界修汉字粘连（`查一下The Matrix`）；P1：补齐 `F-5` 闸门/整十年/逐键覆盖、`R-1` union、demonym DB 非空池共 9 个新 label（43 → 61）；P1：新跑一次 held-out `G1`（§8.2）；P2：本文的行数/池量纲、`A12` 未执行、自测条数口径已按 artifact 改正。**行为只在上述守卫生效处变化：135 条 fixture 的路由产物逐条 diff 为零，in-sample 仍 70/75、`Q12` 仍为唯一 similar 回归** |
