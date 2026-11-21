@@ -5,8 +5,8 @@
 | 工作流 | B1.5f：新 30 条 blind holdout（`C01`–`C30`）+ 一次冷跑 `G1-T` + 报告；**不修任何规则** |
 | issue | [#81](https://github.com/PNZ-z/ai-powered-Fabflix/issues/81)（`OPEN`，正文 `Refs #74`、**无 closing keyword**）；关联 **#74 → 保持 OPEN** |
 | 计划 / issue 文档 / 报告 | `docs/plans/b1-5f-new-blind-holdout.md`（r3 结果回填 / §11）、`docs/issues/issue-81-b1-5f-new-blind-holdout.md`（实施状态回填）、`docs/ai/reports/b1-5f-new-blind-holdout.md`（**新建**） |
-| 分支 / 提交 | 分支 = `main`（工作区**未提交、未推送**）；被测基线 = **`7915fcd`**（B1.5e 合并，PR #79）；工作区 HEAD = `bd7e285` |
-| PR | **未创建**（#81 = 报告完成 / FAIL / 待 PR，可在 PR 合并后关闭） |
+| 分支 / 提交 | 分支 = **`codex/b1-5f-blind-holdout`**；提交 = **`9de1da5`**（“feat(eval): add the B1.5f blind holdout and record its G1-T failure”）—— **由主工作流创建，非 docs-writer**；docs-writer **未执行任何 `git add`/`commit`/`push`**。被测基线 = **`7915fcd`**（B1.5e 合并，PR #79）；PR #82 合并后 `origin/main` = **`b406fad`** |
+| PR | **#82 已合并**（2026-11-21T00:12:24Z，merge commit `b406fad`）；#81 **CLOSED**；#74 保持 OPEN |
 | 实际运行时刻 | 冻结 `2026-11-20T23:52:22Z`（本地 `15:52:22-08:00`）；`G1` `23:54:53Z`；预热 `23:55:01Z`（完成 `23:55:08Z`）；冷跑 `23:55:08Z`；热跑 `23:55:17Z`；回放 `23:55:18Z` |
 | 结果 | **`G1-T` 冷跑 24/30 = 80.0%（Wilson [62.7%, 90.5%]）< 27/30 → FAIL**；`G1` 23/30 = 76.7%；热/回放 24/30 逐例一致 |
 | 日志文件名说明 | 按任务指定沿用 B1.5 系列的 `2026-11-21` 命名；**实际运行时刻是 2026-11-20T23:52–23:56Z**（见上） |
@@ -40,7 +40,7 @@
 | B1.5a–B1.5e 的 fixture/报告 | 冻结记录 `invariants` 表逐一列 SHA；本轮未改 |
 | 阈值 / 分母 / 用例 | `G1-T ≥ 27/30`、`/30` 全分母不变；`C01`–`C30` 冻结后未改；**没有为了好看而剔除失败条目** |
 | 生产面 | 无 `src/main/**`、无 `pom.xml`、无 CI、无 MCP、无 DB 写入（只读 `SELECT`） |
-| B1.5f 的新增产物 | 只有 3 个未跟踪文件：`docs/ai/golden/queries-blind.b1-5f.json`、`docs/ai/golden/query-routing-blind.b1-5f.json`、`scripts/eval/check_blind_holdout_b15f.py` |
+| B1.5f 的新增产物 | 3 个文件：`docs/ai/golden/queries-blind.b1-5f.json`、`docs/ai/golden/query-routing-blind.b1-5f.json`、`scripts/eval/check_blind_holdout_b15f.py`（生成阶段产出，**非 docs-writer 修改**；已随 `9de1da5` 一并提交） |
 
 ### 1.3 实际执行/复核的命令（证据）
 
@@ -81,7 +81,7 @@
 8. **B1.5f 数字必须冻结**：`C01`–`C30` 一旦被用于改规则并重跑，本批即降级为 seen fixture（重复 B1.5c 的错误）。B1.5g 必须配**新盲集 B1.5h**。
 9. **`plan_deviation`（`P-1` 窗口 1948–1950/25 → 1980–1982/13）是已批准偏离**：批准来源 = 主 agent 生成阶段裁定 B（理由：旧窗口的 24 个 `Music` id 与 B1.5d `B22` 可接受集逐一相同，违反 135 条计分的逐 id 不重叠规则）。已回填计划 §3.3 / §11 与 `docs/ai/README.md`；**远端 #81 正文实测也已是 1980–1982 / 13 行口径**（`1948` 计数 0）。
 10. **验收缺口仍在**：`G0`/`G2`/`G3`/MCP **未测/未实现**；执行器与解析器仍为评测 stand-in，`R-2` 派生收窄只在替身里，**不代表生产语义**。
-11. **未发现其他已知遗留问题**：本轮唯一未提交是设计的（任务禁止提交）；工作区另有与本任务无关的 `M demo/index.html` 与未跟踪 `demo/iterations/b1-5f/`、`.idea/`（demo 页由实现阶段产出，已只读核验 200/FAIL/24-30）。
+11. **交付状态提醒**：docs-writer 本身**未 `git add` / `commit` / `push`**；但本轮写作期间主工作流已把工作区（含本文件改动的 docs）提交为 **`9de1da5`** 并切到分支 `codex/b1-5f-blind-holdout`（已推送至同名 origin 分支；**PR #82 已合并**）。工作区剩余 `?? .idea/` 与本任务无关。**未发现其他已知遗留问题**。
 
 ---
 
