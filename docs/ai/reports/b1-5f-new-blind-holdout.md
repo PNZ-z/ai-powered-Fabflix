@@ -12,6 +12,7 @@
 > | 数据快照 | Docker `fabflix-mysql` 宿主 3307 / `moviedb`，21,087 部（196–2024），`db_snapshot_hash = 8b16c047…f925`（四个运行产物一致） |
 > | 端点 / 模型 | `http://<host>:11434`（Ollama），`qwen2.5:7b` digest `845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`；**运行前预热 1 次**（不计 case，§3.4） |
 > | 脚本（零改动） | `scripts/eval/tool_eval.py`（`991db086…af04`，对 `7915fcd` **空 diff**）；新增只读 `scripts/eval/check_blind_holdout_b15f.py`（`d5cfe94a…29fd`，只做断言、不参与路由/判分）；B1.5d 的 `check_blind_holdout.py` **byte-identical**（`8259cc8d…7caf`） |
+> | 提交 / PR | 提交 **`9de1da5`**（分支 `codex/b1-5f-blind-holdout`；“feat(eval): add the B1.5f blind holdout and record its G1-T failure”—— 含两个 fixture、B1.5f checker 与本报告；**由主工作流提交，非 docs-writer**）；**PR #82 已合并**（merge commit `b406fad`，2026-11-21T00:12:24Z）；#81 `CLOSED`；#74 保持 `OPEN` |
 > | 运行产物 | `.pi/artifacts/b1-5f-eval/{blind-G1,blind-G1T-cold,blind-G1T-warm,blind-G1T-replay}.json` + 同名 `.log`（`.pi/` 不入库）；冻结记录 `.pi/artifacts/b1-5f-freeze.json`；时间线 `run-timeline.txt` |
 > | 未做 | **`G0` / `G2` 未测**（计划 `D-3`）；**`G3` 未测**、**MCP 未实现**（全程）；**无生产代码 / 无 `pom.xml` / 无 CI / 无 DB 写** |
 
